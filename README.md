@@ -1,4 +1,8 @@
 # Fresh Guard
+<img src="public/logo.svg" width="20" alt="Fresh Guard">
+![GitHub License](https://img.shields.io/github/license/marcelorodrigo/freshguard)
+
+
 Fresh Guard is a simple and easy to use tool that helps you keep your pantry fresh by reminding you to use your food
 before it goes bad.
 
@@ -16,3 +20,5 @@ To install Fresh Guard, follow these steps:
    composer install
    npm install
    ```
+
+`
