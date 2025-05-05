@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Creates the `stocks` table with columns for item reference, expiration date, quantity, and timestamps.
+     *
+     * Defines a unique constraint on the combination of `item_id` and `expires_at` to prevent duplicate stock entries for the same item and expiration date.
      */
     public function up(): void
     {
@@ -25,7 +27,7 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Drops the 'stocks' table from the database if it exists, reversing the migration.
      */
     public function down(): void
     {

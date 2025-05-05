@@ -23,8 +23,10 @@ class Stock extends Model
 
     protected $fillable = ['quantity', 'expires_at'];
 
-    /**
-     * @return BelongsTo<Item, Stock>
+    /****
+     * Defines the relationship indicating that this stock entry belongs to a single item.
+     *
+     * @return BelongsTo<Item, Stock> The Eloquent relationship to the associated Item model.
      */
     public function item(): BelongsTo
     {

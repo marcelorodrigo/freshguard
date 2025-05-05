@@ -14,7 +14,9 @@ class DatabaseSeeder extends Seeder
     private const int MAX_STOCK = 30;
 
     /**
-     * Seed the application's database.
+     * Seeds the database with categories, items, stocks, and related transactions for testing or development.
+     *
+     * Creates four categories, each with four items. For each item, a stock record is generated with a random quantity and expiration date, along with two transactions representing stock addition and removal.
      */
     public function run(): void
     {

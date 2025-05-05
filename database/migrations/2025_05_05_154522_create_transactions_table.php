@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Creates the `transactions` table with columns for stock reference, transaction type, quantity, transaction date, and timestamps.
+     *
+     * The table includes a foreign key to the `stocks` table, an enumerated `type` column restricted to 'add' or 'remove', a non-nullable unsigned big integer `quantity`, a non-nullable `transaction_at` date, and Laravel's default `created_at` and `updated_at` timestamps.
      */
     public function up(): void
     {
@@ -26,7 +28,7 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Drops the transactions table if it exists.
      */
     public function down(): void
     {

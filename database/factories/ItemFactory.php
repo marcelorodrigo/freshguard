@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ItemFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * Generates the default attributes for a new Item model instance with a unique fake name.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Associative array of Item attributes.
      */
     public function definition(): array
     {

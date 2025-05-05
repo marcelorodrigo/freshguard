@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class CategoryFactory extends Factory
 {
     /**
-     * Define the model's default state.
+     * Generates a default set of attributes for a Category model with a unique category name.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Associative array containing the model's default attributes.
      */
     public function definition(): array
     {

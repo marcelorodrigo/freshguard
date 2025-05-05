@@ -13,9 +13,11 @@ class StockFactory extends Factory
     protected $model = \App\Models\Stock::class;
 
     /**
-     * Define the model's default state.
+     * Returns the default attribute values for a new Stock model instance.
      *
-     * @return array<string, mixed>
+     * Generates a related Item, assigns a random quantity between 10 and 100, and sets an expiration date between 1 and 30 days from now.
+     *
+     * @return array<string, mixed> Default attributes for Stock.
      */
     public function definition(): array
     {
