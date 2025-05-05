@@ -20,7 +20,9 @@ class CategoryFactory extends Factory
         $this->faker->addProvider(new CategoryProvider($this->faker));
 
         return [
-            'name' => $this->faker->categoryName(),
+            'name' => $this->faker
+                ->unique()
+                ->categoryName(),
         ];
     }
 }
