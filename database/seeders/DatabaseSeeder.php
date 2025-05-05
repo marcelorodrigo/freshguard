@@ -7,10 +7,13 @@ use App\Models\Category;
 use App\Models\Item;
 use App\Models\Stock;
 use App\Models\Transaction;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
+    use WithoutModelEvents;
+
     private const int MAX_STOCK = 30;
 
     /**

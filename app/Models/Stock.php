@@ -10,7 +10,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property-read Item $item
+ * @property Item $item
  * @property Carbon $expires_at
  * @property int $quantity
  * @property Carbon $created_at
