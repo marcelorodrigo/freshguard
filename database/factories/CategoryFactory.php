@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use Database\Factories\FakeProvider\CategoriesProvider;
+use Database\Factories\FakeProvider\CategoryProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Categories>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Category>
  */
-class CategoriesFactory extends Factory
+class CategoryFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -17,7 +17,7 @@ class CategoriesFactory extends Factory
      */
     public function definition(): array
     {
-        $this->faker->addProvider(new CategoriesProvider($this->faker));
+        $this->faker->addProvider(new CategoryProvider($this->faker));
 
         return [
             'name' => $this->faker->categoryName(),

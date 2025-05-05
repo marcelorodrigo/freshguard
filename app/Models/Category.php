@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $created_at
  * @property string $updated_at
  */
-class Categories extends Model
+class Category extends Model
 {
-    /** @use HasFactory<\Database\Factories\CategoriesFactory> */
+    /** @use HasFactory<\Database\Factories\CategoryFactory> */
     use HasFactory;
 
     protected $fillable = ['name'];
