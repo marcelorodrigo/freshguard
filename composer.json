@@ -59,6 +59,9 @@
         "phpstan": [
             "vendor/bin/phpstan analyse --memory-limit=1G"
         ],
+        "pint:fix": [
+            "vendor/bin/pint"
+        ],
         "pint:check": [
             "vendor/bin/pint --test"
         ]
