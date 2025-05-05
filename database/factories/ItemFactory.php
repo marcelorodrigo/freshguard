@@ -20,7 +20,9 @@ class ItemFactory extends Factory
         $this->faker->addProvider(new ItemProvider($this->faker));
 
         return [
-            'name' => $this->faker->unique()->itemName(),
+            'name' => $this->faker
+                ->unique()
+                ->itemName(),
         ];
     }
 }
