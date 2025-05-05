@@ -6,16 +6,16 @@ use App\Models\Category;
 use App\Models\Item;
 use Illuminate\Database\Seeder;
 
-class CategorySeeder extends Seeder
+class ItemSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        Category::factory()
-            ->has(Item::factory()->count(4))
-            ->count(4)
+        Item::factory()
+            ->has(Category::factory())
+            ->count(1)
             ->create();
     }
 }
