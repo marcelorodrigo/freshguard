@@ -2,7 +2,7 @@
 
 namespace Database\Factories\FakeProvider;
 
-class CategoriesProvider extends \Faker\Provider\Base
+class CategoryProvider extends \Faker\Provider\Base
 {
     private $names = [
         'Food',
