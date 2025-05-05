@@ -3,14 +3,15 @@
 namespace Database\Factories;
 
 use App\Models\Item;
+use App\Models\Stock;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Stock>
+ * @extends Factory<Stock>
  */
 class StockFactory extends Factory
 {
-    protected $model = \App\Models\Stock::class;
+    protected $model = Stock::class;
 
     /**
      * Define the model's default state.

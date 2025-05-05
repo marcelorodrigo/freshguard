@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
                         Transaction::factory()->create([
                             'stock_id' => $stock->id,
                             'type' => TransactionType::REMOVE,
-                            'quantity' => $quantity - $addQuantity,
+                            'quantity' => abs($quantity - $addQuantity),
                         ]);
                     })
             )

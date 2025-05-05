@@ -4,12 +4,21 @@ namespace Database\Factories;
 
 use App\Enums\TransactionType;
 use App\Models\Stock;
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
+/**
+ * @extends Factory<Transaction>
+ */
 class TransactionFactory extends Factory
 {
-    protected $model = \App\Models\Transaction::class;
+    protected $model = Transaction::class;
 
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [
