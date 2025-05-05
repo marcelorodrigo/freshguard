@@ -17,5 +17,4 @@ class Categories extends Model
     use HasFactory;
 
     protected $fillable = ['name'];
-
 }

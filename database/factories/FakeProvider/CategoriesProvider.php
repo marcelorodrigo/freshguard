@@ -15,12 +15,11 @@ class CategoriesProvider extends \Faker\Provider\Base
         'Home & Kitchen',
         'Beauty & Personal Care',
         'Automotive',
-        'Health & Wellness'
+        'Health & Wellness',
     ];
 
     public function categoryName(): string
     {
         return $this->generator->randomElement($this->names);
     }
-
 }

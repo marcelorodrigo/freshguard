@@ -18,6 +18,7 @@ class CategoriesFactory extends Factory
     public function definition(): array
     {
         $this->faker->addProvider(new CategoriesProvider($this->faker));
+
         return [
             'name' => $this->faker->categoryName(),
         ];
