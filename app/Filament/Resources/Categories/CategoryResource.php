@@ -75,11 +75,13 @@ class CategoryResource extends Resource
             ->actions([
                 ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->hidden(fn (Category $record) => $record->items()->exists()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+
                 ]),
             ]);
     }
