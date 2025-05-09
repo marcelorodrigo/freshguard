@@ -14,6 +14,9 @@ omit_containers:
   - db
 nodejs_version: "22"
 
+# Prevents ddev changing laravel env variables
+disable_settings_management: true
+
 web_extra_exposed_ports:
   - name: node-vite
     container_port: 5173

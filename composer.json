@@ -5,9 +5,10 @@
     "description": "Fresh Guard",
     "license": "General Public License v3.0",
     "require": {
-        "php": "^8.4",
+        "php": "^8.3",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "filament/filament": "4.0.0.0-alpha6"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.15",
@@ -35,7 +36,8 @@
     "scripts": {
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi"
+            "@php artisan package:discover --ansi",
+            "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
@@ -64,6 +66,17 @@
         ],
         "pint:check": [
             "vendor/bin/pint --test"
+        ],
+        "clear": [
+            "@php artisan config:clear",
+            "@php artisan route:clear",
+            "@php artisan view:clear",
+            "@php artisan cache:clear",
+            "@php artisan event:clear",
+            "@php artisan icons:clear",
+            "@php artisan filament:clear-cached-components",
+            "@php artisan optimize:clear",
+            "@php artisan schedule:interrupt"
         ]
     },
     "extra": {
@@ -80,6 +93,6 @@
             "php-http/discovery": true
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "alpha",
     "prefer-stable": true
 }

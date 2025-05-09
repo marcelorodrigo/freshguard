@@ -22,3 +22,6 @@ yarn-error.log
 /.vscode
 /.zed
 /.DS_Store
+# Filament assets
+/public/css/filament/*
+/public/js/filament/*
