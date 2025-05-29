@@ -54,7 +54,7 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan test"
+            "@php artisan test --exclude-group disabled --coverage"
         ],
         "phpstan": [
             "vendor/bin/phpstan analyse --memory-limit=2G"
