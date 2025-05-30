@@ -54,7 +54,7 @@ class Location extends Model
     ];
 
     /**
-     * The "booted" method of the model.
+     * Assigns a UUID string to the model's `id` attribute when a new `Location` is being created.
      */
     protected static function booted(): void
     {
@@ -63,10 +63,10 @@ class Location extends Model
         });
     }
 
-    /**
-     * Get the parent location.
+    /****
+     * Returns the parent location in the hierarchy.
      *
-     * @return BelongsTo<Location, Location>
+     * @return BelongsTo<Location, Location> The relationship instance representing this location's parent.
      */
     public function parent(): BelongsTo
     {
@@ -75,9 +75,9 @@ class Location extends Model
     }
 
     /**
-     * Get the child locations.
+     * Returns a relationship for all locations that have this location as their parent.
      *
-     * @return HasMany<Location, Location>
+     * @return HasMany<Location, Location> The child locations associated with this location.
      */
     public function children(): HasMany
     {

@@ -8,7 +8,9 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Seeds the application's database with a test user and invokes the location seeder.
+     *
+     * Creates a user with predefined credentials and runs the `LocationSeeder` to populate related data.
      */
     public function run(): void
     {

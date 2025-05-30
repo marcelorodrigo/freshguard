@@ -7,7 +7,11 @@ use Illuminate\Foundation\Http\FormRequest;
 class LocationRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Allows all users to make this location request.
+     *
+     * Always returns true, granting authorization for any user.
+     *
+     * @return bool True, indicating authorization is granted.
      */
     public function authorize(): bool
     {
@@ -15,9 +19,11 @@ class LocationRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Returns the validation rules for location-related request data.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * Validates that the `name` field is required and no longer than 255 characters, the `description` field is optional and up to 255 characters, and the `parent_id` field is optional but must reference an existing location ID if provided.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string> Validation rules for the request.
      */
     public function rules(): array
     {

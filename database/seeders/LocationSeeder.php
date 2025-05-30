@@ -8,7 +8,9 @@ use Illuminate\Database\Seeder;
 class LocationSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seeds the database with predefined hierarchical location data.
+     *
+     * Creates a root "Attic" location with sub-locations ("Laundry Room", "Office", "Jana's Office"), and additional main locations ("Kitchen", "Storage", "Living Room") with their respective descriptions.
      */
     public function run(): void
     {
