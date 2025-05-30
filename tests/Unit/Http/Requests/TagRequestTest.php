@@ -3,14 +3,12 @@
 namespace Tests\Unit\Http\Requests;
 
 use App\Http\Requests\TagRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TagRequestTest extends TestCase
 {
-    use RefreshDatabase;
 
     public function test_validation_passes_with_valid_data(): void
     {
