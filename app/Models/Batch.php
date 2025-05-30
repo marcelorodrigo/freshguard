@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Database\Factories\BatchFactory;
@@ -48,6 +46,17 @@ class Batch extends Model
         'quantity' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (Batch $batch): void {
+            $batch->updateItemQuantity();
+        });
+
+        static::deleted(function (Batch $batch): void {
+            $batch->updateItemQuantity();
+        });
+    }
+
     /**
      * Get the item that owns the batch.
      *
@@ -57,5 +66,17 @@ class Batch extends Model
     {
         /** @var BelongsTo<Item, Batch> */
         return $this->belongsTo(Item::class);
+    }
+
+    /**
+     * Update the parent item's quantity based on the sum of its batches.
+     */
+    protected function updateItemQuantity(): void
+    {
+        $this->item->update([
+            'quantity' => $this->item
+                ->batches()
+                ->sum('quantity')
+        ]);
     }
 }

@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('name', 255);
             $table->string('description', 255)
                 ->nullable();
+            $table->unsignedInteger('quantity')
+                ->default(0);
             $table->timestamps();
         });
     }

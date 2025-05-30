@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Models;
 
 use Database\Factories\ItemFactory;
@@ -18,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $location_id
  * @property string $name
  * @property string|null $description
+ * @property int $quantity
  * @property Carbon $created_at
  * @property Carbon|null $updated_at
  * @property-read Location $location
@@ -40,6 +39,7 @@ class Item extends Model
         'location_id',
         'name',
         'description',
+        'quantity',
     ];
 
     /**
