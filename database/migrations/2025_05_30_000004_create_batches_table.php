@@ -18,7 +18,7 @@ return new class extends Migration
                 ->constrained()
                 ->onDelete('cascade');
             $table->date('expires_at');
-            $table->integer('quantity');
+            $table->unsignedInteger('quantity');
             $table->timestamps();
         });
     }

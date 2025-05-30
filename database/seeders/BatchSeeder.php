@@ -26,27 +26,27 @@ class BatchSeeder extends Seeder
             // Create a batch that expires soon (within 7 days)
             Batch::factory()->create([
                 'item_id' => $item->id,
-                'expires_at' => now()->addDays(rand(1, 7)),
-                'quantity' => rand(1, 5),
+                'expires_at' => now()->addDays(fake()->numberBetween(1, 7)),
+                'quantity' => fake()->numberBetween(1, 5),
             ]);
 
             // Create a batch that expires in medium term (within 30 days)
             Batch::factory()->create([
                 'item_id' => $item->id,
-                'expires_at' => now()->addDays(rand(8, 30)),
-                'quantity' => rand(5, 15),
+                'expires_at' => now()->addDays(fake()->numberBetween(8, 30)),
+                'quantity' => fake()->numberBetween(5, 15),
             ]);
 
             // Create a batch that expires in long term
             Batch::factory()->create([
                 'item_id' => $item->id,
-                'expires_at' => now()->addDays(rand(31, 180)),
-                'quantity' => rand(10, 50),
+                'expires_at' => now()->addDays(fake()->numberBetween(31, 180)),
+                'quantity' => fake()->numberBetween(10, 50),
             ]);
 
-            // Randomly add 1-2 more batches for some items
-            if (rand(0, 1)) {
-                $extraBatches = rand(1, 2);
+            // fake()->numberBetweenomly add 1-2 more batches for some items
+            if (fake()->numberBetween(0, 1)) {
+                $extraBatches = fake()->numberBetween(1, 2);
                 Batch::factory($extraBatches)->create([
                     'item_id' => $item->id,
                 ]);

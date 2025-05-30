@@ -16,7 +16,7 @@ class BatchTest extends TestCase
     {
         $batch = Batch::factory()->create();
         $this->assertIsString($batch->id);
-        $this->assertEquals(36, strlen($batch->id)); // Standard UUID length
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $batch->id);
     }
 
     public function test_it_belongs_to_an_item()
