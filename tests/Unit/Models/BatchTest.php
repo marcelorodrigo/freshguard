@@ -6,6 +6,7 @@ use App\Models\Batch;
 use App\Models\Item;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class BatchTest extends TestCase
@@ -35,7 +36,7 @@ class BatchTest extends TestCase
             'quantity',
         ];
 
-        $this->assertEquals($expected, (new Batch())->getFillable());
+        $this->assertEquals($expected, new Batch()->getFillable());
     }
 
     public function test_it_casts_attributes_correctly()
@@ -43,7 +44,7 @@ class BatchTest extends TestCase
         $batch = Batch::factory()->create();
 
         $this->assertIsString($batch->item_id);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $batch->expires_at);
+        $this->assertInstanceOf(Carbon::class, $batch->expires_at);
         $this->assertIsInt($batch->quantity);
     }
 
@@ -74,6 +75,9 @@ class BatchTest extends TestCase
         $this->assertEquals($item->id, $batch->item_id);
         $this->assertEquals($expiresAt->toDateTimeString(), $batch->expires_at->toDateTimeString());
         $this->assertEquals(42, $batch->quantity);
+
+        $item->refresh();
+        $this->assertEquals(42, $item->quantity);
     }
 
     public function test_it_can_find_batches_by_item()
@@ -93,5 +97,42 @@ class BatchTest extends TestCase
         // Test relationship
         $this->assertCount(3, $item->batches);
         $this->assertCount(2, $anotherItem->batches);
+    }
+
+    public function test_deleting_batch_updates_item_quantity()
+    {
+        // Create an item
+        $item = Item::factory()->create();
+
+        // Create three batches with specific quantities
+        $batch10 = Batch::factory()->create([
+            'item_id' => $item->id,
+            'quantity' => 10
+        ]);
+
+        $batch20 = Batch::factory()->create([
+            'item_id' => $item->id,
+            'quantity' => 20
+        ]);
+
+        $batch30 = Batch::factory()->create([
+            'item_id' => $item->id,
+            'quantity' => 30
+        ]);
+
+        // Refresh the item to get updated quantity
+        $item->refresh();
+
+        // Verify total quantity is the sum of all three batches
+        $this->assertEquals(60, $item->quantity);
+
+        // Delete the batch with quantity 20
+        $batch20->delete();
+
+        // Refresh the item to get updated quantity
+        $item->refresh();
+
+        // Verify item quantity is now 40 (10 + 30)
+        $this->assertEquals(40, $item->quantity);
     }
 }

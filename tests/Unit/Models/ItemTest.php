@@ -32,6 +32,7 @@ class ItemTest extends TestCase
             'location_id',
             'name',
             'description',
+            'quantity',
         ], $item->getFillable());
     }
 
@@ -57,6 +58,7 @@ class ItemTest extends TestCase
             'id' => $item->id,
             'name' => $item->name,
             'location_id' => $item->location_id,
+            'quantity' => 0, // Default quantity
         ]);
     }
 
