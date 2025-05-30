@@ -30,8 +30,8 @@ class LocationSeeder extends Seeder
         ]);
 
         Location::factory()->withParent($attic)->create([
-            'name' => 'Jana\'s Office',
-            'description' => 'Jana\'s personal office in the Attic',
+            'name' => 'Private Office',
+            'description' => 'Priavate office in the Attic',
         ]);
 
         // Create other main locations
