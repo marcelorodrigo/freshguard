@@ -56,8 +56,10 @@ class LocationFactory extends Factory
     {
         return $this->state(function (array $attributes) use ($parent) {
             return [
-                'parent_id' => $parent ? $parent->id : Location::factory(),
+-                'parent_id' => $parent ? $parent->id : Location::factory(),
++                'parent_id' => $parent?->id ?? Location::factory()->create()->id,
             ];
         });
+    }
     }
 }
