@@ -2,7 +2,10 @@
 
 namespace Tests\Unit\Models;
 
+use App\Models\Item;
 use App\Models\Tag;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -73,8 +76,9 @@ class TagTest extends TestCase
 
     public function test_creates_with_minimal_attributes(): void
     {
-        $tag = Tag::create([
+        $tag = Tag::factory()->create([
             'name' => 'Test Tag',
+            'description' => null,
         ]);
 
         $this->assertDatabaseHas('tags', [
@@ -114,6 +118,63 @@ class TagTest extends TestCase
 
         $this->assertDatabaseMissing('tags', [
             'id' => $tagId,
+        ]);
+    }
+
+    public function test_tag_has_items_relationship(): void
+    {
+        $tag = new Tag();
+
+        $this->assertInstanceOf(BelongsToMany::class, $tag->items());
+        $this->assertInstanceOf(Collection::class, $tag->items);
+    }
+
+    public function test_tag_can_have_many_items(): void
+    {
+        $tag = Tag::factory()->create();
+        $items = Item::factory()->count(3)->create();
+
+        $tag->items()->attach($items);
+
+        $this->assertCount(3, $tag->items);
+        foreach ($items as $item) {
+            $this->assertTrue($tag->items->contains($item));
+        }
+    }
+
+    public function test_items_can_be_detached_from_tag(): void
+    {
+        $tag = Tag::factory()->create();
+        $items = Item::factory()->count(3)->create();
+
+        $tag->items()->attach($items);
+        $this->assertCount(3, $tag->items);
+
+        $tag->items()->detach($items->first());
+        $tag->refresh();
+
+        $this->assertCount(2, $tag->items);
+        $this->assertFalse($tag->items->contains($items->first()));
+        $this->assertTrue($tag->items->contains($items[1]));
+        $this->assertTrue($tag->items->contains($items[2]));
+    }
+
+    public function test_deleting_tag_doesnt_delete_linked_items(): void
+    {
+        $tag = Tag::factory()->create();
+        $item = Item::factory()->create();
+
+        $tag->items()->attach($item);
+        $itemId = $item->id;
+        $tagId = $tag->id;
+
+        $tag->delete();
+
+        $this->assertDatabaseMissing('tags', ['id' => $tagId]);
+        $this->assertDatabaseHas('items', ['id' => $itemId]);
+        $this->assertDatabaseMissing('item_tag', [
+            'item_id' => $itemId,
+            'tag_id' => $tagId
         ]);
     }
 }

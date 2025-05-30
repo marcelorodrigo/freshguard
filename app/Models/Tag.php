@@ -8,6 +8,7 @@ use Database\Factories\TagFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property Carbon $created_at
  * @property Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Item> $items
  **/
 class Tag extends Model
 {
@@ -33,4 +35,15 @@ class Tag extends Model
         'name',
         'description',
     ];
+
+    /**
+     * Get the items that belong to the tag.
+     *
+     * @return BelongsToMany<Item, Model>
+     */
+    public function items(): BelongsToMany
+    {
+        /** @var BelongsToMany<Item, Model> */
+        return $this->belongsToMany(Item::class);
+    }
 }
