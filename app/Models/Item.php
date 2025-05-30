@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Location $location
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Batch> $batches
  **/
 class Item extends Model
 {
@@ -60,5 +62,16 @@ class Item extends Model
     {
         /** @var BelongsToMany<Tag, Model> */
         return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * Get the batches for the item.
+     *
+     * @return HasMany<Batch, Item>
+     */
+    public function batches(): HasMany
+    {
+        /** @var HasMany<Batch, Item> */
+        return $this->hasMany(Batch::class);
     }
 }

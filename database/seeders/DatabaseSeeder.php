@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             LocationSeeder::class,
             TagSeeder::class,
             ItemSeeder::class,
+            BatchSeeder::class,
         ]);
     }
 }
