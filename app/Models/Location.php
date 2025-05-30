@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 
 /**
  * @property string $id
@@ -39,16 +38,6 @@ class Location extends Model
         'description',
         'parent_id',
     ];
-
-    /**
-     * The "booted" method of the model.
-     */
-    protected static function booted(): void
-    {
-        static::creating(function (Location $location) {
-            $location->id = (string)Str::uuid();
-        });
-    }
 
     /**
      * Get the parent location.
