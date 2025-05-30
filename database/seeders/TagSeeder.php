@@ -15,7 +15,7 @@ class TagSeeder extends Seeder
         $tags = [
             ['name' => 'Promotion', 'description' => 'Items bought on promotion or sale'],
             ['name' => 'Healthy', 'description' => null],
-            ['name' => 'Desert', 'description' => null],
+            ['name' => 'Dessert', 'description' => null],
             ['name' => 'Important', 'description' => 'High priority essential items'],
         ];
 
