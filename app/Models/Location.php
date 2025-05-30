@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Database\Factories\LocationFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Database\Factories\LocationFactory;
 use Illuminate\Support\Str;
 
 /**
@@ -26,21 +27,7 @@ class Location extends Model
     /**
      * @use HasFactory<LocationFactory>
      */
-    use HasFactory;
-
-    /**
-     * Indicates if the IDs are auto-incrementing.
-     *
-     * @var bool
-     */
-    public $incrementing = false;
-
-    /**
-     * The data type of the auto-incrementing ID.
-     *
-     * @var string
-     */
-    protected $keyType = 'string';
+    use HasFactory, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -59,7 +46,7 @@ class Location extends Model
     protected static function booted(): void
     {
         static::creating(function (Location $location) {
-            $location->id = (string) Str::uuid();
+            $location->id = (string)Str::uuid();
         });
     }
 
