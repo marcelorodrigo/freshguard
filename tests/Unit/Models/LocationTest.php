@@ -35,6 +35,7 @@ class LocationTest extends TestCase
     {
         // Test that the default value is set correctly
         $location = Location::factory()->create();
+        $this->assertEquals(0, $location->expiration_notify_days);
 
         // Test updating the value
         $location->update(['expiration_notify_days' => 15]);
