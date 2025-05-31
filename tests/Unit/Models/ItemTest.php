@@ -36,6 +36,7 @@ class ItemTest extends TestCase
             'name',
             'description',
             'quantity',
+            'expiration_notify_days',
         ], $item->getFillable());
     }
 
@@ -74,6 +75,18 @@ class ItemTest extends TestCase
         // Create item without description
         $itemWithoutDescription = Item::factory()->withoutDescription()->create();
         $this->assertNull($itemWithoutDescription->description);
+    }
+
+    public function test_factory_creates_item_with_default_expiration_notify_days(): void
+    {
+        $item = Item::factory()->create();
+        $this->assertEquals(0, $item->expiration_notify_days);
+    }
+
+    public function test_factory_creates_item_with_custom_expiration_notify_days(): void
+    {
+        $item = Item::factory()->withExpirationNotifyDays(7)->create();
+        $this->assertEquals(7, $item->expiration_notify_days);
     }
 
     public function test_creates_with_minimal_attributes(): void
@@ -116,6 +129,15 @@ class ItemTest extends TestCase
             'description' => 'Updated Description',
             'location_id' => $newLocation->id,
         ]);
+    }
+
+    public function test_updates_expiration_notify_days(): void
+    {
+        $item = Item::factory()->create();
+        $this->assertEquals(0, $item->expiration_notify_days);
+
+        $item->update(['expiration_notify_days' => 10]);
+        $this->assertEquals(10, $item->expiration_notify_days);
     }
 
     public function test_deletes_item(): void
