@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string|null $description
  * @property int $quantity
+ * @property int $expiration_notify_days
  * @property Carbon $created_at
  * @property Carbon|null $updated_at
  * @property-read Location $location
@@ -43,6 +44,7 @@ class Item extends Model
         'name',
         'description',
         'quantity',
+        'expiration_notify_days',
     ];
 
     /**

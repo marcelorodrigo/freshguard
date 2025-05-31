@@ -145,4 +145,71 @@ class LocationRequestTest extends TestCase
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('parent_id', $validator->errors()->toArray());
     }
+
+    public function test_validation_passes_with_expiration_notify_days(): void
+    {
+        $request = new LocationRequest();
+
+        $data = [
+            'name' => 'Test Location',
+            'description' => 'Test Description',
+            'parent_id' => null,
+            'expiration_notify_days' => 5,
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($request->authorize());
+        $this->assertFalse($validator->fails());
+    }
+
+    public function test_validation_passes_with_expiration_notify_days_zero(): void
+    {
+        $request = new LocationRequest();
+
+        $data = [
+            'name' => 'Test Location',
+            'description' => 'Test Description',
+            'parent_id' => null,
+            'expiration_notify_days' => 0,
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($request->authorize());
+        $this->assertFalse($validator->fails());
+    }
+
+    public function test_validation_fails_with_negative_expiration_notify_days(): void
+    {
+        $request = new LocationRequest();
+
+        $data = [
+            'name' => 'Test Location',
+            'description' => 'Test Description',
+            'parent_id' => null,
+            'expiration_notify_days' => -1,
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('expiration_notify_days', $validator->errors()->toArray());
+    }
+
+    public function test_validation_fails_with_non_integer_expiration_notify_days(): void
+    {
+        $request = new LocationRequest();
+
+        $data = [
+            'name' => 'Test Location',
+            'description' => 'Test Description',
+            'parent_id' => null,
+            'expiration_notify_days' => 'not-a-number',
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+    }
 }

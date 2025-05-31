@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('description')
                 ->nullable();
+            $table->unsignedInteger('expiration_notify_days')
+                ->default(0);
             // Nullable foreign key to allow root locations without a parent
             $table->uuid('parent_id')
                 ->nullable();

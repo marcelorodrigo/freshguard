@@ -23,6 +23,8 @@ return new class extends Migration
                 ->nullable();
             $table->unsignedInteger('quantity')
                 ->default(0);
+            $table->unsignedInteger('expiration_notify_days')
+                ->default(0);
             $table->timestamps();
         });
     }

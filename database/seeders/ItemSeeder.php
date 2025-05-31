@@ -44,6 +44,22 @@ class ItemSeeder extends Seeder
                     ->withoutDescription()
                     ->withTags()
                     ->create();
+
+                // Create 2 items with 30-day expiration notification
+                Item::factory()
+                    ->count(2)
+                    ->for($location)
+                    ->withExpirationNotifyDays(30)
+                    ->withTags($tagIds)
+                    ->create();
+
+                // Create 2 items with 60-day expiration notification
+                Item::factory()
+                    ->count(2)
+                    ->for($location)
+                    ->withExpirationNotifyDays(60)
+                    ->withTags()
+                    ->create();
             }
         } else {
             // If no locations exist, create items with their own locations
@@ -63,6 +79,20 @@ class ItemSeeder extends Seeder
             Item::factory()
                 ->count(5)
                 ->withoutDescription()
+                ->withTags()
+                ->create();
+
+            // 3 items with 30-day expiration notification
+            Item::factory()
+                ->count(3)
+                ->withExpirationNotifyDays(30)
+                ->withTags($tagIds)
+                ->create();
+
+            // 3 items with 60-day expiration notification
+            Item::factory()
+                ->count(3)
+                ->withExpirationNotifyDays(60)
                 ->withTags()
                 ->create();
         }

@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property string|null $description
  * @property string|null $parent_id
+ * @property int $expiration_notify_days
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read Location|null $parent
@@ -28,6 +29,7 @@ class Location extends Model
      */
     use HasFactory, HasUuids;
 
+
     /**
      * The attributes that are mass assignable.
      *
@@ -36,6 +38,7 @@ class Location extends Model
     protected $fillable = [
         'name',
         'description',
+        'expiration_notify_days',
         'parent_id',
     ];
 
