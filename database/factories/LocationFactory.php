@@ -43,6 +43,7 @@ class LocationFactory extends Factory
             'name' => $this->faker->randomElement($houseLocations),
             'description' => $this->faker->randomElement($locationDetails),
             'parent_id' => null,
+            'expiration_notify_days' => $this->faker->numberBetween(0, 30),
         ];
     }
 
