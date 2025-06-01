@@ -237,4 +237,72 @@ class ItemRequestTest extends TestCase
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('tags.0', $validator->errors()->toArray());
     }
+
+    public function test_validation_passes_with_expiration_notify_days(): void
+    {
+        $request = new ItemRequest();
+
+        $data = [
+            'location_id' => $this->location->id,
+            'name' => 'Test Item',
+            'description' => 'Test Description',
+            'expiration_notify_days' => 5,
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($request->authorize());
+        $this->assertFalse($validator->fails());
+    }
+
+    public function test_validation_passes_with_expiration_notify_days_zero(): void
+    {
+        $request = new ItemRequest();
+
+        $data = [
+            'location_id' => $this->location->id,
+            'name' => 'Test Item',
+            'description' => 'Test Description',
+            'expiration_notify_days' => 0,
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($request->authorize());
+        $this->assertFalse($validator->fails());
+    }
+
+    public function test_validation_fails_with_negative_expiration_notify_days(): void
+    {
+        $request = new ItemRequest();
+
+        $data = [
+            'location_id' => $this->location->id,
+            'name' => 'Test Item',
+            'description' => 'Test Description',
+            'expiration_notify_days' => -1,
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('expiration_notify_days', $validator->errors()->toArray());
+    }
+
+    public function test_validation_fails_with_non_integer_expiration_notify_days(): void
+    {
+        $request = new ItemRequest();
+
+        $data = [
+            'location_id' => $this->location->id,
+            'name' => 'Test Item',
+            'description' => 'Test Description',
+            'expiration_notify_days' => 'not-a-number',
+        ];
+
+        $validator = Validator::make($data, $request->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('expiration_notify_days', $validator->errors()->toArray());
+    }
 }
