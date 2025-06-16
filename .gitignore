@@ -24,3 +24,8 @@ Homestead.yaml
 npm-debug.log
 Thumbs.db
 yarn-error.log
+
+# filament assets
+/public/css/filament/
+/public/fonts/filament/
+/public/js/filament/
