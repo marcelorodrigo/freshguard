@@ -24,7 +24,8 @@ class LocationRequest extends FormRequest
         return [
             'name' => ['required', 'max:255'],
             'description' => ['nullable', 'max:255'],
-            'parent_id' => ['nullable', 'exists:locations,id']
+            'expiration_notify_days' => ['integer', 'min:0'],
+            'parent_id' => ['nullable', 'exists:locations,id'],
         ];
     }
 }

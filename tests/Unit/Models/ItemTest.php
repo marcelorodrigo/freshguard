@@ -3,12 +3,15 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Item;
+use App\Models\Batch;
 use App\Models\Location;
 use App\Models\Tag;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -33,6 +36,7 @@ class ItemTest extends TestCase
             'name',
             'description',
             'quantity',
+            'expiration_notify_days',
         ], $item->getFillable());
     }
 
@@ -71,6 +75,18 @@ class ItemTest extends TestCase
         // Create item without description
         $itemWithoutDescription = Item::factory()->withoutDescription()->create();
         $this->assertNull($itemWithoutDescription->description);
+    }
+
+    public function test_factory_creates_item_with_default_expiration_notify_days(): void
+    {
+        $item = Item::factory()->create();
+        $this->assertEquals(0, $item->expiration_notify_days);
+    }
+
+    public function test_factory_creates_item_with_custom_expiration_notify_days(): void
+    {
+        $item = Item::factory()->withExpirationNotifyDays(7)->create();
+        $this->assertEquals(7, $item->expiration_notify_days);
     }
 
     public function test_creates_with_minimal_attributes(): void
@@ -113,6 +129,15 @@ class ItemTest extends TestCase
             'description' => 'Updated Description',
             'location_id' => $newLocation->id,
         ]);
+    }
+
+    public function test_updates_expiration_notify_days(): void
+    {
+        $item = Item::factory()->create();
+        $this->assertEquals(0, $item->expiration_notify_days);
+
+        $item->update(['expiration_notify_days' => 10]);
+        $this->assertEquals(10, $item->expiration_notify_days);
     }
 
     public function test_deletes_item(): void
@@ -220,5 +245,104 @@ class ItemTest extends TestCase
         $item = Item::factory()->withTags()->create();
 
         $this->assertCount(2, $item->tags);
+    }
+
+    public function test_has_batches_relationship(): void
+    {
+        $item = new Item();
+
+        $this->assertInstanceOf(HasMany::class, $item->batches());
+        $this->assertInstanceOf(Collection::class, $item->batches);
+    }
+
+    public function test_can_have_many_batches(): void
+    {
+        $item = Item::factory()->create();
+        $batches = Batch::factory()->count(3)->for($item)->create();
+
+        $this->assertCount(3, $item->batches);
+        foreach ($batches as $batch) {
+            $this->assertTrue($item->batches->contains($batch));
+        }
+    }
+
+    public function test_scope_with_batches_expiring_within_days_includes_items_with_batches_expiring_in_range(): void
+    {
+        // Set fixed date for testing
+        Carbon::setTestNow('2025-06-11 17:00:00');
+
+        // Create items with batches expiring at different times
+        $itemWithBatchExpiringToday = Item::factory()->create();
+        $itemWithBatchExpiringIn3Days = Item::factory()->create();
+        $itemWithBatchExpiringIn7Days = Item::factory()->create();
+        $itemWithBatchExpiringIn10Days = Item::factory()->create();
+        $itemWithExpiredBatch = Item::factory()->create();
+        $itemWithNoExpiringBatchInRange = Item::factory()->create();
+
+        // Create batches with specific expiration dates
+        Batch::factory()->for($itemWithBatchExpiringToday)->create(['expires_at' => Carbon::now()]);
+        Batch::factory()->for($itemWithBatchExpiringIn3Days)->create(['expires_at' => Carbon::now()->addDays(3)]);
+        Batch::factory()->for($itemWithBatchExpiringIn7Days)->create(['expires_at' => Carbon::now()->addDays(7)]);
+        Batch::factory()->for($itemWithBatchExpiringIn10Days)->create(['expires_at' => Carbon::now()->addDays(10)]);
+        Batch::factory()->for($itemWithExpiredBatch)->create(['expires_at' => Carbon::now()->subDays(1)]);
+        Batch::factory()->for($itemWithNoExpiringBatchInRange)->create(['expires_at' => Carbon::now()->addDays(15)]);
+
+        // Test scope with 5 days range
+        $itemsExpiringWithin5Days = Item::withBatchesExpiringWithinDays(5)->get();
+
+        // Should include items with batches expiring today, in 3 days, but not those expiring in 7 or 10 days
+        $this->assertTrue($itemsExpiringWithin5Days->contains($itemWithBatchExpiringToday));
+        $this->assertTrue($itemsExpiringWithin5Days->contains($itemWithBatchExpiringIn3Days));
+        $this->assertFalse($itemsExpiringWithin5Days->contains($itemWithBatchExpiringIn7Days));
+        $this->assertFalse($itemsExpiringWithin5Days->contains($itemWithBatchExpiringIn10Days));
+        $this->assertFalse($itemsExpiringWithin5Days->contains($itemWithExpiredBatch));
+        $this->assertFalse($itemsExpiringWithin5Days->contains($itemWithNoExpiringBatchInRange));
+    }
+
+    public function test_scope_with_batches_expiring_within_days_works_with_multiple_batches(): void
+    {
+        // Set fixed date for testing
+        Carbon::setTestNow('2025-06-11 18:00:00');
+
+        // Create item with multiple batches
+        $item = Item::factory()->create();
+
+        // One batch expires in range, one doesn't
+        Batch::factory()->for($item)->create(['expires_at' => Carbon::now()->addDays(3)]);
+        Batch::factory()->for($item)->create(['expires_at' => Carbon::now()->addDays(10)]);
+
+        // Item should be included in results because at least one batch expires within range
+        $itemsExpiringWithin5Days = Item::withBatchesExpiringWithinDays(5)->get();
+
+        $this->assertTrue($itemsExpiringWithin5Days->contains($item));
+    }
+
+    public function test_scope_with_batches_expiring_within_days_returns_empty_collection_when_no_matches(): void
+    {
+        // Set fixed date for testing
+        Carbon::setTestNow('2025-05-30 12:00:00');
+
+        // Create items with batches that don't expire within the range
+        $item1 = Item::factory()->create();
+        $item2 = Item::factory()->create();
+
+        Batch::factory()->for($item1)->create(['expires_at' => Carbon::now()->addDays(10)]);
+        Batch::factory()->for($item2)->create(['expires_at' => Carbon::now()->subDays(1)]);
+
+        // Test scope with 5 days range
+        $itemsExpiringWithin5Days = Item::withBatchesExpiringWithinDays(5)->get();
+
+        $this->assertCount(0, $itemsExpiringWithin5Days);
+    }
+
+    public function test_scope_with_batches_expiring_within_days_excludes_items_without_batches(): void
+    {
+        // Create item without batches
+        $itemWithoutBatches = Item::factory()->create();
+
+        // Test scope with any days range
+        $itemsExpiringWithinDays = Item::withBatchesExpiringWithinDays(30)->get();
+
+        $this->assertFalse($itemsExpiringWithinDays->contains($itemWithoutBatches));
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -17,11 +18,14 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string|null $description
  * @property int $quantity
+ * @property int $expiration_notify_days
  * @property Carbon $created_at
  * @property Carbon|null $updated_at
  * @property-read Location $location
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Tag> $tags
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Batch> $batches
+ *
+ * @method static Builder<static> withBatchesExpiringWithinDays(int $days)
  **/
 class Item extends Model
 {
@@ -40,6 +44,7 @@ class Item extends Model
         'name',
         'description',
         'quantity',
+        'expiration_notify_days',
     ];
 
     /**
@@ -73,5 +78,20 @@ class Item extends Model
     {
         /** @var HasMany<Batch, Item> */
         return $this->hasMany(Batch::class);
+    }
+
+    /**
+     * Scope a query to only include items with batches expiring within the specified number of days.
+     *
+     * @param  Builder<Item>  $query
+     * @param  int  $days
+     * @return Builder<Item>
+     */
+    public function scopeWithBatchesExpiringWithinDays(Builder $query, int $days): Builder
+    {
+        return $query->whereHas('batches', function (Builder $query) use ($days) {
+            $query->where('expires_at', '>=', Carbon::now())
+                  ->where('expires_at', '<=', Carbon::now()->addDays($days));
+        });
     }
 }
