@@ -19,7 +19,7 @@ jobs:
           coverage: xdebug
         env:
           fail-fast: true
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Validate composer.json and composer.lock
         run: composer validate --strict
       - name: Cache Composer packages
@@ -33,7 +33,7 @@ jobs:
       - name: Directory Permissions
         run: chmod -R 777 storage bootstrap/cache
       - name: Configure Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: 'npm'
@@ -48,6 +48,6 @@ jobs:
         env:
           XDEBUG_MODE: coverage
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
