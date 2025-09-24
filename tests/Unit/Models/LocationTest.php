@@ -5,6 +5,7 @@ namespace Tests\Unit\Models;
 
 use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class LocationTest extends TestCase
@@ -23,7 +24,7 @@ class LocationTest extends TestCase
     {
         $location = Location::factory()->create();
         $this->assertIsString($location->id);
-        $this->assertEquals(36, strlen($location->id)); // UUID length
+        $this->assertTrue(Str::isUuid($location->id));
     }
 
     public function test_it_can_have_a_parent(): void
