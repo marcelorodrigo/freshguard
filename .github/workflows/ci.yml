@@ -19,7 +19,7 @@ jobs:
           coverage: xdebug
         env:
           fail-fast: true
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Validate composer.json and composer.lock
         run: composer validate --strict
       - name: Cache Composer packages
