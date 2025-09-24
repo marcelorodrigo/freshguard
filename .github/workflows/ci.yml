@@ -20,6 +20,9 @@ jobs:
         env:
           fail-fast: true
       - uses: actions/checkout@v5
+        with:
+          show-progress: false
+          fetch-depth: 0
       - name: Validate composer.json and composer.lock
         run: composer validate --strict
       - name: Cache Composer packages
