@@ -56,6 +56,10 @@
         ],
         "test": [
             "@php artisan config:clear --ansi",
+            "@php artisan test --exclude-group disabled"
+        ],
+        "test:coverage": [
+            "@php artisan config:clear --ansi",
             "@php artisan test --exclude-group disabled --coverage --coverage-clover=storage/logs/clover.xml --log-junit=storage/logs/phpunit.xml"
         ],
         "phpstan": [
