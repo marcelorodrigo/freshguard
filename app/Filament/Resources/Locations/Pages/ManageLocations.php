@@ -14,7 +14,7 @@ class ManageLocations extends ManageRecords
     {
         return [
             CreateAction::make()
-                ->label('New Location')
+                ->label(__('New Location'))
                 ->icon('heroicon-o-plus'),
         ];
     }
