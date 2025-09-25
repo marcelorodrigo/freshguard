@@ -33,7 +33,7 @@ class LocationResourceTest extends TestCase
         $resource = new LocationResource;
         $titleProperty = new \ReflectionProperty(LocationResource::class, 'recordTitleAttribute');
 
-        $this->assertSame('Name', $titleProperty->getDefaultValue());
+        $this->assertSame('name', $titleProperty->getDefaultValue());
     }
 
     #[\PHPUnit\Framework\Attributes\Test]
