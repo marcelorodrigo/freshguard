@@ -47,7 +47,7 @@ jobs:
       - name: PHPStan
         run: composer phpstan
       - name: Execute tests (Unit and Feature tests) via PHPUnit
-        run: composer test
+        run: composer test:coverage
         env:
           XDEBUG_MODE: coverage
       - name: SonarQube Scan
