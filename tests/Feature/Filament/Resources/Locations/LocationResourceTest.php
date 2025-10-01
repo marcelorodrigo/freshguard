@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests\Filament\Resources\Locations;
+namespace Feature\Filament\Resources\Locations;
 
 use App\Filament\Resources\Locations\Pages\ManageLocations;
 use App\Models\Location;
@@ -13,7 +13,7 @@ class LocationResourceTest extends TestCase
 {
     use DatabaseMigrations;
 
-    public function test_can_load_the_page_with_created_records(): void
+    public function test_can_load_locations_with_created_records(): void
     {
         $locations_count = 5;
         $parent = Location::factory()->create(['name' => 'Parent Location']);
@@ -28,7 +28,7 @@ class LocationResourceTest extends TestCase
         Livewire::test(ManageLocations::class)
             ->assertOk()
             ->assertCanSeeTableRecords($locations)
-            ->assertCountTableRecords($locations_count)
+            ->assertCountTableRecords($locations_count + 1)
             ->assertCanRenderTableColumn('name')
             ->assertCanRenderTableColumn('description')
             ->assertCanRenderTableColumn('parent.name');
