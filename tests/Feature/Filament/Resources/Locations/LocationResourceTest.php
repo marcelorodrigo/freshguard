@@ -36,7 +36,7 @@ class LocationResourceTest extends TestCase
 
     public function test_can_create_location(): void
     {
-        $location = Location::factory()->create();
+        $location = Location::factory()->make();
 
         Livewire::test(ManageLocations::class)
             ->callAction('create', data: [
