@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 class ManageLocationsTest extends TestCase
 {
+
     #[Test]
     public function should_return_correct_resource_class(): void
     {

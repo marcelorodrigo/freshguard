@@ -13,10 +13,20 @@ class LocationForm
         return $schema
             ->components([
                 TextInput::make('name')
-                    ->required(),
-                TextInput::make('description'),
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('description')
+                    ->maxLength(255),
+                TextInput::make('expiration_notify_days')
+                    ->integer()
+                    ->suffix(__('days'))
+                    ->minValue(0)
+                    ->default(null)
+                    ->label('Notify Expiration (Days)'),
                 Select::make('parent_id')
-                    ->relationship('parent', 'name'),
+                    ->relationship('parent', 'name')
+                    ->searchable()
+                    ->preload(),
             ]);
     }
 }
