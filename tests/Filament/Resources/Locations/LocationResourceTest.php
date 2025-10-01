@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Tests\Filament\Resources\Locations;
 
@@ -8,18 +9,26 @@ use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Livewire\Livewire;
 use Tests\TestCase;
 
-class LocationResource2Test extends TestCase
+class LocationResourceTest extends TestCase
 {
     use DatabaseMigrations;
 
     public function test_can_load_the_page_with_created_records(): void
     {
-        $locations = Location::factory()->count(5)->create();
+        $locations_count = 5;
+        $parent = Location::factory()->create(['name' => 'Parent Location']);
+        $locations = Location::factory()
+            ->count($locations_count)
+            ->sequence(
+                ['parent_id' => $parent->id],
+                ['parent_id' => null]
+            )
+            ->create();
 
         Livewire::test(ManageLocations::class)
             ->assertOk()
             ->assertCanSeeTableRecords($locations)
-            ->assertCountTableRecords(5)
+            ->assertCountTableRecords($locations_count)
             ->assertCanRenderTableColumn('name')
             ->assertCanRenderTableColumn('description')
             ->assertCanRenderTableColumn('parent.name');
