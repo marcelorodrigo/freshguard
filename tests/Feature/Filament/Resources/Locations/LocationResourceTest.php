@@ -34,4 +34,51 @@ class LocationResourceTest extends TestCase
             ->assertCanRenderTableColumn('parent.name');
     }
 
+    public function test_can_create_location(): void
+    {
+        $location = Location::factory()->make();
+
+        Livewire::test(ManageLocations::class)
+            ->callAction('create', data: [
+                'name' => $location->name,
+                'description' => $location->description,
+                'expiration_notify_days' => $location->expiration_notify_days,
+                'parent_id' => null
+            ])
+            ->assertOk()
+            ->assertNotified();
+
+        $this->assertDatabaseHas(Location::class, [
+            'name' => $location->name,
+            'description' => $location->description,
+            'expiration_notify_days' => $location->expiration_notify_days,
+            'parent_id' => null
+        ]);
+    }
+
+    public function test_can_edit_location(): void
+    {
+        $location = Location::factory()->create([
+            'name' => 'Original Name',
+            'description' => 'Original Description',
+            'expiration_notify_days' => 10,
+            'parent_id' => null
+        ]);
+
+        $newData = [
+            'name' => 'Updated Name',
+            'description' => 'Updated Description',
+            'expiration_notify_days' => 20,
+            'parent_id' => null
+        ];
+
+        Livewire::test(ManageLocations::class)
+            ->callTableAction('edit', $location, data: $newData)
+            ->assertNotified();
+
+        $this->assertDatabaseHas(Location::class, [
+            'id' => $location->id,
+            ...$newData
+        ]);
+    }
 }
