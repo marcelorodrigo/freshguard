@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Unit\Models;
@@ -54,4 +55,3 @@ test('casts password as hashed', function () {
     expect($user->password)->not->toBe('plain-password')
         ->and(Hash::check('plain-password', $user->password))->toBeTrue();
 });
-

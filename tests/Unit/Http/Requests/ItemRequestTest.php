@@ -18,7 +18,7 @@ beforeEach(function () use (&$location, &$tag) {
 });
 
 test('validation passes with valid data', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -34,7 +34,7 @@ test('validation passes with valid data', function () use (&$location, &$tag) {
 });
 
 test('validation passes with emojis', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -50,7 +50,7 @@ test('validation passes with emojis', function () use (&$location, &$tag) {
 });
 
 test('validation passes with null description', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -66,7 +66,7 @@ test('validation passes with null description', function () use (&$location, &$t
 });
 
 test('validation passes without tags', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -81,7 +81,7 @@ test('validation passes without tags', function () use (&$location, &$tag) {
 });
 
 test('validation fails without location id', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'name' => 'Test Item',
@@ -95,7 +95,7 @@ test('validation fails without location id', function () use (&$location, &$tag)
 });
 
 test('validation fails with invalid location id', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => 'not-a-uuid',
@@ -110,7 +110,7 @@ test('validation fails with invalid location id', function () use (&$location, &
 });
 
 test('validation fails with nonexistent location id', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => Str::uuid()->toString(),
@@ -125,7 +125,7 @@ test('validation fails with nonexistent location id', function () use (&$locatio
 });
 
 test('validation fails without name', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -139,7 +139,7 @@ test('validation fails without name', function () use (&$location, &$tag) {
 });
 
 test('validation fails with name too long', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -154,7 +154,7 @@ test('validation fails with name too long', function () use (&$location, &$tag) 
 });
 
 test('validation fails with description too long', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -169,7 +169,7 @@ test('validation fails with description too long', function () use (&$location, 
 });
 
 test('validation fails with invalid tags format', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -185,7 +185,7 @@ test('validation fails with invalid tags format', function () use (&$location, &
 });
 
 test('validation fails with invalid tag id', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -201,7 +201,7 @@ test('validation fails with invalid tag id', function () use (&$location, &$tag)
 });
 
 test('validation fails with nonexistent tag id', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -217,7 +217,7 @@ test('validation fails with nonexistent tag id', function () use (&$location, &$
 });
 
 test('validation passes with expiration notify days', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -233,7 +233,7 @@ test('validation passes with expiration notify days', function () use (&$locatio
 });
 
 test('validation passes with expiration notify days zero', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -249,7 +249,7 @@ test('validation passes with expiration notify days zero', function () use (&$lo
 });
 
 test('validation fails with negative expiration notify days', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,
@@ -265,7 +265,7 @@ test('validation fails with negative expiration notify days', function () use (&
 });
 
 test('validation fails with non integer expiration notify days', function () use (&$location, &$tag) {
-    $request = new ItemRequest();
+    $request = new ItemRequest;
 
     $data = [
         'location_id' => $location->id,

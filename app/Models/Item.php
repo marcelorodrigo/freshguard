@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use Database\Factories\ItemFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -84,14 +84,13 @@ class Item extends Model
      * Scope a query to only include items with batches expiring within the specified number of days.
      *
      * @param  Builder<Item>  $query
-     * @param  int  $days
      * @return Builder<Item>
      */
     public function scopeWithBatchesExpiringWithinDays(Builder $query, int $days): Builder
     {
         return $query->whereHas('batches', function (Builder $query) use ($days) {
             $query->where('expires_at', '>=', Carbon::now())
-                  ->where('expires_at', '<=', Carbon::now()->addDays($days));
+                ->where('expires_at', '<=', Carbon::now()->addDays($days));
         });
     }
 }

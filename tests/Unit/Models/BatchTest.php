@@ -96,17 +96,17 @@ test('deleting batch updates item quantity', function () {
     // Create three batches with specific quantities
     $batch10 = Batch::factory()->create([
         'item_id' => $item->id,
-        'quantity' => 10
+        'quantity' => 10,
     ]);
 
     $batch20 = Batch::factory()->create([
         'item_id' => $item->id,
-        'quantity' => 20
+        'quantity' => 20,
     ]);
 
     $batch30 = Batch::factory()->create([
         'item_id' => $item->id,
-        'quantity' => 30
+        'quantity' => 30,
     ]);
 
     // Refresh the item to get updated quantity
@@ -124,4 +124,3 @@ test('deleting batch updates item quantity', function () {
     // Verify item quantity is now 40 (10 + 30)
     expect($item->quantity)->toBe(40);
 });
-

@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Models;
 
-use App\Models\Item;
 use App\Models\Batch;
+use App\Models\Item;
 use App\Models\Location;
 use App\Models\Tag;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,7 +24,7 @@ test('uuid is generated on creation', function () {
 });
 
 test('fillable attributes', function () {
-    $item = new Item();
+    $item = new Item;
 
     expect($item->getFillable())->toBe([
         'location_id',
@@ -36,13 +36,13 @@ test('fillable attributes', function () {
 });
 
 test('incrementing is false', function () {
-    $item = new Item();
+    $item = new Item;
 
     expect($item->getIncrementing())->toBeFalse();
 });
 
 test('key type is string', function () {
-    $item = new Item();
+    $item = new Item;
 
     expect($item->getKeyType())->toBe('string');
 });
@@ -138,7 +138,7 @@ test('deletes item', function () {
 });
 
 test('has location relationship', function () {
-    $item = new Item();
+    $item = new Item;
 
     expect($item->location())->toBeInstanceOf(BelongsTo::class);
 });
@@ -152,7 +152,7 @@ test('belongs to location', function () {
 });
 
 test('has tags relationship', function () {
-    $item = new Item();
+    $item = new Item;
 
     expect($item->tags())->toBeInstanceOf(BelongsToMany::class)
         ->and($item->tags)->toBeInstanceOf(Collection::class);
@@ -200,7 +200,7 @@ test('deleting item doesnt delete tags', function () {
     $this->assertDatabaseHas('tags', ['id' => $tagId]);
     $this->assertDatabaseMissing('item_tag', [
         'item_id' => $itemId,
-        'tag_id' => $tagId
+        'tag_id' => $tagId,
     ]);
 });
 
@@ -225,7 +225,7 @@ test('withTags factory method without args', function () {
 });
 
 test('has batches relationship', function () {
-    $item = new Item();
+    $item = new Item;
 
     expect($item->batches())->toBeInstanceOf(HasMany::class)
         ->and($item->batches)->toBeInstanceOf(Collection::class);
@@ -316,4 +316,3 @@ test('scope with batches expiring within days excludes items without batches', f
 
     expect($itemsExpiringWithinDays->contains($itemWithoutBatches))->toBeFalse();
 });
-

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use App\Filament\Resources\Locations\Pages\ManageLocations;
@@ -7,7 +8,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
-
 
 test('can load locations with created records', function (): void {
     $locations_count = 5;
@@ -37,7 +37,7 @@ test('can create location', function (): void {
             'name' => $location->name,
             'description' => $location->description,
             'expiration_notify_days' => $location->expiration_notify_days,
-            'parent_id' => null
+            'parent_id' => null,
         ])
         ->assertOk()
         ->assertNotified();
@@ -46,7 +46,7 @@ test('can create location', function (): void {
         'name' => $location->name,
         'description' => $location->description,
         'expiration_notify_days' => $location->expiration_notify_days,
-        'parent_id' => null
+        'parent_id' => null,
     ]);
 });
 
@@ -55,14 +55,14 @@ test('can edit location', function (): void {
         'name' => 'Original Name',
         'description' => 'Original Description',
         'expiration_notify_days' => 10,
-        'parent_id' => null
+        'parent_id' => null,
     ]);
 
     $newData = [
         'name' => 'Updated Name',
         'description' => 'Updated Description',
         'expiration_notify_days' => 20,
-        'parent_id' => null
+        'parent_id' => null,
     ];
 
     Livewire::test(ManageLocations::class)
@@ -71,6 +71,6 @@ test('can edit location', function (): void {
 
     $this->assertDatabaseHas(Location::class, [
         'id' => $location->id,
-        ...$newData
+        ...$newData,
     ]);
 });

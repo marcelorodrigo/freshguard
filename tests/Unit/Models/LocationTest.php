@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Unit\Models;
@@ -60,4 +61,3 @@ test('fillable attributes', function () {
         ->and($location->expiration_notify_days)->toBe(10)
         ->and($location->parent_id)->toBeNull();
 });
-

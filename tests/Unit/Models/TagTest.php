@@ -19,7 +19,7 @@ test('uuid is generated on creation', function () {
 });
 
 test('fillable attributes', function () {
-    $tag = new Tag();
+    $tag = new Tag;
 
     expect($tag->getFillable())->toBe([
         'name',
@@ -28,13 +28,13 @@ test('fillable attributes', function () {
 });
 
 test('incrementing is false', function () {
-    $tag = new Tag();
+    $tag = new Tag;
 
     expect($tag->getIncrementing())->toBeFalse();
 });
 
 test('key type is string', function () {
-    $tag = new Tag();
+    $tag = new Tag;
 
     expect($tag->getKeyType())->toBe('string');
 });
@@ -110,7 +110,7 @@ test('deletes tag', function () {
 });
 
 test('tag has items relationship', function () {
-    $tag = new Tag();
+    $tag = new Tag;
 
     expect($tag->items())->toBeInstanceOf(BelongsToMany::class)
         ->and($tag->items)->toBeInstanceOf(Collection::class);
@@ -158,7 +158,6 @@ test('deleting tag doesnt delete linked items', function () {
     $this->assertDatabaseHas('items', ['id' => $itemId]);
     $this->assertDatabaseMissing('item_tag', [
         'item_id' => $itemId,
-        'tag_id' => $tagId
+        'tag_id' => $tagId,
     ]);
 });
-

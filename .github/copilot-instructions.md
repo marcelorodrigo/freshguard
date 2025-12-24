@@ -16,7 +16,7 @@ This is a Laravel 12 application using Filament v4 for admin UI and Tailwind CSS
 - **Build Assets**: `npm run build` (Vite + Tailwind).
 - **Testing**: `composer test` (runs Pest/PHPUnit, clears config cache). Coverage: `composer test:coverage`.
 - **Static Analysis**: `composer phpstan` (runs Larastan at level 10).
-- **Linting/Fixing**: `composer pint:dirty` (fixes only changed files).
+- **Code Formatting**: Use **Laravel Pint** for all code formatting and style fixes. Run `composer pint` to format all files or `composer pint:dirty` to fix only changed files. Pint enforces PSR-12 compliance and Laravel best practices.
 - **Migrations/Seeders**: Use standard Laravel artisan commands. Factories and seeders are in `database/`.
 
 ## Project-Specific Conventions

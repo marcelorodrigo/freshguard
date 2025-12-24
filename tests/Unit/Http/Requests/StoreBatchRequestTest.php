@@ -1,16 +1,16 @@
 <?php
 
 use App\Http\Requests\StoreBatchRequest;
+use App\Models\Item;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
-use App\Models\Item;
 
 uses(RefreshDatabase::class);
 
 $request = null;
 
 beforeEach(function () use (&$request) {
-    $request = new StoreBatchRequest();
+    $request = new StoreBatchRequest;
 });
 
 test('authorization always returns true', function () use (&$request) {

@@ -18,6 +18,7 @@ class BatchSeeder extends Seeder
 
         if ($items->count() === 0) {
             $this->command->info('No items found. Skipping batch seeding.');
+
             return;
         }
 

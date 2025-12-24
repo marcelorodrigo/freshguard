@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 uses(RefreshDatabase::class);
 
 test('validation passes with valid data', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',
@@ -24,7 +24,7 @@ test('validation passes with valid data', function () {
 });
 
 test('validation passes with emojis', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => '🏠',
@@ -39,7 +39,7 @@ test('validation passes with emojis', function () {
 });
 
 test('validation passes with null description', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',
@@ -60,7 +60,7 @@ test('validation passes with valid parent id', function () {
         'description' => 'Parent Description',
     ]);
 
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Child Location',
@@ -75,7 +75,7 @@ test('validation passes with valid parent id', function () {
 });
 
 test('validation fails without name', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'description' => 'Test Description',
@@ -89,7 +89,7 @@ test('validation fails without name', function () {
 });
 
 test('validation fails with name too long', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => Str::repeat('a', 256),
@@ -104,7 +104,7 @@ test('validation fails with name too long', function () {
 });
 
 test('validation fails with description too long', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',
@@ -119,7 +119,7 @@ test('validation fails with description too long', function () {
 });
 
 test('validation fails with invalid parent id', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',
@@ -134,7 +134,7 @@ test('validation fails with invalid parent id', function () {
 });
 
 test('validation passes with expiration notify days', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',
@@ -150,7 +150,7 @@ test('validation passes with expiration notify days', function () {
 });
 
 test('validation passes with expiration notify days zero', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',
@@ -166,7 +166,7 @@ test('validation passes with expiration notify days zero', function () {
 });
 
 test('validation fails with negative expiration notify days', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',
@@ -182,7 +182,7 @@ test('validation fails with negative expiration notify days', function () {
 });
 
 test('validation fails with non integer expiration notify days', function () {
-    $request = new LocationRequest();
+    $request = new LocationRequest;
 
     $data = [
         'name' => 'Test Location',

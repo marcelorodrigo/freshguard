@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 test('validation passes with valid data', function () {
-    $request = new TagRequest();
+    $request = new TagRequest;
 
     $data = [
         'name' => 'Test Tag',
@@ -19,7 +19,7 @@ test('validation passes with valid data', function () {
 });
 
 test('validation passes with emojis', function () {
-    $request = new TagRequest();
+    $request = new TagRequest;
 
     $data = [
         'name' => '🏷️',
@@ -33,7 +33,7 @@ test('validation passes with emojis', function () {
 });
 
 test('validation passes with null description', function () {
-    $request = new TagRequest();
+    $request = new TagRequest;
 
     $data = [
         'name' => 'Test Tag',
@@ -47,7 +47,7 @@ test('validation passes with null description', function () {
 });
 
 test('validation fails without name', function () {
-    $request = new TagRequest();
+    $request = new TagRequest;
 
     $data = [
         'description' => 'Test Description',
@@ -60,7 +60,7 @@ test('validation fails without name', function () {
 });
 
 test('validation fails with name too long', function () {
-    $request = new TagRequest();
+    $request = new TagRequest;
 
     $data = [
         'name' => Str::repeat('a', 256),
