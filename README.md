@@ -1,61 +1,105 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🥗 FreshGuard
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> **Keep Your Inventory Fresh**
 
-## About Laravel
+Your intelligent home stock inventory companion designed to ensure your products reach your table at their peak freshness. Say goodbye to forgotten items, mysterious expiration dates, and wasted food. FreshGuard transforms your pantry into a thriving ecosystem of properly tracked, optimally consumed produce.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## About FreshGuard
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+FreshGuard is a modern home inventory management system that brings order, awareness, and sustainability to your kitchen. Whether you're a meal-prep enthusiast, a sustainability advocate, or simply someone who hates throwing away good food, FreshGuard puts you in control.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Key Goals
 
-## Learning Laravel
+🎯 **Maximize Freshness** - Track your items with precision, ensuring nothing sits forgotten in the back of your fridge.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+📊 **Smart Inventory Management** - Organize items by location, tags, and batches for intuitive access and discovery.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+⏰ **Never Miss Expiration** - Stay ahead of expiration dates with intelligent notifications and consumption tracking.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+♻️ **Reduce Food Waste** - Transform surplus into savings by knowing exactly what you have and when to use it.
 
-## Laravel Sponsors
+🏠 **Organized Locations** - Categorize your items across multiple storage locations—refrigerator, freezer, pantry, and beyond.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+🏷️ **Flexible Tagging** - Create custom tags to classify items by type, dietary preference, or any criteria that matters to you.
 
-### Premium Partners
+## Technical Architecture
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+FreshGuard is built with modern, battle-tested technologies designed for reliability and maintainability:
+
+### Core Technologies
+
+- **Framework**: Laravel 12 - A powerful PHP framework with expressive syntax and elegant solutions
+- **Frontend**: Tailwind CSS v4 - Utility-first CSS for responsive, beautiful interfaces
+- **Admin Panel**: Filament - A beautiful TALL stack admin panel built on Laravel
+- **Database**: SQLite (development) with support for production databases
+- **Language**: PHP 8.4 with strict types and comprehensive type hints
+
+### Architecture Highlights
+
+- **Eloquent ORM** - Elegant database interactions with intuitive relationships
+- **Form Requests** - Powerful validation layer for data integrity
+- **Service Layer** - Clean separation of concerns with dependency injection
+- **PSR-12 Compliance** - Industry-standard PHP coding standards
+- **PHPStan Level 10** - Strict static analysis for maximum type safety
+- **RESTful Design** - API-first architecture for flexibility and extensibility
+- **Modular Structure** - Clear separation between Models, Controllers, and Requests
+
+### Data Models
+
+- **Items** - Your products with metadata, locations, and expiration tracking
+- **Batches** - Group items by purchase or storage date for batch management
+- **Locations** - Define where items are stored across your home
+- **Tags** - Flexible categorization system for intelligent organization
+- **Users** - Multi-user support with authentication and authorization
+
+## Getting Started
+
+### Requirements
+
+- PHP 8.4+
+- Composer
+- Node.js & npm (for frontend assets)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/marcelorodrigo/freshguard.git
+
+# Install PHP dependencies
+composer install
+
+# Install frontend dependencies
+npm install
+
+# Set up environment
+cp .env.example .env
+php artisan key:generate
+
+# Run migrations
+php artisan migrate
+
+# Build frontend assets
+npm run build
+```
+
+### Development
+
+```bash
+# Start development server
+php artisan serve
+
+# Watch for frontend changes
+npm run dev
+
+# Run tests
+php artisan test
+```
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+We welcome contributions! Please feel free to submit pull requests or open issues for bugs and feature requests at [marcelorodrigo/freshguard](https://github.com/marcelorodrigo/freshguard).
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+FreshGuard is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
