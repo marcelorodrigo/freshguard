@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 use App\Filament\Resources\Locations\Pages\ManageLocations;
 use App\Models\Location;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
 
 
 test('can load locations with created records', function (): void {
