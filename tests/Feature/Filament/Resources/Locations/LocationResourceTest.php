@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Feature\Filament\Resources\Locations;
+namespace Tests\Feature\Filament\Resources\Locations;
 
 use App\Filament\Resources\Locations\Pages\ManageLocations;
 use App\Models\Location;
