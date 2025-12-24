@@ -61,7 +61,7 @@
         ],
         "test:coverage": [
             "@php artisan config:clear --ansi",
-            "@php artisan test --exclude-group disabled --coverage --coverage-clover=storage/logs/clover.xml --log-junit=storage/logs/phpunit.xml"
+            "@php artisan test --exclude-group disabled --coverage --coverage-clover=storage/logs/clover.xml"
         ],
         "phpstan": [
             "vendor/bin/phpstan analyse --memory-limit=2G"
