@@ -1,215 +1,197 @@
 <?php
 
-namespace Tests\Unit\Http\Requests;
-
 use App\Http\Requests\LocationRequest;
 use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Tests\TestCase;
 
-class LocationRequestTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    public function test_validation_passes_with_valid_data(): void
-    {
-        $request = new LocationRequest();
+test('validation passes with valid data', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => 'Test Description',
-            'parent_id' => null,
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => 'Test Description',
+        'parent_id' => null,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($request->authorize());
-        $this->assertFalse($validator->fails());
-    }
+    expect($request->authorize())->toBeTrue()
+        ->and($validator->fails())->toBeFalse();
+});
 
-    public function test_validation_passes_with_emojis(): void
-    {
-        $request = new LocationRequest();
+test('validation passes with emojis', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => '🏠',
-            'description' => 'Nice place to relax 😊',
-            'parent_id' => null,
-        ];
+    $data = [
+        'name' => '🏠',
+        'description' => 'Nice place to relax 😊',
+        'parent_id' => null,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($request->authorize());
-        $this->assertFalse($validator->fails());
-    }
+    expect($request->authorize())->toBeTrue()
+        ->and($validator->fails())->toBeFalse();
+});
 
-    public function test_validation_passes_with_null_description(): void
-    {
-        $request = new LocationRequest();
+test('validation passes with null description', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => null,
-            'parent_id' => null,
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => null,
+        'parent_id' => null,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($request->authorize());
-        $this->assertFalse($validator->fails());
-    }
+    expect($request->authorize())->toBeTrue()
+        ->and($validator->fails())->toBeFalse();
+});
 
-    public function test_validation_passes_with_valid_parent_id(): void
-    {
-        // Create a parent location
-        $parent = Location::create([
-            'name' => 'Parent Location',
-            'description' => 'Parent Description',
-        ]);
+test('validation passes with valid parent id', function () {
+    // Create a parent location
+    $parent = Location::create([
+        'name' => 'Parent Location',
+        'description' => 'Parent Description',
+    ]);
 
-        $request = new LocationRequest();
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Child Location',
-            'description' => 'Child Description',
-            'parent_id' => $parent->id,
-        ];
+    $data = [
+        'name' => 'Child Location',
+        'description' => 'Child Description',
+        'parent_id' => $parent->id,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($request->authorize());
-        $this->assertFalse($validator->fails());
-    }
+    expect($request->authorize())->toBeTrue()
+        ->and($validator->fails())->toBeFalse();
+});
 
-    public function test_validation_fails_without_name(): void
-    {
-        $request = new LocationRequest();
+test('validation fails without name', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'description' => 'Test Description',
-            'parent_id' => null,
-        ];
+    $data = [
+        'description' => 'Test Description',
+        'parent_id' => null,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('name', $validator->errors()->toArray());
-    }
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->toArray())->toHaveKey('name');
+});
 
-    public function test_validation_fails_with_name_too_long(): void
-    {
-        $request = new LocationRequest();
+test('validation fails with name too long', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => Str::repeat('a', 256), // 256 characters exceeds the 255 max
-            'description' => 'Test Description',
-            'parent_id' => null,
-        ];
+    $data = [
+        'name' => Str::repeat('a', 256),
+        'description' => 'Test Description',
+        'parent_id' => null,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('name', $validator->errors()->toArray());
-    }
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->toArray())->toHaveKey('name');
+});
 
-    public function test_validation_fails_with_description_too_long(): void
-    {
-        $request = new LocationRequest();
+test('validation fails with description too long', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => Str::repeat('a', 256), // 256 characters exceeds the 255 max
-            'parent_id' => null,
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => Str::repeat('a', 256),
+        'parent_id' => null,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('description', $validator->errors()->toArray());
-    }
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->toArray())->toHaveKey('description');
+});
 
-    public function test_validation_fails_with_invalid_parent_id(): void
-    {
-        $request = new LocationRequest();
+test('validation fails with invalid parent id', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => 'Test Description',
-            'parent_id' => Str::uuid(), // Non-existent UUID
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => 'Test Description',
+        'parent_id' => Str::uuid(),
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('parent_id', $validator->errors()->toArray());
-    }
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->toArray())->toHaveKey('parent_id');
+});
 
-    public function test_validation_passes_with_expiration_notify_days(): void
-    {
-        $request = new LocationRequest();
+test('validation passes with expiration notify days', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => 'Test Description',
-            'parent_id' => null,
-            'expiration_notify_days' => 5,
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => 'Test Description',
+        'parent_id' => null,
+        'expiration_notify_days' => 5,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($request->authorize());
-        $this->assertFalse($validator->fails());
-    }
+    expect($request->authorize())->toBeTrue()
+        ->and($validator->fails())->toBeFalse();
+});
 
-    public function test_validation_passes_with_expiration_notify_days_zero(): void
-    {
-        $request = new LocationRequest();
+test('validation passes with expiration notify days zero', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => 'Test Description',
-            'parent_id' => null,
-            'expiration_notify_days' => 0,
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => 'Test Description',
+        'parent_id' => null,
+        'expiration_notify_days' => 0,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($request->authorize());
-        $this->assertFalse($validator->fails());
-    }
+    expect($request->authorize())->toBeTrue()
+        ->and($validator->fails())->toBeFalse();
+});
 
-    public function test_validation_fails_with_negative_expiration_notify_days(): void
-    {
-        $request = new LocationRequest();
+test('validation fails with negative expiration notify days', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => 'Test Description',
-            'parent_id' => null,
-            'expiration_notify_days' => -1,
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => 'Test Description',
+        'parent_id' => null,
+        'expiration_notify_days' => -1,
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('expiration_notify_days', $validator->errors()->toArray());
-    }
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->toArray())->toHaveKey('expiration_notify_days');
+});
 
-    public function test_validation_fails_with_non_integer_expiration_notify_days(): void
-    {
-        $request = new LocationRequest();
+test('validation fails with non integer expiration notify days', function () {
+    $request = new LocationRequest();
 
-        $data = [
-            'name' => 'Test Location',
-            'description' => 'Test Description',
-            'parent_id' => null,
-            'expiration_notify_days' => 'not-a-number',
-        ];
+    $data = [
+        'name' => 'Test Location',
+        'description' => 'Test Description',
+        'parent_id' => null,
+        'expiration_notify_days' => 'not-a-number',
+    ];
 
-        $validator = Validator::make($data, $request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($validator->fails());
-    }
-}
+    expect($validator->fails())->toBeTrue();
+});
