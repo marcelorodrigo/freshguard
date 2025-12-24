@@ -66,6 +66,9 @@
         "phpstan": [
             "vendor/bin/phpstan analyse --memory-limit=2G"
         ],
+        "pint": [
+            "vendor/bin/pint --parallel"
+        ],
         "pint:dirty": [
             "vendor/bin/pint --dirty"
         ]

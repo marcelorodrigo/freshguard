@@ -6,7 +6,7 @@ use App\Models\Location;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Location>
+ * @extends Factory<Location>
  */
 class LocationFactory extends Factory
 {
@@ -50,7 +50,6 @@ class LocationFactory extends Factory
     /**
      * Configure the factory to have a parent location.
      *
-     * @param Location|null $parent
      * @return $this
      */
     public function withParent(?Location $parent = null): self

@@ -51,7 +51,7 @@ class ItemFactory extends Factory
     public function withTags(array $tagIds = []): static
     {
         return $this->afterCreating(function (Item $item) use ($tagIds) {
-            if (!empty($tagIds)) {
+            if (! empty($tagIds)) {
                 $item->tags()->attach($tagIds);
             } else {
                 // If no tags specified, attach the first 2 tags by default

@@ -29,7 +29,6 @@ class Location extends Model
      */
     use HasFactory, HasUuids;
 
-
     /**
      * The attributes that are mass assignable.
      *

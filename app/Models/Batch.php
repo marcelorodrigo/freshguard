@@ -76,7 +76,7 @@ class Batch extends Model
         $this->item->update([
             'quantity' => $this->item
                 ->batches()
-                ->sum('quantity')
+                ->sum('quantity'),
         ]);
     }
 }

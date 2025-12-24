@@ -1,109 +1,94 @@
 <?php
-
-namespace Tests\Unit\Http\Requests;
+declare(strict_types=1);
 
 use App\Http\Requests\StoreBatchRequest;
+use App\Models\Item;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
-use Tests\TestCase;
-use App\Models\Item;
 
-class StoreBatchRequestTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    private StoreBatchRequest $request;
+$request = null;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->request = new StoreBatchRequest();
-    }
+beforeEach(function () use (&$request) {
+    $request = new StoreBatchRequest;
+});
 
-    public function test_authorization_always_returns_true()
-    {
-        $this->assertTrue($this->request->authorize());
-    }
+test('authorization always returns true', function () use (&$request) {
+    expect($request->authorize())->toBeTrue();
+});
 
-    public function test_rules_exist_for_required_fields()
-    {
-        $rules = $this->request->rules();
+test('rules exist for required fields', function () use (&$request) {
+    $rules = $request->rules();
 
-        $this->assertArrayHasKey('item_id', $rules);
-        $this->assertArrayHasKey('expires_at', $rules);
-        $this->assertArrayHasKey('quantity', $rules);
-    }
+    expect($rules)->toHaveKey('item_id')
+        ->and($rules)->toHaveKey('expires_at')
+        ->and($rules)->toHaveKey('quantity');
+});
 
-    public function test_item_id_validation_rules()
-    {
-        $rules = $this->request->rules();
+test('item id validation rules', function () use (&$request) {
+    $rules = $request->rules();
 
-        $this->assertContains('required', $rules['item_id']);
-        $this->assertContains('string', $rules['item_id']);
-        $this->assertContains('uuid', $rules['item_id']);
-        $this->assertContains('exists:items,id', $rules['item_id']);
-    }
+    expect($rules['item_id'])->toContain('required')
+        ->and($rules['item_id'])->toContain('string')
+        ->and($rules['item_id'])->toContain('uuid')
+        ->and($rules['item_id'])->toContain('exists:items,id');
+});
 
-    public function test_expires_at_validation_rules()
-    {
-        $rules = $this->request->rules();
+test('expires at validation rules', function () use (&$request) {
+    $rules = $request->rules();
 
-        $this->assertContains('required', $rules['expires_at']);
-        $this->assertContains('date', $rules['expires_at']);
-        $this->assertContains('after_or_equal:today', $rules['expires_at']);
-    }
+    expect($rules['expires_at'])->toContain('required')
+        ->and($rules['expires_at'])->toContain('date')
+        ->and($rules['expires_at'])->toContain('after_or_equal:today');
+});
 
-    public function test_quantity_validation_rules()
-    {
-        $rules = $this->request->rules();
+test('quantity validation rules', function () use (&$request) {
+    $rules = $request->rules();
 
-        $this->assertContains('required', $rules['quantity']);
-        $this->assertContains('integer', $rules['quantity']);
-        $this->assertContains('min:1', $rules['quantity']);
-    }
+    expect($rules['quantity'])->toContain('required')
+        ->and($rules['quantity'])->toContain('integer')
+        ->and($rules['quantity'])->toContain('min:1');
+});
 
-    public function test_custom_messages_are_defined()
-    {
-        $messages = $this->request->messages();
+test('custom messages are defined', function () use (&$request) {
+    $messages = $request->messages();
 
-        $this->assertIsArray($messages);
-        $this->assertArrayHasKey('item_id.required', $messages);
-        $this->assertArrayHasKey('item_id.exists', $messages);
-        $this->assertArrayHasKey('expires_at.required', $messages);
-        $this->assertArrayHasKey('expires_at.after_or_equal', $messages);
-        $this->assertArrayHasKey('quantity.required', $messages);
-        $this->assertArrayHasKey('quantity.integer', $messages);
-        $this->assertArrayHasKey('quantity.min', $messages);
-    }
+    expect($messages)->toBeArray()
+        ->and($messages)->toHaveKey('item_id.required')
+        ->and($messages)->toHaveKey('item_id.exists')
+        ->and($messages)->toHaveKey('expires_at.required')
+        ->and($messages)->toHaveKey('expires_at.after_or_equal')
+        ->and($messages)->toHaveKey('quantity.required')
+        ->and($messages)->toHaveKey('quantity.integer')
+        ->and($messages)->toHaveKey('quantity.min');
+});
 
-    public function test_valid_data_passes_validation()
-    {
-        $item = Item::factory()->create();
+test('valid data passes validation', function () use (&$request) {
+    $item = Item::factory()->create();
 
-        $data = [
-            'item_id' => $item->id,
-            'expires_at' => now()->addDays(1)->format('Y-m-d'),
-            'quantity' => 10,
-        ];
+    $data = [
+        'item_id' => $item->id,
+        'expires_at' => now()->addDays(1)->format('Y-m-d'),
+        'quantity' => 10,
+    ];
 
-        $validator = Validator::make($data, $this->request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertFalse($validator->fails());
-    }
+    expect($validator->fails())->toBeFalse();
+});
 
-    public function test_invalid_data_fails_validation()
-    {
-        $data = [
-            'item_id' => 'not-a-uuid',
-            'expires_at' => now()->subDays(1)->format('Y-m-d'),  // Past date
-            'quantity' => 0,  // Below minimum
-        ];
+test('invalid data fails validation', function () use (&$request) {
+    $data = [
+        'item_id' => 'not-a-uuid',
+        'expires_at' => now()->subDays(1)->format('Y-m-d'),
+        'quantity' => 0,
+    ];
 
-        $validator = Validator::make($data, $this->request->rules());
+    $validator = Validator::make($data, $request->rules());
 
-        $this->assertTrue($validator->fails());
-        $this->assertArrayHasKey('item_id', $validator->errors()->toArray());
-        $this->assertArrayHasKey('expires_at', $validator->errors()->toArray());
-        $this->assertArrayHasKey('quantity', $validator->errors()->toArray());
-    }
-}
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->toArray())->toHaveKey('item_id')
+        ->and($validator->errors()->toArray())->toHaveKey('expires_at')
+        ->and($validator->errors()->toArray())->toHaveKey('quantity');
+});
