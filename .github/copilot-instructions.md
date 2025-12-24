@@ -13,6 +13,7 @@
 - Use strict types and type hints in all methods, properties, and return statements.
 - Implement error handling and logging with Laravel's built-in features.
 - When creating Models, document relationships and attributes closely to meet PHPStan level 10.
+- Per coding guidelines, PHP files should use declare(strict_types=1).
 
 ## Laravel Core Practices
 - Use Laravel's built-in features, helpers, and directory structure.
