@@ -46,7 +46,7 @@ jobs:
         run: npm run build
       - name: PHPStan
         run: composer phpstan
-      - name: Execute tests (Unit and Feature tests) via PHPUnit
+      - name: Execute tests
         run: composer test:coverage
         env:
           XDEBUG_MODE: coverage
