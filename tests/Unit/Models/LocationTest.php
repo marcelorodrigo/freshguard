@@ -6,68 +6,58 @@ namespace Tests\Unit\Models;
 use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Tests\TestCase;
 
-class LocationTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    public function test_it_can_create_a_location_with_factory(): void
-    {
-        $location = Location::factory()->create();
-        $this->assertInstanceOf(Location::class, $location);
-        $this->assertNotNull($location->id);
-        $this->assertIsString($location->id);
-    }
+test('it can create a location with factory', function () {
+    $location = Location::factory()->create();
+    expect($location)->toBeInstanceOf(Location::class)
+        ->and($location->id)->not->toBeNull()
+        ->and($location->id)->toBeString();
+});
 
-    public function test_it_has_uuid_as_primary_key(): void
-    {
-        $location = Location::factory()->create();
-        $this->assertIsString($location->id);
-        $this->assertTrue(Str::isUuid($location->id));
-    }
+test('it has uuid as primary key', function () {
+    $location = Location::factory()->create();
+    expect($location->id)->toBeString()
+        ->and(Str::isUuid($location->id))->toBeTrue();
+});
 
-    public function test_it_can_have_a_parent(): void
-    {
-        $parent = Location::factory()->create();
-        $child = Location::factory()->create(['parent_id' => $parent->id]);
-        $this->assertTrue($child->parent->is($parent));
-    }
+test('it can have a parent', function () {
+    $parent = Location::factory()->create();
+    $child = Location::factory()->create(['parent_id' => $parent->id]);
+    expect($child->parent->is($parent))->toBeTrue();
+});
 
-    public function test_it_can_have_children(): void
-    {
-        $parent = Location::factory()->create();
-        $child1 = Location::factory()->create(['parent_id' => $parent->id]);
-        $child2 = Location::factory()->create(['parent_id' => $parent->id]);
-        $this->assertCount(2, $parent->children);
-        $this->assertTrue($parent->children->contains($child1));
-        $this->assertTrue($parent->children->contains($child2));
-    }
+test('it can have children', function () {
+    $parent = Location::factory()->create();
+    $child1 = Location::factory()->create(['parent_id' => $parent->id]);
+    $child2 = Location::factory()->create(['parent_id' => $parent->id]);
+    expect($parent->children)->toHaveCount(2)
+        ->and($parent->children->contains($child1))->toBeTrue()
+        ->and($parent->children->contains($child2))->toBeTrue();
+});
 
-    public function test_it_can_have_no_parent(): void
-    {
-        $location = Location::factory()->create(['parent_id' => null]);
-        $this->assertNull($location->parent);
-    }
+test('it can have no parent', function () {
+    $location = Location::factory()->create(['parent_id' => null]);
+    expect($location->parent)->toBeNull();
+});
 
-    public function test_it_can_have_no_children(): void
-    {
-        $location = Location::factory()->create();
-        $this->assertCount(0, $location->children);
-    }
+test('it can have no children', function () {
+    $location = Location::factory()->create();
+    expect($location->children)->toHaveCount(0);
+});
 
-    public function test_fillable_attributes(): void
-    {
-        $data = [
-            'name' => 'Test Location',
-            'description' => 'Test Description',
-            'expiration_notify_days' => 10,
-            'parent_id' => null,
-        ];
-        $location = Location::create($data);
-        $this->assertEquals('Test Location', $location->name);
-        $this->assertEquals('Test Description', $location->description);
-        $this->assertEquals(10, $location->expiration_notify_days);
-        $this->assertNull($location->parent_id);
-    }
-}
+test('fillable attributes', function () {
+    $data = [
+        'name' => 'Test Location',
+        'description' => 'Test Description',
+        'expiration_notify_days' => 10,
+        'parent_id' => null,
+    ];
+    $location = Location::create($data);
+    expect($location->name)->toBe('Test Location')
+        ->and($location->description)->toBe('Test Description')
+        ->and($location->expiration_notify_days)->toBe(10)
+        ->and($location->parent_id)->toBeNull();
+});
+

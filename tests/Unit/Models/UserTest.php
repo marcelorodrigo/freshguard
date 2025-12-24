@@ -5,59 +5,53 @@ namespace Tests\Unit\Models;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Tests\TestCase;
 
-class UserTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    public function test_it_can_create_a_user_with_factory(): void
-    {
-        $user = User::factory()->create();
-        $this->assertInstanceOf(User::class, $user);
-        $this->assertNotNull($user->id);
-        $this->assertNotNull($user->email);
-    }
+test('it can create a user with factory', function () {
+    $user = User::factory()->create();
+    expect($user)->toBeInstanceOf(User::class)
+        ->and($user->id)->not->toBeNull()
+        ->and($user->email)->not->toBeNull();
+});
 
-    public function test_fillable_attributes(): void
-    {
-        $data = [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'secret-password',
-        ];
-        $user = User::create($data);
-        $this->assertEquals('Test User', $user->name);
-        $this->assertEquals('test@example.com', $user->email);
-        $this->assertNotNull($user->password);
-    }
+test('fillable attributes', function () {
+    $data = [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => 'secret-password',
+    ];
+    $user = User::create($data);
+    expect($user->name)->toBe('Test User')
+        ->and($user->email)->toBe('test@example.com')
+        ->and($user->password)->not->toBeNull();
+});
 
-    public function test_hidden_attributes_are_not_serialized(): void
-    {
-        $user = User::factory()->create([
-            'password' => 'secret-password',
-            'remember_token' => Str::random(10),
-        ]);
-        $array = $user->toArray();
-        $this->assertArrayNotHasKey('password', $array);
-        $this->assertArrayNotHasKey('remember_token', $array);
-    }
+test('hidden attributes are not serialized', function () {
+    $user = User::factory()->create([
+        'password' => 'secret-password',
+        'remember_token' => Str::random(10),
+    ]);
+    $array = $user->toArray();
+    expect($array)->not->toHaveKey('password')
+        ->and($array)->not->toHaveKey('remember_token');
+});
 
-    public function test_casts_email_verified_at_as_datetime(): void
-    {
-        $user = User::factory()->create([
-            'email_verified_at' => now(),
-        ]);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $user->email_verified_at);
-    }
+test('casts email verified at as datetime', function () {
+    $user = User::factory()->create([
+        'email_verified_at' => now(),
+    ]);
+    expect($user->email_verified_at)->toBeInstanceOf(Carbon::class);
+});
 
-    public function test_casts_password_as_hashed(): void
-    {
-        $user = User::factory()->create([
-            'password' => 'plain-password',
-        ]);
-        $this->assertNotEquals('plain-password', $user->password);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('plain-password', $user->password));
-    }
-}
+test('casts password as hashed', function () {
+    $user = User::factory()->create([
+        'password' => 'plain-password',
+    ]);
+    expect($user->password)->not->toBe('plain-password')
+        ->and(Hash::check('plain-password', $user->password))->toBeTrue();
+});
+

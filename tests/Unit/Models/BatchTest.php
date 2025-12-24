@@ -7,132 +7,121 @@ use App\Models\Item;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Tests\TestCase;
 
-class BatchTest extends TestCase
-{
-    use RefreshDatabase;
+uses(RefreshDatabase::class);
 
-    public function test_it_uses_uuids_as_primary_key()
-    {
-        $batch = Batch::factory()->create();
-        $this->assertIsString($batch->id);
-        $this->assertMatchesRegularExpression('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $batch->id);
-    }
+test('it uses uuids as primary key', function () {
+    $batch = Batch::factory()->create();
+    expect($batch->id)->toBeString()
+        ->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
+});
 
-    public function test_it_belongs_to_an_item()
-    {
-        $batch = Batch::factory()->create();
+test('it belongs to an item', function () {
+    $batch = Batch::factory()->create();
 
-        $this->assertInstanceOf(BelongsTo::class, $batch->item());
-        $this->assertInstanceOf(Item::class, $batch->item);
-    }
+    expect($batch->item())->toBeInstanceOf(BelongsTo::class)
+        ->and($batch->item)->toBeInstanceOf(Item::class);
+});
 
-    public function test_it_has_correct_fillable_attributes()
-    {
-        $expected = [
-            'item_id',
-            'expires_at',
-            'quantity',
-        ];
+test('it has correct fillable attributes', function () {
+    $expected = [
+        'item_id',
+        'expires_at',
+        'quantity',
+    ];
 
-        $this->assertEquals($expected, new Batch()->getFillable());
-    }
+    expect(new Batch()->getFillable())->toBe($expected);
+});
 
-    public function test_it_casts_attributes_correctly()
-    {
-        $batch = Batch::factory()->create();
+test('it casts attributes correctly', function () {
+    $batch = Batch::factory()->create();
 
-        $this->assertIsString($batch->item_id);
-        $this->assertInstanceOf(Carbon::class, $batch->expires_at);
-        $this->assertIsInt($batch->quantity);
-    }
+    expect($batch->item_id)->toBeString()
+        ->and($batch->expires_at)->toBeInstanceOf(Carbon::class)
+        ->and($batch->quantity)->toBeInt();
+});
 
-    public function test_it_creates_valid_factory_instances()
-    {
-        $batch = Batch::factory()->create();
+test('it creates valid factory instances', function () {
+    $batch = Batch::factory()->create();
 
-        $this->assertDatabaseHas('batches', [
-            'id' => $batch->id,
-        ]);
+    $this->assertDatabaseHas('batches', [
+        'id' => $batch->id,
+    ]);
 
-        $this->assertNotNull($batch->item_id);
-        $this->assertNotNull($batch->expires_at);
-        $this->assertNotNull($batch->quantity);
-    }
+    expect($batch->item_id)->not->toBeNull()
+        ->and($batch->expires_at)->not->toBeNull()
+        ->and($batch->quantity)->not->toBeNull();
+});
 
-    public function test_it_can_create_batches_with_custom_attributes()
-    {
-        $item = Item::factory()->create();
-        $expiresAt = now()->addDays(30);
+test('it can create batches with custom attributes', function () {
+    $item = Item::factory()->create();
+    $expiresAt = now()->addDays(30);
 
-        $batch = Batch::factory()->create([
-            'item_id' => $item->id,
-            'expires_at' => $expiresAt,
-            'quantity' => 42,
-        ]);
+    $batch = Batch::factory()->create([
+        'item_id' => $item->id,
+        'expires_at' => $expiresAt,
+        'quantity' => 42,
+    ]);
 
-        $this->assertEquals($item->id, $batch->item_id);
-        $this->assertEquals($expiresAt->toDateTimeString(), $batch->expires_at->toDateTimeString());
-        $this->assertEquals(42, $batch->quantity);
+    expect($batch->item_id)->toBe($item->id)
+        ->and($batch->expires_at->toDateTimeString())->toBe($expiresAt->toDateTimeString())
+        ->and($batch->quantity)->toBe(42);
 
-        $item->refresh();
-        $this->assertEquals(42, $item->quantity);
-    }
+    $item->refresh();
+    expect($item->quantity)->toBe(42);
+});
 
-    public function test_it_can_find_batches_by_item()
-    {
-        // Create item with multiple batches
-        $item = Item::factory()->create();
-        Batch::factory()->count(3)->create([
-            'item_id' => $item->id,
-        ]);
+test('it can find batches by item', function () {
+    // Create item with multiple batches
+    $item = Item::factory()->create();
+    Batch::factory()->count(3)->create([
+        'item_id' => $item->id,
+    ]);
 
-        // Create another item with batches to ensure filtering works
-        $anotherItem = Item::factory()->create();
-        Batch::factory()->count(2)->create([
-            'item_id' => $anotherItem->id,
-        ]);
+    // Create another item with batches to ensure filtering works
+    $anotherItem = Item::factory()->create();
+    Batch::factory()->count(2)->create([
+        'item_id' => $anotherItem->id,
+    ]);
 
-        // Test relationship
-        $this->assertCount(3, $item->batches);
-        $this->assertCount(2, $anotherItem->batches);
-    }
+    // Test relationship
+    expect($item->batches)->toHaveCount(3)
+        ->and($anotherItem->batches)->toHaveCount(2);
+});
 
-    public function test_deleting_batch_updates_item_quantity()
-    {
-        // Create an item
-        $item = Item::factory()->create();
+test('deleting batch updates item quantity', function () {
+    // Create an item
+    $item = Item::factory()->create();
 
-        // Create three batches with specific quantities
-        $batch10 = Batch::factory()->create([
-            'item_id' => $item->id,
-            'quantity' => 10
-        ]);
+    // Create three batches with specific quantities
+    $batch10 = Batch::factory()->create([
+        'item_id' => $item->id,
+        'quantity' => 10
+    ]);
 
-        $batch20 = Batch::factory()->create([
-            'item_id' => $item->id,
-            'quantity' => 20
-        ]);
+    $batch20 = Batch::factory()->create([
+        'item_id' => $item->id,
+        'quantity' => 20
+    ]);
 
-        $batch30 = Batch::factory()->create([
-            'item_id' => $item->id,
-            'quantity' => 30
-        ]);
+    $batch30 = Batch::factory()->create([
+        'item_id' => $item->id,
+        'quantity' => 30
+    ]);
 
-        // Refresh the item to get updated quantity
-        $item->refresh();
+    // Refresh the item to get updated quantity
+    $item->refresh();
 
-        // Verify total quantity is the sum of all three batches
-        $this->assertEquals(60, $item->quantity);
+    // Verify total quantity is the sum of all three batches
+    expect($item->quantity)->toBe(60);
 
-        // Delete the batch with quantity 20
-        $batch20->delete();
+    // Delete the batch with quantity 20
+    $batch20->delete();
 
-        // Refresh the item to get updated quantity
-        $item->refresh();
+    // Refresh the item to get updated quantity
+    $item->refresh();
 
-        // Verify item quantity is now 40 (10 + 30)
-        $this->assertEquals(40, $item->quantity);
-    }
-}
+    // Verify item quantity is now 40 (10 + 30)
+    expect($item->quantity)->toBe(40);
+});
+
