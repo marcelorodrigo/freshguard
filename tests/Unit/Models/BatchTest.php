@@ -183,5 +183,4 @@ test('deleting all batches sets item quantity to zero', function () {
     $item->refresh();
 
     expect($item->quantity)->toBe(0);
-});;
-
+});

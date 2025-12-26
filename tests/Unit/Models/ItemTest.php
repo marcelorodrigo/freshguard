@@ -5,10 +5,8 @@ namespace Tests\Unit\Models;
 use App\Models\Batch;
 use App\Models\Item;
 use App\Models\Location;
-use App\Models\Tag;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -30,6 +28,7 @@ test('fillable attributes', function () {
         'location_id',
         'name',
         'description',
+        'tags',
         'quantity',
         'expiration_notify_days',
     ]);
@@ -151,77 +150,58 @@ test('belongs to location', function () {
     expect($item->location->id)->toBe($location->id);
 });
 
-test('has tags relationship', function () {
-    $item = new Item;
+test('tags can be stored as array', function () {
+    $item = Item::factory()->create([
+        'tags' => ['Promotion', 'Healthy', 'Important'],
+    ]);
 
-    expect($item->tags())->toBeInstanceOf(BelongsToMany::class)
-        ->and($item->tags)->toBeInstanceOf(Collection::class);
+    expect($item->tags)->toBeArray()
+        ->and($item->tags)->toHaveCount(3)
+        ->and($item->tags)->toContain('Promotion')
+        ->and($item->tags)->toContain('Healthy')
+        ->and($item->tags)->toContain('Important');
 });
 
-test('can have many tags', function () {
-    $item = Item::factory()->create();
-    $tags = Tag::factory()->count(3)->create();
+test('tags can be null', function () {
+    $item = Item::factory()->create([
+        'tags' => null,
+    ]);
 
-    $item->tags()->attach($tags);
-
-    expect($item->tags)->toHaveCount(3);
-    foreach ($tags as $tag) {
-        expect($item->tags->contains($tag))->toBeTrue();
-    }
+    expect($item->tags)->toBeNull();
 });
 
-test('tags can be detached', function () {
-    $item = Item::factory()->create();
-    $tags = Tag::factory()->count(3)->create();
+test('tags can be updated', function () {
+    $item = Item::factory()->create([
+        'tags' => ['Promotion'],
+    ]);
 
-    $item->tags()->attach($tags);
-    expect($item->tags)->toHaveCount(3);
+    expect($item->tags)->toHaveCount(1);
 
-    $item->tags()->detach($tags->first());
+    $item->update([
+        'tags' => ['Promotion', 'Healthy', 'Organic'],
+    ]);
+
     $item->refresh();
 
-    expect($item->tags)->toHaveCount(2)
-        ->and($item->tags->contains($tags->first()))->toBeFalse()
-        ->and($item->tags->contains($tags[1]))->toBeTrue()
-        ->and($item->tags->contains($tags[2]))->toBeTrue();
+    expect($item->tags)->toHaveCount(3)
+        ->and($item->tags)->toContain('Healthy')
+        ->and($item->tags)->toContain('Organic');
 });
 
-test('deleting item doesnt delete tags', function () {
-    $item = Item::factory()->create();
-    $tag = Tag::factory()->create();
+test('withTags factory method creates item with specified tags', function () {
+    $item = Item::factory()->withTags(['Custom', 'Tags'])->create();
 
-    $item->tags()->attach($tag);
-    $itemId = $item->id;
-    $tagId = $tag->id;
-
-    $item->delete();
-
-    $this->assertDatabaseMissing('items', ['id' => $itemId]);
-    $this->assertDatabaseHas('tags', ['id' => $tagId]);
-    $this->assertDatabaseMissing('item_tag', [
-        'item_id' => $itemId,
-        'tag_id' => $tagId,
-    ]);
+    expect($item->tags)->toBeArray()
+        ->and($item->tags)->toHaveCount(2)
+        ->and($item->tags)->toContain('Custom')
+        ->and($item->tags)->toContain('Tags');
 });
 
-test('withTags factory method', function () {
-    $tags = Tag::factory()->count(3)->create();
-    $tagIds = $tags->pluck('id')->toArray();
-
-    $item = Item::factory()->withTags($tagIds)->create();
-
-    expect($item->tags)->toHaveCount(3);
-    foreach ($tags as $tag) {
-        expect($item->tags->contains($tag))->toBeTrue();
-    }
-});
-
-test('withTags factory method without args', function () {
-    Tag::factory()->count(5)->create();
-
+test('withTags factory method creates item with random tags when no args provided', function () {
     $item = Item::factory()->withTags()->create();
 
-    expect($item->tags)->toHaveCount(2);
+    expect($item->tags)->toBeArray()
+        ->and($item->tags)->not->toBeEmpty();
 });
 
 test('has batches relationship', function () {

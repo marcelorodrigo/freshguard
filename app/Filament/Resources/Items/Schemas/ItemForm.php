@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Items\Schemas;
 
+use App\Models\Item;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -42,7 +43,19 @@ class ItemForm
                     ->default(0)
                     ->label(__('Notify on expiration (days)')),
                 TagsInput::make('tags')
-                    ->label(__('Tags')),
+                    ->label(__('Tags'))
+                    ->suggestions(function (): array {
+                        // Get all existing tags from all items
+                        return Item::query()
+                            ->whereNotNull('tags')
+                            ->pluck('tags')
+                            ->flatten()
+                            ->unique()
+                            ->sort()
+                            ->values()
+                            ->toArray();
+                    })
+                    ->placeholder(__('Add tags...')),
             ]);
     }
 }

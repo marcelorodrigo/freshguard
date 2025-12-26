@@ -93,7 +93,6 @@ test('can create user with required fields', function (): void {
     expect(Hash::check($userData['password'], $user->password))->toBeTrue();
 });
 
-
 test('can create user without email verification', function (): void {
     $userData = [
         'name' => 'Unverified User',
@@ -292,4 +291,3 @@ test('table has created_at and updated_at columns defined', function (): void {
     Livewire::test(ManageUsers::class)
         ->assertOk();
 });
-

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\Batch;
 use App\Models\Item;
-use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -151,4 +150,3 @@ test('item batches relation is eager loadable', function (): void {
         expect($item->batches)->toHaveCount(2);
     }
 });
-

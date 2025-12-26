@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             LocationSeeder::class,
-            TagSeeder::class,
             ItemSeeder::class,
             BatchSeeder::class,
         ]);

@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Item;
 use App\Models\Location;
-use App\Models\Tag;
 use Illuminate\Database\Seeder;
 
 class ItemSeeder extends Seeder
@@ -17,9 +16,14 @@ class ItemSeeder extends Seeder
         // Get all locations to associate items with
         $locations = Location::all();
 
-        // Retrieve all tags for assignment
-        $tags = Tag::all();
-        $tagIds = $tags->pluck('id')->toArray();
+        // Sample tags to use
+        $sampleTags = [
+            ['Promotion', 'Important'],
+            ['Healthy', 'Organic'],
+            ['Dessert'],
+            ['Frozen', 'Important'],
+            ['Promotion'],
+        ];
 
         if ($locations->count() > 0) {
             // Create items for each location with different configurations
@@ -28,7 +32,7 @@ class ItemSeeder extends Seeder
                 Item::factory()
                     ->count(4)
                     ->for($location)
-                    ->withTags($tagIds)
+                    ->withTags($sampleTags[array_rand($sampleTags)])
                     ->create();
 
                 // Create 3 items with description but without tags
@@ -50,7 +54,7 @@ class ItemSeeder extends Seeder
                     ->count(2)
                     ->for($location)
                     ->withExpirationNotifyDays(30)
-                    ->withTags($tagIds)
+                    ->withTags(['Important', 'Healthy'])
                     ->create();
 
                 // Create 2 items with 60-day expiration notification
@@ -67,7 +71,7 @@ class ItemSeeder extends Seeder
             // 10 items with tags and description
             Item::factory()
                 ->count(10)
-                ->withTags($tagIds)
+                ->withTags($sampleTags[array_rand($sampleTags)])
                 ->create();
 
             // 5 items with description but without tags
@@ -86,7 +90,7 @@ class ItemSeeder extends Seeder
             Item::factory()
                 ->count(3)
                 ->withExpirationNotifyDays(30)
-                ->withTags($tagIds)
+                ->withTags(['Important', 'Healthy'])
                 ->create();
 
             // 3 items with 60-day expiration notification

@@ -39,7 +39,7 @@ test('can create item', function (): void {
             'location_id' => $location->id,
             'quantity' => 0,
             'expiration_notify_days' => $item->expiration_notify_days,
-            'tags' => [],
+            'tags' => ['Promotion', 'Healthy'],
         ])
         ->assertOk()
         ->assertNotified();
@@ -59,6 +59,7 @@ test('can edit item', function (): void {
         'name' => 'Original Item',
         'description' => 'Original Description',
         'expiration_notify_days' => 10,
+        'tags' => ['Promotion'],
     ]);
 
     $newData = [
@@ -67,7 +68,7 @@ test('can edit item', function (): void {
         'location_id' => $location->id,
         'quantity' => 0,
         'expiration_notify_days' => 20,
-        'tags' => [],
+        'tags' => ['Important', 'Healthy'],
     ];
 
     Livewire::test(ManageItems::class)
@@ -80,4 +81,7 @@ test('can edit item', function (): void {
         'description' => 'Updated Description',
         'expiration_notify_days' => 20,
     ]);
+
+    $item->refresh();
+    expect($item->tags)->toBe(['Important', 'Healthy']);
 });
