@@ -28,6 +28,8 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Batch> $batches
  *
  * @method static Builder<static> withBatchesExpiringWithinDays(int $days)
+ * @method static Builder<static> withEarliestBatchExpirationDate()
+ * @mixin Builder<static>
  **/
 class Item extends Model
 {
@@ -96,5 +98,22 @@ class Item extends Model
             $query->where('expires_at', '>=', Carbon::now())
                 ->where('expires_at', '<=', Carbon::now()->addDays($days));
         });
+    }
+
+    /**
+     * Scope a query to include the earliest batch expiration date as a subquery.
+     *
+     * @param  Builder<Item>  $query
+     * @return Builder<Item>
+     */
+    public function scopeWithEarliestBatchExpirationDate(Builder $query): Builder
+    {
+        return $query->addSelect([
+            'earliest_batch_expiration' => Batch::query()
+                ->selectRaw('expires_at')
+                ->whereColumn('item_id', 'items.id')
+                ->orderBy('expires_at', 'asc')
+                ->limit(1),
+        ]);
     }
 }
