@@ -21,27 +21,29 @@ class ItemForm
                     ->required()
                     ->maxLength(255)
                     ->label(__('Item Name')),
-                Textarea::make('description')
-                    ->maxLength(1000)
-                    ->label(__('Description')),
                 Select::make('location_id')
                     ->relationship('location', 'name')
                     ->required()
                     ->searchable()
                     ->preload()
                     ->label(__('Location')),
+                Textarea::make('description')
+                    ->maxLength(1000)
+                    ->nullable()
+                    ->label(__('Description')),
                 TextInput::make('quantity')
                     ->integer()
                     ->default(0)
                     ->readOnly()
                     ->helperText(__('The quantity is computed from all batches'))
-                    ->label(__('Quantity')),
+                    ->label(__('Quantity'))
+                    ->hidden(static fn ($get, $record) => is_null($record)),
                 TextInput::make('expiration_notify_days')
                     ->integer()
                     ->suffix(__('days'))
                     ->minValue(0)
                     ->default(0)
-                    ->label(__('Notify on expiration (days)')),
+                    ->label(__('Notify before expiration')),
                 TagsInput::make('tags')
                     ->label(__('Tags'))
                     ->suggestions(function (): array {

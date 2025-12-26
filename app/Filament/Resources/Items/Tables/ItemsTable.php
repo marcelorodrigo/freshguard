@@ -31,7 +31,6 @@ class ItemsTable
                     ->label(__('Description')),
                 TextColumn::make('tags')
                     ->badge()
-                    ->separator(',')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Tags')),
