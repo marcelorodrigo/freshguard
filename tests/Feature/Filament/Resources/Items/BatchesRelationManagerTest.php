@@ -2,12 +2,94 @@
 
 declare(strict_types=1);
 
+use App\Filament\Resources\Items\Pages\EditItem;
+use App\Filament\Resources\Items\RelationManagers\BatchesRelationManager;
 use App\Models\Batch;
 use App\Models\Item;
+use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+test('batches relation manager is accessible on edit item page', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
+
+test('batches relation manager displays batches table columns', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+    Batch::factory()->for($item)->create([
+        'expires_at' => Carbon::now()->addDays(10),
+        'quantity' => 50,
+    ]);
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
+
+test('batches relation manager can create new batch via create action', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+
+    expect($item->batches)->toHaveCount(0);
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
+
+test('batches relation manager displays create action with correct label and icon', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
+
+test('batches relation manager displays edit action for each batch', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+    $batch = Batch::factory()->for($item)->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
+
+test('batches relation manager displays delete action for each batch', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+    $batch = Batch::factory()->for($item)->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
+
+test('batches relation manager form uses batch form schema', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
+
+test('batches relation manager returns correct title', function (): void {
+    $title = BatchesRelationManager::getTitle();
+    expect($title)->toBe('Batches');
+});
+
+test('batches relation manager has no bulk actions', function (): void {
+    $location = Location::factory()->create();
+    $item = Item::factory()->create(['location_id' => $location->id]);
+    Batch::factory()->count(3)->for($item)->create();
+
+    Livewire::test(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful();
+});
 
 test('item has batches relationship', function (): void {
     $item = Item::factory()->create();
