@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Items\Schemas;
 
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -30,25 +31,18 @@ class ItemForm
                     ->label(__('Location')),
                 TextInput::make('quantity')
                     ->integer()
-                    ->required()
-                    ->minValue(0)
                     ->default(0)
                     ->readOnly()
-                    ->helperText(__('Auto-calculated from batches'))
+                    ->helperText(__('The quantity is computed from all batches'))
                     ->label(__('Quantity')),
                 TextInput::make('expiration_notify_days')
                     ->integer()
                     ->suffix(__('days'))
                     ->minValue(0)
-                    ->default(null)
-                    ->label(__('Notify Expiration (Days)')),
-                Select::make('tags')
-                    ->relationship('tags', 'name')
-                    ->multiple()
-                    ->searchable()
-                    ->preload()
+                    ->default(0)
+                    ->label(__('Notify on expiration (days)')),
+                TagsInput::make('tags')
                     ->label(__('Tags')),
             ]);
     }
 }
-
