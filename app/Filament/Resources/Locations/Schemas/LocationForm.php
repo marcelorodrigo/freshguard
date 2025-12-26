@@ -21,7 +21,7 @@ class LocationForm
                     ->integer()
                     ->suffix(__('days'))
                     ->minValue(0)
-                    ->default(null)
+                    ->default(0)
                     ->label('Notify Expiration (Days)'),
                 Select::make('parent_id')
                     ->relationship('parent', 'name')
