@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Items;
 
+use App\Filament\Resources\Items\Pages\CreateItem;
+use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\Pages\ManageItems;
+use App\Filament\Resources\Items\RelationManagers\BatchesRelationManager;
 use App\Filament\Resources\Items\Schemas\ItemForm;
 use App\Filament\Resources\Items\Tables\ItemsTable;
 use App\Models\Item;
@@ -23,6 +26,7 @@ class ItemResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     protected static ?string $navigationLabel = 'Items';
+
     protected static string|null|\UnitEnum $navigationGroup = 'Inventory';
 
     public static function form(Schema $schema): Schema
@@ -39,8 +43,15 @@ class ItemResource extends Resource
     {
         return [
             'index' => ManageItems::route('/'),
+            'create' => CreateItem::route('/create'),
+            'edit' => EditItem::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            BatchesRelationManager::class,
         ];
     }
 }
-
-

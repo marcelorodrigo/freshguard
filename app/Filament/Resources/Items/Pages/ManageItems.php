@@ -6,9 +6,9 @@ namespace App\Filament\Resources\Items\Pages;
 
 use App\Filament\Resources\Items\ItemResource;
 use Filament\Actions\CreateAction;
-use Filament\Resources\Pages\ManageRecords;
+use Filament\Resources\Pages\ListRecords;
 
-class ManageItems extends ManageRecords
+class ManageItems extends ListRecords
 {
     protected static string $resource = ItemResource::class;
 
@@ -21,4 +21,3 @@ class ManageItems extends ManageRecords
         ];
     }
 }
-

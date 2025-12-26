@@ -124,3 +124,64 @@ test('deleting batch updates item quantity', function () {
     // Verify item quantity is now 40 (10 + 30)
     expect($item->quantity)->toBe(40);
 });
+
+test('batch belongs to correct item', function () {
+    $item1 = Item::factory()->create();
+    $item2 = Item::factory()->create();
+
+    $batch1 = Batch::factory()->for($item1)->create();
+    $batch2 = Batch::factory()->for($item2)->create();
+
+    expect($batch1->item->id)->toBe($item1->id)
+        ->and($batch2->item->id)->toBe($item2->id)
+        ->and($batch1->item->id)->not->toBe($item2->id)
+        ->and($batch2->item->id)->not->toBe($item1->id);
+});
+
+test('updating batch quantity updates item total', function () {
+    $item = Item::factory()->create();
+    $batch = Batch::factory()->for($item)->create(['quantity' => 50]);
+
+    $item->refresh();
+    expect($item->quantity)->toBe(50);
+
+    $batch->update(['quantity' => 100]);
+    $item->refresh();
+
+    expect($item->quantity)->toBe(100);
+});
+
+test('batch expiration date is properly cast to carbon', function () {
+    $expiryDate = Carbon::now()->addDays(30);
+    $batch = Batch::factory()->create(['expires_at' => $expiryDate]);
+
+    expect($batch->expires_at)->toBeInstanceOf(Carbon::class)
+        ->and($batch->expires_at->format('Y-m-d'))->toBe($expiryDate->format('Y-m-d'));
+});
+
+test('batch quantity is cast to integer', function () {
+    $batch = Batch::factory()->create(['quantity' => 42]);
+
+    expect($batch->quantity)->toBeInt()
+        ->and($batch->quantity)->toBe(42);
+});
+
+test('deleting all batches sets item quantity to zero', function () {
+    $item = Item::factory()->create();
+    $batch1 = Batch::factory()->for($item)->create(['quantity' => 10]);
+    $batch2 = Batch::factory()->for($item)->create(['quantity' => 10]);
+    $batch3 = Batch::factory()->for($item)->create(['quantity' => 10]);
+
+    $item->refresh();
+    expect($item->quantity)->toBe(30);
+
+    // Delete batches one by one to trigger the event
+    $batch1->delete();
+    $batch2->delete();
+    $batch3->delete();
+
+    $item->refresh();
+
+    expect($item->quantity)->toBe(0);
+});;
+
