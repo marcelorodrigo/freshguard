@@ -29,7 +29,7 @@ class ItemRequest extends FormRequest
             'description' => ['nullable', 'max:255'],
             'expiration_notify_days' => ['sometimes', 'integer', 'min:0'],
             'tags' => ['nullable', 'array'],
-            'tags.*' => ['uuid', 'exists:tags,id'],
+            'tags.*' => ['string', 'max:50'],
         ];
     }
 }

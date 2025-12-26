@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use App\Models\Item;
 use App\Models\Location;
-use App\Models\Tag;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -47,18 +46,22 @@ class ItemFactory extends Factory
 
     /**
      * Assign the specified tags to the item.
+     *
+     * @param  array<int, string>  $tags
      */
-    public function withTags(array $tagIds = []): static
+    public function withTags(array $tags = []): static
     {
-        return $this->afterCreating(function (Item $item) use ($tagIds) {
-            if (! empty($tagIds)) {
-                $item->tags()->attach($tagIds);
-            } else {
-                // If no tags specified, attach the first 2 tags by default
-                $item->tags()->attach(
-                    Tag::query()->limit(2)->pluck('id')
-                );
+        $defaultTags = ['Promotion', 'Healthy', 'Dessert', 'Important', 'Organic', 'Frozen'];
+
+        return $this->state(function () use ($tags, $defaultTags) {
+            if (empty($tags)) {
+                // If no tags specified, use 1-3 random default tags
+                $tags = fake()->randomElements($defaultTags, fake()->numberBetween(1, 3));
             }
+
+            return [
+                'tags' => $tags,
+            ];
         });
     }
 

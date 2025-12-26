@@ -29,6 +29,11 @@ class ItemsTable
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Description')),
+                TextColumn::make('tags')
+                    ->badge()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->label(__('Tags')),
                 TextColumn::make('quantity')
                     ->numeric()
                     ->sortable()
@@ -64,4 +69,3 @@ class ItemsTable
             ]);
     }
 }
-
