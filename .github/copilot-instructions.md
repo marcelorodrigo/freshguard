@@ -78,7 +78,102 @@ This is a Laravel 12 application using Filament v4 for admin UI and Tailwind CSS
 3. Add factories and tests in `database/factories/` and `tests/`.
 4. Register routes/pages as needed in Filament resource.
 
+## Filament Testing Best Practices
+
+### Testing Helpers & Setup
+- Use Pest's `livewire()` helper (not `Livewire::test()`) for testing Filament components: `use function Pest\Livewire\livewire;`
+- Use `$this->assertDatabaseHas()` and `$this->assertDatabaseMissing()` for database assertions
+- Always authenticate before testing: Use `beforeEach()` with `actingAs()` or `User::factory()->create()`
+- Chain assertions for cleaner, more readable tests
+
+### Testing Resource Pages
+- **List Pages**: Use `assertSuccessful()`, `assertCanSeeTableRecords()`, `searchTable()`, `sortTable()`, `filterTable()`, `callTableAction()`, `callTableBulkAction()`
+- **Create Pages**: Use `fillForm()`, `call('create')`, `assertNotified()`, `assertHasFormErrors()` for validation
+- **Edit Pages**: Use `assertSchemaStateSet()` to verify form data, `fillForm()`, `call('save')`, `callAction(DeleteAction::class)`
+- **Validation**: Use Pest datasets (`->with([...])`) to test multiple validation rules concisely without repeating code
+
+### Testing Tables
+- **Record Visibility**: `assertCanSeeTableRecords()`, `assertCanNotSeeTableRecords()`, `assertCountTableRecords()`
+- **Columns**: `assertCanRenderTableColumn()`, `assertCanNotRenderTableColumn()`, `assertTableColumnExists()`
+- **Search**: Use `searchTable()` for global search; use `searchTableColumns(['column' => 'value'])` for column-specific search
+- **Sorting**: Use **database `orderBy()` NOT collection `sortBy()`** - SQL and PHP sort differently! Example:
+  ```php
+  $sorted = Model::query()->orderBy('name')->get();
+  livewire(ListPage::class)->sortTable('name')->assertCanSeeTableRecords($sorted, inOrder: true);
+  ```
+- **Filtering**: Use `filterTable()` and chain with `assertCanSeeTableRecords()` / `assertCanNotSeeTableRecords()`
+- **Pagination**: If table uses pagination, `assertCanSeeTableRecords()` only checks page 1; call `call('gotoPage', 2)` to switch pages
+- **Deferred Loading**: If table uses `deferLoading()`, call `loadTable()` before `assertCanSeeTableRecords()`
+
+### Testing Schemas (Forms & Infos)
+- **Form Data**: Use `fillForm([...])` to populate fields; use `assertSchemaStateSet([...])` to verify state
+- **Form Existence**: `assertFormExists()`, `assertFormFieldExists()`, `assertFormFieldDoesNotExist()`
+- **Field Visibility**: `assertFormFieldVisible()`, `assertFormFieldHidden()`
+- **Field State**: `assertFormFieldEnabled()`, `assertFormFieldDisabled()`
+- **Schema Components**: Use `assertSchemaComponentExists('key')` to verify components like Sections; pass a callback for truth tests
+- **Validation**: `assertHasFormErrors(['field' => 'rule'])`, `assertHasNoFormErrors()`
+- **Repeaters**: Use `Repeater::fake()` at test start to disable UUIDs; test state with `assertSchemaStateSet()` function callback
+- **Builders**: Similar to repeaters; use `Builder::fake()` for UUID-free testing
+
+### Testing Relation Managers
+- Test directly with `ownerRecord` and `pageClass` parameters:
+  ```php
+  livewire(RelationManagerClass::class, [
+      'ownerRecord' => $parent,
+      'pageClass' => ParentEditPage::class,
+  ])->assertSuccessful()->assertCanSeeTableRecords($relatedRecords);
+  ```
+- Create/edit related records: `callAction(CreateAction::class, [...data...])` or `callTableAction(EditAction::class, $record, [...data...])`
+- Use `callTableAction(DeleteAction::class, $record)` to delete related records
+
+### Testing Actions
+- **Header/Page Actions**: Use `callAction('actionName')` or `callAction(ActionClass::class)`
+- **Table Actions**: Use `callTableAction(ActionClass::class, $record)` or `TestAction::make(ActionClass::class)->table($record)`
+- **Bulk Actions**: Select records with `selectTableRecords($records)`, then `callAction(TestAction::make(ActionClass::class)->table()->bulk())`
+- **Action Existence**: `assertActionExists()`, `assertActionHidden()`, `assertActionVisible()`, `assertActionDisabled()`, `assertActionEnabled()`
+- **Action Configuration**: Pass a callback to `assertActionExists(function() {})` for truth tests
+- **Modal Actions**: Use `fillForm()` with action data, chain with `call()` or `callMountedAction()`
+
+### Key Assertions & Methods
+| Purpose | Method |
+|---------|--------|
+| Load page success | `assertSuccessful()` or `assertOk()` |
+| Records visible | `assertCanSeeTableRecords($records)` |
+| Records hidden | `assertCanNotSeeTableRecords($records)` |
+| Column renders | `assertCanRenderTableColumn('name')` |
+| Column hidden | `assertCanNotRenderTableColumn('name')` |
+| Form data matches | `assertSchemaStateSet([...])` |
+| Form errors | `assertHasFormErrors([...])` |
+| Notification shown | `assertNotified()` |
+| Redirect occurred | `assertRedirect()` |
+| Action exists | `assertActionExists('name')` |
+| Field exists | `assertFormFieldExists('name')` |
+
+### Common Test Patterns
+1. **CRUD Operations**: Create with `call('create')` or `fillForm()` + `call('create')`; update with `fillForm()` + `call('save')`; delete with `callAction(DeleteAction::class)`.
+2. **Search/Sort/Filter**: Chain methods after loading page: `->searchTable(...)->assertCanSeeTableRecords(...)->sortTable(...)->assertCanSeeTableRecords(...)`
+3. **Validation Datasets**: Use Pest's `->with([...])` to test multiple scenarios:
+   ```php
+   it('validates', function (array $data, array $errors) {
+       livewire(Page::class)->fillForm([...$data])->call('save')->assertHasFormErrors($errors);
+   })->with([
+       'field required' => [['field' => null], ['field' => 'required']],
+   ]);
+   ```
+4. **Database Assertions**: After UI actions, verify database state: `assertDatabaseHas(Model::class, [...])` or `assertDatabaseMissing(Model::class, [...])`
+
+### Best Practices Summary
+- ✅ Keep tests focused on Filament UI behavior, not business logic (move model tests to Unit tests)
+- ✅ Use dataset tests (`->with([])`) to reduce boilerplate for validation/edge cases
+- ✅ Use database `orderBy()` for sorting assertions, not collection `sortBy()`
+- ✅ Chain assertions for readability
+- ✅ Test happy paths and validation errors separately
+- ✅ Remove redundant assertions (e.g., don't test that standard Filament actions exist if not customized)
+- ✅ Use factory data (`->make()`) for form population
+- ✅ Combine multiple logical tests into single chained test (e.g., search, sort, filter in one test)
+
 ## References
+- [Filament Testing Docs](https://filamentphp.com/docs/3.x/admin/testing) (Tables, Schemas, Resources, Actions)
 - [Filament Docs](https://filamentphp.com/docs/2.x/admin/resources/overview)
 - [Laravel Docs](https://laravel.com/docs/12.x/)
 - [Pest Docs](https://pestphp.com/docs/introduction)
