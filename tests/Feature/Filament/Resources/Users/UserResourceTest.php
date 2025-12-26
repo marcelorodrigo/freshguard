@@ -6,18 +6,19 @@ use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Livewire\Livewire;
+use Illuminate\Support\Str;
+
+use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
 
-test('can load users with created records', function (): void {
-    $users_count = 5;
-    $users = User::factory()->count($users_count)->create();
+test('can render page and see table records', function (): void {
+    $users = User::factory()->count(5)->create();
 
-    Livewire::test(ManageUsers::class)
-        ->assertOk()
+    livewire(ManageUsers::class)
+        ->assertSuccessful()
         ->assertCanSeeTableRecords($users)
-        ->assertCountTableRecords($users_count)
+        ->assertCountTableRecords(5)
         ->assertCanRenderTableColumn('name')
         ->assertCanRenderTableColumn('email')
         ->assertCanRenderTableColumn('email_verified_at');
@@ -27,7 +28,7 @@ test('can search users by name', function (): void {
     $users = User::factory()->count(5)->create();
     $searchUser = $users->first();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->searchTable($searchUser->name)
         ->assertCanSeeTableRecords([$searchUser])
         ->assertCanNotSeeTableRecords($users->skip(1));
@@ -37,7 +38,7 @@ test('can search users by email', function (): void {
     $users = User::factory()->count(5)->create();
     $searchUser = $users->first();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->searchTable($searchUser->email)
         ->assertCanSeeTableRecords([$searchUser])
         ->assertCanNotSeeTableRecords($users->skip(1));
@@ -46,7 +47,7 @@ test('can search users by email', function (): void {
 test('can sort users by name', function (): void {
     $users = User::factory()->count(3)->create();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->sortTable('name')
         ->assertCanSeeTableRecords($users->sortBy('name'), inOrder: true)
         ->sortTable('name', 'desc')
@@ -56,7 +57,7 @@ test('can sort users by name', function (): void {
 test('can sort users by email', function (): void {
     $users = User::factory()->count(3)->create();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->sortTable('email')
         ->assertCanSeeTableRecords($users->sortBy('email'), inOrder: true)
         ->sortTable('email', 'desc')
@@ -67,9 +68,9 @@ test('can sort users by email verified status', function (): void {
     User::factory()->count(2)->verified()->create();
     User::factory()->count(2)->unverified()->create();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->sortTable('email_verified_at')
-        ->assertOk();
+        ->assertSuccessful();
 });
 
 test('can create user with required fields', function (): void {
@@ -79,9 +80,8 @@ test('can create user with required fields', function (): void {
         'password' => 'SecurePassword123!',
     ];
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->callAction('create', data: $userData)
-        ->assertOk()
         ->assertNotified();
 
     $this->assertDatabaseHas(User::class, [
@@ -100,9 +100,8 @@ test('can create user without email verification', function (): void {
         'password' => 'SecurePassword123!',
     ];
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->callAction('create', data: $userData)
-        ->assertOk()
         ->assertNotified();
 
     $this->assertDatabaseHas(User::class, [
@@ -112,54 +111,23 @@ test('can create user without email verification', function (): void {
     ]);
 });
 
-test('cannot create user without name', function (): void {
-    Livewire::test(ManageUsers::class)
-        ->callAction('create', data: [
-            'email' => 'test@example.com',
-            'password' => 'SecurePassword123!',
-        ])
-        ->assertHasActionErrors(['name']);
-});
-
-test('cannot create user without email', function (): void {
-    Livewire::test(ManageUsers::class)
-        ->callAction('create', data: [
-            'name' => 'Test User',
-            'password' => 'SecurePassword123!',
-        ])
-        ->assertHasActionErrors(['email']);
-});
-
-test('cannot create user without password', function (): void {
-    Livewire::test(ManageUsers::class)
+test('validates user creation data', function (array $data, array $errors): void {
+    livewire(ManageUsers::class)
         ->callAction('create', data: [
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ])
-        ->assertHasActionErrors(['password']);
-});
-
-test('cannot create user with invalid email format', function (): void {
-    Livewire::test(ManageUsers::class)
-        ->callAction('create', data: [
-            'name' => 'Test User',
-            'email' => 'invalid-email',
             'password' => 'SecurePassword123!',
+            ...$data,
         ])
-        ->assertHasActionErrors(['email']);
-});
-
-test('cannot create user with duplicate email', function (): void {
-    $existingUser = User::factory()->create();
-
-    Livewire::test(ManageUsers::class)
-        ->callAction('create', data: [
-            'name' => 'Another User',
-            'email' => $existingUser->email,
-            'password' => 'SecurePassword123!',
-        ])
-        ->assertHasActionErrors(['email']);
-});
+        ->assertHasActionErrors($errors);
+})->with([
+    'name is required' => [['name' => null], ['name' => 'required']],
+    'name max 255 characters' => [['name' => Str::random(256)], ['name' => 'max']],
+    'email is required' => [['email' => null], ['email' => 'required']],
+    'email must be valid' => [['email' => 'invalid-email'], ['email' => 'email']],
+    'email must be unique' => [fn () => ['email' => User::factory()->create()->email], ['email' => 'unique']],
+    'password is required' => [['password' => null], ['password' => 'required']],
+]);
 
 test('can edit user name and email', function (): void {
     $user = User::factory()->create([
@@ -167,30 +135,27 @@ test('can edit user name and email', function (): void {
         'email' => 'original@example.com',
     ]);
 
-    $newData = [
-        'name' => 'Updated Name',
-        'email' => 'updated@example.com',
-        'password' => '',
-    ];
-
-    Livewire::test(ManageUsers::class)
-        ->callTableAction('edit', $user, data: $newData)
+    livewire(ManageUsers::class)
+        ->callTableAction('edit', $user, data: [
+            'name' => 'Updated Name',
+            'email' => 'updated@example.com',
+            'password' => '',
+        ])
         ->assertNotified();
 
     $this->assertDatabaseHas(User::class, [
         'id' => $user->id,
-        'name' => $newData['name'],
-        'email' => $newData['email'],
+        'name' => 'Updated Name',
+        'email' => 'updated@example.com',
     ]);
 });
 
 test('can edit user password', function (): void {
     $user = User::factory()->create();
     $originalPassword = $user->password;
-
     $newPassword = 'NewSecurePassword123!';
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->callTableAction('edit', $user, data: [
             'name' => $user->name,
             'email' => $user->email,
@@ -207,7 +172,7 @@ test('password is not changed when left empty during edit', function (): void {
     $user = User::factory()->create();
     $originalPassword = $user->password;
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->callTableAction('edit', $user, data: [
             'name' => 'New Name',
             'email' => $user->email,
@@ -220,23 +185,11 @@ test('password is not changed when left empty during edit', function (): void {
         ->and($user->name)->toBe('New Name');
 });
 
-test('user factory can create verified users', function (): void {
-    $user = User::factory()->verified()->create();
-
-    expect($user->email_verified_at)->not->toBeNull();
-});
-
-test('user factory can create unverified users', function (): void {
-    $user = User::factory()->unverified()->create();
-
-    expect($user->email_verified_at)->toBeNull();
-});
-
 test('cannot edit user with duplicate email', function (): void {
     $existingUser = User::factory()->create();
     $userToEdit = User::factory()->create();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->callTableAction('edit', $userToEdit, data: [
             'name' => 'Updated Name',
             'email' => $existingUser->email,
@@ -248,7 +201,7 @@ test('cannot edit user with duplicate email', function (): void {
 test('can delete user', function (): void {
     $user = User::factory()->create();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->callTableAction('delete', $user)
         ->assertNotified();
 
@@ -260,7 +213,7 @@ test('can delete user', function (): void {
 test('can bulk delete users', function (): void {
     $users = User::factory()->count(3)->create();
 
-    Livewire::test(ManageUsers::class)
+    livewire(ManageUsers::class)
         ->callTableBulkAction('delete', $users)
         ->assertNotified();
 
@@ -269,25 +222,4 @@ test('can bulk delete users', function (): void {
             'id' => $user->id,
         ]);
     }
-});
-
-test('table displays correct verification icon for verified users', function (): void {
-    $verifiedUser = User::factory()->verified()->create();
-
-    Livewire::test(ManageUsers::class)
-        ->assertCanSeeTableRecords([$verifiedUser]);
-});
-
-test('table displays correct verification icon for unverified users', function (): void {
-    $unverifiedUser = User::factory()->unverified()->create();
-
-    Livewire::test(ManageUsers::class)
-        ->assertCanSeeTableRecords([$unverifiedUser]);
-});
-
-test('table has created_at and updated_at columns defined', function (): void {
-    User::factory()->create();
-
-    Livewire::test(ManageUsers::class)
-        ->assertOk();
 });

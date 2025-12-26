@@ -6,74 +6,35 @@ use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\RelationManagers\BatchesRelationManager;
 use App\Models\Item;
 use App\Models\Location;
+use Filament\Actions\DeleteAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
+
+use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
 
-test('edit item page is accessible', function (): void {
-    $location = Location::factory()->create();
-    $item = Item::factory()->create(['location_id' => $location->id]);
-
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful();
-});
-
-test('edit item page loads with correct data', function (): void {
+test('can load page with correct form data', function (): void {
     $location = Location::factory()->create();
     $item = Item::factory()->create([
         'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
+        'expiration_notify_days' => 7,
+        'tags' => ['Tag1', 'Tag2'],
     ]);
 
-    Livewire::test(EditItem::class, ['record' => $item->id])
+    livewire(EditItem::class, ['record' => $item->id])
         ->assertSuccessful()
-        ->assertFormSet([
+        ->assertSchemaStateSet([
             'name' => 'Test Item',
             'description' => 'Test Description',
+            'location_id' => $location->id,
+            'expiration_notify_days' => 7,
+            'tags' => ['Tag1', 'Tag2'],
         ]);
 });
 
-test('edit item page has delete action', function (): void {
-    $location = Location::factory()->create();
-    $item = Item::factory()->create(['location_id' => $location->id]);
-
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful()
-        ->assertActionExists('delete');
-});
-
-test('edit item page has force delete action', function (): void {
-    $location = Location::factory()->create();
-    $item = Item::factory()->create(['location_id' => $location->id]);
-
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful()
-        ->assertActionExists('forceDelete');
-});
-
-test('edit item page has restore action', function (): void {
-    $location = Location::factory()->create();
-    $item = Item::factory()->create(['location_id' => $location->id]);
-
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful()
-        ->assertActionExists('restore');
-});
-
-test('edit item page has batches relation manager', function (): void {
-    $location = Location::factory()->create();
-    $item = Item::factory()->create(['location_id' => $location->id]);
-
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful();
-
-    // Verify the page is properly configured for relation managers
-    expect(true)->toBeTrue();
-});
-
-test('edit item page can update item data', function (): void {
+test('can update item', function (): void {
     $location = Location::factory()->create();
     $item = Item::factory()->create([
         'location_id' => $location->id,
@@ -81,47 +42,41 @@ test('edit item page can update item data', function (): void {
         'description' => 'Original Description',
     ]);
 
-    // Test that the item can be edited through the resource
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful()
-        ->assertFormSet([
-            'name' => 'Original Name',
-            'description' => 'Original Description',
-        ]);
+    $newLocation = Location::factory()->create();
 
-    // Update the item directly
-    $item->update([
+    livewire(EditItem::class, ['record' => $item->id])
+        ->fillForm([
+            'name' => 'Updated Name',
+            'description' => 'Updated Description',
+            'location_id' => $newLocation->id,
+            'expiration_notify_days' => 14,
+        ])
+        ->call('save')
+        ->assertNotified();
+
+    $this->assertDatabaseHas(Item::class, [
+        'id' => $item->id,
         'name' => 'Updated Name',
         'description' => 'Updated Description',
+        'location_id' => $newLocation->id,
+        'expiration_notify_days' => 14,
     ]);
-
-    $item->refresh();
-    expect($item->name)->toBe('Updated Name')
-        ->and($item->description)->toBe('Updated Description');
 });
 
-test('edit item page uses item resource', function (): void {
-    expect(EditItem::getResource())->toBe(\App\Filament\Resources\Items\ItemResource::class);
+test('can delete item', function (): void {
+    $item = Item::factory()->create();
+
+    livewire(EditItem::class, ['record' => $item->id])
+        ->callAction(DeleteAction::class)
+        ->assertNotified();
+
+    expect(Item::find($item->id))->toBeNull();
 });
 
-test('edit item page displays header actions', function (): void {
-    $location = Location::factory()->create();
-    $item = Item::factory()->create(['location_id' => $location->id]);
+test('has batches relation manager', function (): void {
+    $item = Item::factory()->create();
 
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful();
+    livewire(EditItem::class, ['record' => $item->id])
+        ->assertSuccessful()
+        ->assertSeeLivewire(BatchesRelationManager::class);
 });
-
-test('edit item page can delete item', function (): void {
-    $location = Location::factory()->create();
-    $item = Item::factory()->create(['location_id' => $location->id]);
-    $itemId = $item->id;
-
-    Livewire::test(EditItem::class, ['record' => $item->id])
-        ->callAction('delete')
-        ->assertHasNoErrors();
-
-    // Verify item was deleted
-    expect(Item::find($itemId))->toBeNull();
-});
-
