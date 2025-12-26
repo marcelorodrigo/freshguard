@@ -53,9 +53,6 @@ class ItemsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Updated')),
             ])
-            ->filters([
-                //
-            ])
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
