@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Items\Tables;
 
+use App\Models\Batch;
 use App\Models\Item;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -60,8 +61,13 @@ class ItemsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Updated')),
             ])
-            /** @phpstan-ignore-next-line */
-            ->modifyQueryUsing(fn (Builder $query) => $query->withEarliestBatchExpirationDate())
+            ->modifyQueryUsing(fn (Builder $query) => $query->addSelect([
+                'earliest_batch_expiration' => Batch::query()
+                    ->selectRaw('expires_at')
+                    ->whereColumn('item_id', 'items.id')
+                    ->orderBy('expires_at', 'asc')
+                    ->limit(1),
+            ]))
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
