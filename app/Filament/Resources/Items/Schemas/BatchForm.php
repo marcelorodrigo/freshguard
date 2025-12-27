@@ -17,7 +17,7 @@ class BatchForm
             ->components([
                 DatePicker::make('expires_at')
                     ->required()
-                    ->minDate(Carbon::today())
+                    ->default(Carbon::now()->addDays(7))
                     ->label(__('Expiration Date')),
                 TextInput::make('quantity')
                     ->integer()
