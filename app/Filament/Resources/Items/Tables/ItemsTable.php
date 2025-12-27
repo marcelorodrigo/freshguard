@@ -62,7 +62,7 @@ class ItemsTable
             ])
             ->modifyQueryUsing(fn (Builder $query) => $query->addSelect([
                 'earliest_batch_expiration' => Batch::query()
-                    ->selectRaw('expires_at')
+                    ->select('expires_at')
                     ->whereColumn('item_id', 'items.id')
                     ->orderBy('expires_at', 'asc')
                     ->limit(1),
