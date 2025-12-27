@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "341917f0a407032d1adeb1be71de4def",
+    "content-hash": "406e3f03581d5bcaa355c3b0a742e279",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -3303,16 +3303,22 @@
         },
         {
             "name": "marcelorodrigo/filament-barcode-scanner-field",
-            "version": "dev-first-version",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/marcelorodrigo/filament-barcode-scanner-field.git",
+                "reference": "c9db4559c79dfc0d5b49b8756c4bd9ebe2c6b8b6"
+            },
             "dist": {
-                "type": "path",
-                "url": "/Users/marcelo/projects/filament-barcode-scanner-field",
-                "reference": "aa9cc3c2d7b06c4518f3eff89dd2b86a27f6be2c"
+                "type": "zip",
+                "url": "https://api.github.com/repos/marcelorodrigo/filament-barcode-scanner-field/zipball/c9db4559c79dfc0d5b49b8756c4bd9ebe2c6b8b6",
+                "reference": "c9db4559c79dfc0d5b49b8756c4bd9ebe2c6b8b6",
+                "shasum": ""
             },
             "require": {
                 "filament/forms": "^4.0",
                 "php": "^8.3",
-                "spatie/laravel-package-tools": "^1.15.0"
+                "spatie/laravel-package-tools": "^1.92.7"
             },
             "require-dev": {
                 "larastan/larastan": "^3.8",
@@ -3326,60 +3332,25 @@
                 "phpstan/extension-installer": "^1.4",
                 "phpstan/phpstan-deprecation-rules": "^2.0",
                 "phpstan/phpstan-phpunit": "^2.0",
-                "rector/rector": "^2.3",
-                "spatie/laravel-ray": "^1.26"
+                "rector/rector": "^2.3"
             },
             "type": "library",
             "extra": {
                 "laravel": {
-                    "providers": [
-                        "Marcelorodrigo\\FilamentBarcodeScannerField\\FilamentBarcodeScannerFieldServiceProvider"
-                    ],
                     "aliases": {
                         "FilamentBarcodeScannerField": "Marcelorodrigo\\FilamentBarcodeScannerField\\Facades\\FilamentBarcodeScannerField"
-                    }
+                    },
+                    "providers": [
+                        "Marcelorodrigo\\FilamentBarcodeScannerField\\FilamentBarcodeScannerFieldServiceProvider"
+                    ]
                 }
             },
             "autoload": {
                 "psr-4": {
-                    "Marcelorodrigo\\FilamentBarcodeScannerField\\": "src/",
-                    "Marcelorodrigo\\FilamentBarcodeScannerField\\Database\\Factories\\": "database/factories/"
+                    "Marcelorodrigo\\FilamentBarcodeScannerField\\": "src/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "Marcelorodrigo\\FilamentBarcodeScannerField\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "post-autoload-dump": [
-                    "@php ./vendor/bin/testbench package:discover --ansi"
-                ],
-                "analyse": [
-                    "vendor/bin/phpstan analyse --memory-limit=2G"
-                ],
-                "lint": [
-                    "pint"
-                ],
-                "refactor": [
-                    "rector"
-                ],
-                "test": [
-                    "pest"
-                ],
-                "test:ci": [
-                    "vendor/bin/pest --configuration=phpunit.ci.xml --ci"
-                ],
-                "test:coverage": [
-                    "vendor/bin/pest --configuration=phpunit.ci.xml --ci --coverage"
-                ],
-                "test:lint": [
-                    "pint --test"
-                ],
-                "test:refactor": [
-                    "rector --dry-run"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -3402,9 +3373,13 @@
                 "issues": "https://github.com/marcelorodrigo/filament-barcode-scanner-field/issues",
                 "source": "https://github.com/marcelorodrigo/filament-barcode-scanner-field"
             },
-            "transport-options": {
-                "relative": false
-            }
+            "funding": [
+                {
+                    "url": "https://github.com/marcelorodrigo",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-12-27T16:10:36+00:00"
         },
         {
             "name": "masterminds/html5",
@@ -11802,9 +11777,7 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "marcelorodrigo/filament-barcode-scanner-field": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

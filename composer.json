@@ -11,7 +11,7 @@
         "filament/filament": "^4.0",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "marcelorodrigo/filament-barcode-scanner-field": "@dev"
+        "marcelorodrigo/filament-barcode-scanner-field": "^1.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -75,12 +75,6 @@
             "vendor/bin/pint --dirty"
         ]
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "/Users/marcelo/projects/filament-barcode-scanner-field"
-        }
-    ],
     "extra": {
         "laravel": {
             "dont-discover": []

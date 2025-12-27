@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Items\Tables;
 
 use App\Models\Batch;
-use App\Models\Item;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
