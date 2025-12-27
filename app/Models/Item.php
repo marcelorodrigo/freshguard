@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Batch> $batches
  *
  * @method static Builder<static> withBatchesExpiringWithinDays(int $days)
+ *
  * @mixin Builder<static>
  **/
 class Item extends Model

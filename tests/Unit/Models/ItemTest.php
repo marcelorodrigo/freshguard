@@ -151,7 +151,6 @@ test('belongs to location', function () {
     expect($item->location->id)->toBe($location->id);
 });
 
-
 test('tags can be stored as array', function () {
     $item = Item::factory()->create([
         'tags' => ['Promotion', 'Healthy', 'Important'],
