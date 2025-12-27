@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $location_id
  * @property string $name
+ * @property string|null $barcode
  * @property string|null $description
  * @property array<int, string>|null $tags
  * @property int $quantity
@@ -28,6 +29,8 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Batch> $batches
  *
  * @method static Builder<static> withBatchesExpiringWithinDays(int $days)
+ *
+ * @mixin Builder<static>
  **/
 class Item extends Model
 {
@@ -44,6 +47,7 @@ class Item extends Model
     protected $fillable = [
         'location_id',
         'name',
+        'barcode',
         'description',
         'tags',
         'quantity',

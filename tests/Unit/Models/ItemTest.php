@@ -27,6 +27,7 @@ test('fillable attributes', function () {
     expect($item->getFillable())->toBe([
         'location_id',
         'name',
+        'barcode',
         'description',
         'tags',
         'quantity',

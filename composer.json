@@ -10,7 +10,8 @@
         "ext-pdo": "*",
         "filament/filament": "^4.0",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "marcelorodrigo/filament-barcode-scanner-field": "^1.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

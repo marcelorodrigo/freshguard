@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Items\Tables;
 
+use App\Models\Batch;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ItemsTable
 {
@@ -20,7 +22,7 @@ class ItemsTable
                 TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->label(__('Item Name')),
+                    ->label(__('Name')),
                 TextColumn::make('location.name')
                     ->searchable()
                     ->sortable()
@@ -43,10 +45,10 @@ class ItemsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Expiration Alert (Days)')),
-                TextColumn::make('batches_count')
-                    ->counts('batches')
+                TextColumn::make('earliest_batch_expiration')
+                    ->date()
                     ->sortable()
-                    ->label(__('Batches')),
+                    ->label(__('First Batch Expiration')),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -58,6 +60,13 @@ class ItemsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Updated')),
             ])
+            ->modifyQueryUsing(fn (Builder $query) => $query->addSelect([
+                'earliest_batch_expiration' => Batch::query()
+                    ->select('expires_at')
+                    ->whereColumn('item_id', 'items.id')
+                    ->orderBy('expires_at', 'asc')
+                    ->limit(1),
+            ]))
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),

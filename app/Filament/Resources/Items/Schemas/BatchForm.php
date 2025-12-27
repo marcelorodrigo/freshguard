@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Items\Schemas;
 
-use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
@@ -15,9 +15,9 @@ class BatchForm
     {
         return $schema
             ->components([
-                DateTimePicker::make('expires_at')
+                DatePicker::make('expires_at')
                     ->required()
-                    ->minDate(Carbon::now())
+                    ->default(Carbon::now()->addDays(7))
                     ->label(__('Expiration Date')),
                 TextInput::make('quantity')
                     ->integer()

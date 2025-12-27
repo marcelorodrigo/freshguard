@@ -10,6 +10,7 @@ use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Marcelorodrigo\FilamentBarcodeScannerField\Forms\Components\BarcodeInput;
 
 class ItemForm
 {
@@ -20,7 +21,11 @@ class ItemForm
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255)
-                    ->label(__('Item Name')),
+                    ->label(__('Name')),
+                BarcodeInput::make('barcode')
+                    ->maxLength(255)
+                    ->default(null)
+                    ->label(__('Barcode')),
                 Select::make('location_id')
                     ->relationship('location', 'name')
                     ->required()

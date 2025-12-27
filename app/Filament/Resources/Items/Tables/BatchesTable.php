@@ -14,10 +14,10 @@ class BatchesTable
         return $table
             ->columns([
                 TextColumn::make('expires_at')
-                    ->dateTime('Y-m-d H:i')
+                    ->dateTime('Y-m-d')
                     ->sortable()
                     ->searchable()
-                    ->label(__('Expires At')),
+                    ->label(__('Expiration Date')),
                 TextColumn::make('quantity')
                     ->numeric()
                     ->sortable()
@@ -27,6 +27,7 @@ class BatchesTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Created At')),
-            ]);
+            ])
+            ->defaultSort('expires_at', 'asc');
     }
 }
