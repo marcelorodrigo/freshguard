@@ -26,6 +26,7 @@ class ItemRequest extends FormRequest
         return [
             'location_id' => ['required', 'uuid', 'exists:locations,id'],
             'name' => ['required', 'max:255'],
+            'barcode' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'max:255'],
             'expiration_notify_days' => ['sometimes', 'integer', 'min:0'],
             'tags' => ['nullable', 'array'],

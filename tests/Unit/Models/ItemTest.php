@@ -27,6 +27,7 @@ test('fillable attributes', function () {
     expect($item->getFillable())->toBe([
         'location_id',
         'name',
+        'barcode',
         'description',
         'tags',
         'quantity',
@@ -149,6 +150,7 @@ test('belongs to location', function () {
     expect($item->location)->toBeInstanceOf(Location::class);
     expect($item->location->id)->toBe($location->id);
 });
+
 
 test('tags can be stored as array', function () {
     $item = Item::factory()->create([

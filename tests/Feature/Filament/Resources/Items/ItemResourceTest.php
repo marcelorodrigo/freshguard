@@ -51,6 +51,7 @@ test('can create item with required fields', function (): void {
     livewire(ManageItems::class)
         ->callAction('create', data: [
             'name' => $newItem->name,
+            'barcode' => $newItem->barcode,
             'description' => $newItem->description,
             'location_id' => $location->id,
             'expiration_notify_days' => $newItem->expiration_notify_days,
@@ -76,6 +77,7 @@ test('validates item creation data', function (array $data, array $errors): void
     livewire(ManageItems::class)
         ->callAction('create', data: [
             'name' => $newItem->name,
+            'barcode' => $newItem->barcode,
             'description' => $newItem->description,
             'location_id' => $location->id,
             'expiration_notify_days' => $newItem->expiration_notify_days,
@@ -95,6 +97,7 @@ test('can edit item', function (): void {
     $item = Item::factory()->create([
         'location_id' => $location->id,
         'name' => 'Original Item',
+        'barcode' => '1234567890123',
         'description' => 'Original Description',
         'expiration_notify_days' => 10,
         'tags' => ['Promotion'],
@@ -103,6 +106,7 @@ test('can edit item', function (): void {
     livewire(ManageItems::class)
         ->callTableAction('edit', $item, data: [
             'name' => 'Updated Item',
+            'barcode' => '1234567890123',
             'description' => 'Updated Description',
             'location_id' => $location->id,
             'expiration_notify_days' => 20,

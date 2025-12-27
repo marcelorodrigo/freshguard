@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "18a07d97e5e991c0b5d39d94813d5bd9",
+    "content-hash": "341917f0a407032d1adeb1be71de4def",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -3300,6 +3300,111 @@
                 }
             ],
             "time": "2025-12-19T02:00:29+00:00"
+        },
+        {
+            "name": "marcelorodrigo/filament-barcode-scanner-field",
+            "version": "dev-first-version",
+            "dist": {
+                "type": "path",
+                "url": "/Users/marcelo/projects/filament-barcode-scanner-field",
+                "reference": "aa9cc3c2d7b06c4518f3eff89dd2b86a27f6be2c"
+            },
+            "require": {
+                "filament/forms": "^4.0",
+                "php": "^8.3",
+                "spatie/laravel-package-tools": "^1.15.0"
+            },
+            "require-dev": {
+                "larastan/larastan": "^3.8",
+                "laravel/pint": "^1.26",
+                "nunomaduro/collision": "^8.8",
+                "orchestra/testbench": "^10.0",
+                "pestphp/pest": "^4.0",
+                "pestphp/pest-plugin-arch": "^4.0",
+                "pestphp/pest-plugin-laravel": "^4.0",
+                "pestphp/pest-plugin-livewire": "^4.0",
+                "phpstan/extension-installer": "^1.4",
+                "phpstan/phpstan-deprecation-rules": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "rector/rector": "^2.3",
+                "spatie/laravel-ray": "^1.26"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Marcelorodrigo\\FilamentBarcodeScannerField\\FilamentBarcodeScannerFieldServiceProvider"
+                    ],
+                    "aliases": {
+                        "FilamentBarcodeScannerField": "Marcelorodrigo\\FilamentBarcodeScannerField\\Facades\\FilamentBarcodeScannerField"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Marcelorodrigo\\FilamentBarcodeScannerField\\": "src/",
+                    "Marcelorodrigo\\FilamentBarcodeScannerField\\Database\\Factories\\": "database/factories/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Marcelorodrigo\\FilamentBarcodeScannerField\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "post-autoload-dump": [
+                    "@php ./vendor/bin/testbench package:discover --ansi"
+                ],
+                "analyse": [
+                    "vendor/bin/phpstan analyse --memory-limit=2G"
+                ],
+                "lint": [
+                    "pint"
+                ],
+                "refactor": [
+                    "rector"
+                ],
+                "test": [
+                    "pest"
+                ],
+                "test:ci": [
+                    "vendor/bin/pest --configuration=phpunit.ci.xml --ci"
+                ],
+                "test:coverage": [
+                    "vendor/bin/pest --configuration=phpunit.ci.xml --ci --coverage"
+                ],
+                "test:lint": [
+                    "pint --test"
+                ],
+                "test:refactor": [
+                    "rector --dry-run"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Marcelo Wiebbelling",
+                    "email": "mrodrigow@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "This is my package filament-barcode-scanner-field",
+            "homepage": "https://github.com/marcelorodrigo/filament-barcode-scanner-field",
+            "keywords": [
+                "filament-barcode-scanner-field",
+                "filamentphp",
+                "laravel",
+                "marcelorodrigo"
+            ],
+            "support": {
+                "issues": "https://github.com/marcelorodrigo/filament-barcode-scanner-field/issues",
+                "source": "https://github.com/marcelorodrigo/filament-barcode-scanner-field"
+            },
+            "transport-options": {
+                "relative": false
+            }
         },
         {
             "name": "masterminds/html5",
@@ -11697,7 +11802,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "marcelorodrigo/filament-barcode-scanner-field": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

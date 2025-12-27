@@ -21,6 +21,7 @@ class ItemFactory extends Factory
         return [
             'location_id' => Location::factory(),
             'name' => fake()->words(3, true),
+            'barcode' => fake()->ean13(),
             'description' => fake()->sentence(),
             'expiration_notify_days' => 0,
         ];

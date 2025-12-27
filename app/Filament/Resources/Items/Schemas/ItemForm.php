@@ -10,6 +10,7 @@ use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Marcelorodrigo\FilamentBarcodeScannerField\Forms\Components\BarcodeInput;
 
 class ItemForm
 {
@@ -20,7 +21,11 @@ class ItemForm
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255)
-                    ->label(__('Item Name')),
+                    ->label(__('Name')),
+                BarcodeInput::make('barcode')
+                    ->maxLength(255)
+                    ->default(null)
+                    ->label(__('Barcode')),
                 Select::make('location_id')
                     ->relationship('location', 'name')
                     ->required()
@@ -37,7 +42,7 @@ class ItemForm
                     ->readOnly()
                     ->helperText(__('The quantity is computed from all batches'))
                     ->label(__('Quantity'))
-                    ->hidden(static fn ($record) => is_null($record)),
+                    ->hidden(static fn($record) => is_null($record)),
                 TextInput::make('expiration_notify_days')
                     ->integer()
                     ->suffix(__('days'))

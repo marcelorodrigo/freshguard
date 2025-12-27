@@ -19,6 +19,8 @@ return new class extends Migration
                 ->constrained()
                 ->onDelete('cascade');
             $table->string('name', 255);
+            $table->string('barcode', 255)
+                ->nullable();
             $table->string('description', 255)
                 ->nullable();
             $table->json('tags')

@@ -18,6 +18,7 @@ test('can load page with correct form data', function (): void {
     $item = Item::factory()->create([
         'location_id' => $location->id,
         'name' => 'Test Item',
+        'barcode' => '1234567890123',
         'description' => 'Test Description',
         'expiration_notify_days' => 7,
         'tags' => ['Tag1', 'Tag2'],
@@ -27,6 +28,7 @@ test('can load page with correct form data', function (): void {
         ->assertSuccessful()
         ->assertSchemaStateSet([
             'name' => 'Test Item',
+            'barcode' => '1234567890123',
             'description' => 'Test Description',
             'location_id' => $location->id,
             'expiration_notify_days' => 7,
@@ -39,6 +41,7 @@ test('can update item', function (): void {
     $item = Item::factory()->create([
         'location_id' => $location->id,
         'name' => 'Original Name',
+        'barcode' => '1234567890123',
         'description' => 'Original Description',
     ]);
 
@@ -47,6 +50,7 @@ test('can update item', function (): void {
     livewire(EditItem::class, ['record' => $item->id])
         ->fillForm([
             'name' => 'Updated Name',
+            'barcode' => '1234567890123',
             'description' => 'Updated Description',
             'location_id' => $newLocation->id,
             'expiration_notify_days' => 14,
