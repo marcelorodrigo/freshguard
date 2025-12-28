@@ -75,7 +75,8 @@
             "vendor/bin/pint --dirty"
         ],
         "deploy": [
-            "@php artisan optimize"
+            "@php artisan optimize",
+            "@php artisan filament:optimize"
         ]
     },
     "extra": {
