@@ -1,16 +1,15 @@
 FROM node:24-alpine AS assets
 WORKDIR /data
 COPY package.json package-lock.json vite.config.js ./
-RUN npm ci --ignore-scripts --omit=dev
+RUN npm ci
 COPY resources ./resources
 RUN npm run build
 
 # PHP application stage
-FROM php:8.5-fpm-alpine AS base
+FROM php:8.5.1-fpm-alpine3.23 AS base
 
 # Install system dependencies and PHP extensions
 RUN apk add --no-cache \
-    curl \
     freetype-dev \
     gifsicle \
     git \
@@ -18,15 +17,15 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev \
     libpng-dev \
     nginx \
+    oniguruma \
     optipng \
     pngquant \
     supervisor \
     sqlite \
     unzip \
-    vim \
     zip \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install pdo pdo_sqlite mbstring exif pcntl bcmath gd
+ && docker-php-ext-install ctype exif fileinfo filter gd hash mbstring pdo pdo_sqlite tokenizer
 
 # Install Composer
 COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
