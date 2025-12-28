@@ -24,23 +24,27 @@ RUN apk add --no-cache \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
  && docker-php-ext-install exif gd intl pdo_mysql zip
 
-# Install Composer
-COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
-
 # Set working directory
 WORKDIR /var/www/html
 
+# Configure Nginx
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/default.conf /etc/nginx/http.d/default.conf
+
+# Configure Supervisor
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Copy composer files
 COPY composer.json composer.lock ./
+
+# Install Composer
+COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 
 # Install PHP dependencies (production only)
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # Copy application code
 COPY . .
-
-# Install and build frontend assets
-RUN npm ci && npm run build
 
 # Create Laravel required directories
 RUN mkdir -p storage/framework/cache/data \
@@ -55,12 +59,8 @@ RUN composer deploy \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
-# Configure Nginx
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/default.conf /etc/nginx/http.d/default.conf
-
-# Configure Supervisor
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Install and build frontend assets
+RUN npm ci && npm run build
 
 # Expose port
 EXPOSE 80
