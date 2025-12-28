@@ -46,7 +46,7 @@ COPY . .
 COPY --from=assets /data/public/build ./public/build
 
 RUN composer deploy \
-    chown -R www-data:www-data /var/www/html \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
