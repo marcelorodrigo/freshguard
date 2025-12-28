@@ -21,6 +21,7 @@ RUN apk add --no-cache \
     optipng \
     pngquant \
     supervisor \
+    sqlite3 \
     unzip \
     vim \
     zip \
