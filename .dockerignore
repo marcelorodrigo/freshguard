@@ -1,7 +1,6 @@
 # Git & Version Control
 .git/
 .gitattributes
-.gitignore
 
 # IDE & Editor
 .idea/
