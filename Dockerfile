@@ -13,6 +13,7 @@ RUN apk add --no-cache \
     freetype-dev \
     gifsicle \
     git \
+    icu-dev \
     jpegoptim \
     libjpeg-turbo-dev \
     libpng-dev \
@@ -25,7 +26,7 @@ RUN apk add --no-cache \
     unzip \
     zip \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install exif gd pdo_sqlite
+ && docker-php-ext-install exif gd intl pdo_sqlite
 
 # Install Composer
 COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
