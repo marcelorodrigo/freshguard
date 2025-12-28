@@ -17,6 +17,7 @@ RUN apk add --no-cache \
     jpegoptim \
     libjpeg-turbo-dev \
     libpng-dev \
+    libzip-dev \
     nginx \
     oniguruma-dev \
     optipng \
@@ -26,7 +27,7 @@ RUN apk add --no-cache \
     unzip \
     zip \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install exif gd intl pdo_sqlite
+ && docker-php-ext-install exif gd intl pdo_sqlite zip
 
 # Install Composer
 COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
