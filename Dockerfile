@@ -1,11 +1,19 @@
+FROM node:24-alpine AS assets
+WORKDIR /data
+COPY package.json package-lock.json vite.config.js ./
+RUN npm ci --ignore-scripts --omit=dev
+COPY resources ./resources
+RUN npm run build
+
+# PHP application stage
 FROM php:8.5-fpm-alpine AS base
 
 # Install system dependencies and PHP extensions
 RUN apk add --no-cache \
     curl \
     freetype-dev \
-    git \
     gifsicle \
+    git \
     jpegoptim \
     libjpeg-turbo-dev \
     libpng-dev \
@@ -13,6 +21,7 @@ RUN apk add --no-cache \
     optipng \
     pngquant \
     supervisor \
+    sqlite3 \
     unzip \
     vim \
     zip \
@@ -34,8 +43,11 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts
 # Copy application code
 COPY . .
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
+# Copy built assets from Node.js stage
+COPY --from=assets /data/public/build ./public/build
+
+RUN composer deploy \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
