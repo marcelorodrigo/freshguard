@@ -34,15 +34,6 @@ COPY docker/default.conf /etc/nginx/http.d/default.conf
 # Configure Supervisor
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Copy composer files
-COPY composer.json composer.lock ./
-
-# Install Composer
-COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
-
-# Install PHP dependencies (production only)
-RUN composer install --optimize-autoloader --no-dev
-
 # Copy application code
 COPY . .
 
@@ -53,6 +44,13 @@ RUN mkdir -p storage/framework/cache/data \
     && mkdir -p storage/framework/views \
     && mkdir -p storage/logs \
     && mkdir -p bootstrap/cache
+
+# Install Composer
+COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
+
+# Install PHP dependencies (production only)
+RUN composer install --optimize-autoloader --no-dev
+
 
 RUN composer deploy \
     && chown -R www-data:www-data /var/www/html \
