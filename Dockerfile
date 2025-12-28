@@ -18,16 +18,16 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev \
     libpng-dev \
     libzip-dev \
+    mysql-client \
     nginx \
     oniguruma-dev \
     optipng \
     pngquant \
     supervisor \
-    sqlite-dev \
     unzip \
     zip \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install exif gd intl pdo_sqlite zip
+ && docker-php-ext-install exif gd intl pdo_mysql zip
 
 # Install Composer
 COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
