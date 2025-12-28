@@ -47,6 +47,14 @@ COPY . .
 # Copy built assets from Node.js stage
 COPY --from=assets /data/public/build ./public/build
 
+# Create Laravel required directories
+RUN mkdir -p storage/framework/cache/data \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/testing \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache
+
 RUN composer deploy \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
