@@ -16,7 +16,6 @@
 /public/hot/
 npm-debug.log
 yarn-error.log
-package-lock.json
 
 # Filament Build Assets (rebuilds in container)
 /public/fonts/filament/
