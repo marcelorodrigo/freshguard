@@ -1,10 +1,3 @@
-FROM node:24-alpine AS assets
-WORKDIR /data
-COPY package.json package-lock.json vite.config.js ./
-RUN npm ci
-COPY resources ./resources
-RUN npm run build
-
 # PHP application stage
 FROM php:8.5.1-fpm-alpine3.23 AS base
 
@@ -20,6 +13,8 @@ RUN apk add --no-cache \
     libzip-dev \
     mysql-client \
     nginx \
+    nodejs \
+    npm \
     oniguruma-dev \
     optipng \
     pngquant \
@@ -44,8 +39,8 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts
 # Copy application code
 COPY . .
 
-# Copy built assets from Node.js stage
-COPY --from=assets /data/public/build ./public/build
+# Install and build frontend assets
+RUN npm ci && npm run build
 
 # Create Laravel required directories
 RUN mkdir -p storage/framework/cache/data \

@@ -4,6 +4,7 @@
 
 # IDE & Editor
 .idea/
+.editorconfig
 
 # Environment & Config
 .env
@@ -13,8 +14,7 @@
 /node_modules/
 /public/build/
 /public/hot/
-npm-debug.log
-yarn-error.log
+npm*.log
 
 # Filament Build Assets (rebuilds in container)
 /public/fonts/filament/
