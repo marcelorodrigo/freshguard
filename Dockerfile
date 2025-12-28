@@ -41,7 +41,7 @@ COPY composer.json composer.lock ./
 COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 
 # Install PHP dependencies (production only)
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+RUN composer install --optimize-autoloader --no-dev
 
 # Copy application code
 COPY . .
