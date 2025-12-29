@@ -83,6 +83,40 @@ php artisan migrate
 npm run build
 ```
 
+### Email Configuration
+
+**Important**: User registration requires email verification. You must configure an email provider in your `.env` file before enabling user registrations.
+
+Supported mail drivers include:
+- **SMTP** - Traditional SMTP server
+- **Mailgun** - Third-party email service
+- **Postmark** - Email delivery service
+- **Resend** - Modern email API
+- **SES** - Amazon Simple Email Service
+- **Log** - Log emails to files (development only)
+
+**Example SMTP Configuration** (`.env`):
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_username
+MAIL_PASSWORD=your_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=freshguard@freshguard.local
+MAIL_FROM_NAME=FreshGuard
+```
+
+For development/testing with the **log driver**, emails will be written to logs instead of being sent:
+
+```env
+MAIL_MAILER=log
+MAIL_LOG_CHANNEL=stack
+```
+
+Refer to the [Laravel Mail Documentation](https://laravel.com/docs/12.x/mail) for detailed configuration instructions for your chosen email provider.
+
 ### Development
 
 ```bash
