@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Users\Actions;
 
+use App\Models\User;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Jackiedo\DotenvEditor\Facades\DotenvEditor;
 use Livewire\Component;
 
@@ -26,7 +28,14 @@ class ToggleRegistrationsAction
                 ? 'danger'
                 : 'success'
             )
-            ->visible()
+            ->visible(static function (): bool {
+                $user = Auth::user();
+                return $user instanceof User && $user->isAdmin();
+            })
+            ->authorize(static function (): bool {
+                $user = Auth::user();
+                return $user instanceof User && $user->isAdmin();
+            })
             ->action(function (Action $action): void {
                 $currentStatus = config('freshguard.registrations_enabled');
                 $newStatus = ! $currentStatus;
