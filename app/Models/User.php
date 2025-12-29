@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Database\Factories\UserFactory;
@@ -50,6 +52,18 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
+        // Allow the first user to access the panel regardless of email verification
+        // since they are setting up the system
+        if ($this->isFirstUser()) {
+            return true;
+        }
+
         return $this->hasVerifiedEmail();
+    }
+
+    private function isFirstUser(): bool
+    {
+        // Check if this is the first user ever created
+        return self::query()->orderBy('created_at')->first()?->getKey() === $this->getKey();
     }
 }
