@@ -30,10 +30,12 @@ class ToggleRegistrationsAction
             )
             ->visible(static function (): bool {
                 $user = Auth::user();
+
                 return $user instanceof User && $user->isAdmin();
             })
             ->authorize(static function (): bool {
                 $user = Auth::user();
+
                 return $user instanceof User && $user->isAdmin();
             })
             ->action(function (Action $action): void {

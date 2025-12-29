@@ -228,7 +228,21 @@ test('second registered user is not automatically admin', function (): void {
 test('admin cannot remove their own admin status', function (): void {
     $admin = auth()->user();
 
-    // Verify that the admin field exists and is enabled in the form
+    // Verify admin starts as admin
+    expect($admin->is_admin)->toBeTrue();
+
+    // Attempt to edit the admin's own record and remove admin status
+    livewire(ManageUsers::class)
+        ->callTableAction(EditAction::class, $admin, data: [
+            'name' => $admin->name,
+            'email' => $admin->email,
+            'password' => '',
+            'is_admin' => false,
+        ])
+        ->assertNotified();
+
+    // Verify the admin status was not changed in the database
+    $admin->refresh();
     expect($admin->is_admin)->toBeTrue();
 });
 
