@@ -1,5 +1,5 @@
 
-# Copilot Instructions for freshguard
+# Copilot Instructions for FreshGuard
 
 ## Core Expertise & Philosophy
 - You are an expert in Laravel 12 and Tailwind CSS v4, with a strong emphasis on PHP best practices.
@@ -10,73 +10,92 @@
 ## PHP & Code Quality
 - Use PHP 8.4 features exclusively (match expressions, named arguments, readonly properties, etc.).
 - Follow PSR-12 coding standards and strict typing that meet PHPStan/Larastan level 10.
+- **All PHP files MUST use `declare(strict_types=1);` as first statement after opening tag** (Note: `Batch.php` currently missing this - fix when editing).
 - Use strict types and type hints in all methods, properties, and return statements.
+- Document all model properties, relationships, and custom query scopes with PHPDoc @property, @property-read, @method tags for PHPStan.
 - Implement error handling and logging with Laravel's built-in features.
-- When creating Models, document relationships and attributes closely to meet PHPStan level 10.
-- Per coding guidelines, PHP files should use declare(strict_types=1).
 
 ## Laravel Core Practices
 - Use Laravel's built-in features, helpers, and directory structure.
-- Use lowercase with dashes for directories.
-- Implement error handling and logging with Laravel's features.
-- Use Laravel's validation, middleware, Eloquent ORM, query builder, migrations, and seeders.
+- Use lowercase with dashes for directories (e.g., `app/Filament/Resources/Items/`).
+- Use Laravel's validation (via Filament form validation), middleware, Eloquent ORM, query builder, migrations, and seeders.
 - Follow Laravel's MVC architecture and routing system.
-- Use Form Requests for validation.
-- Use Blade for views.
-- Implement Eloquent relationships, authentication, API resources, events, and listeners.
-- Use i18n for localization.
+- Use Blade for views with i18n `__('...')` for all user-facing strings.
+- Implement Eloquent relationships, authentication, events, and listeners.
 
 ## Tailwind CSS
 - Use Tailwind utility classes for responsive design.
-- Implement consistent color scheme and typography.
-- Use @apply directive for reusable styles in CSS files.
+- Configured via Vite with `@tailwindcss/vite` plugin (see `vite.config.js`).
+- Use utility classes in Blade and Filament components.
 - Optimize for production by purging unused CSS classes.
 
 ## Project Overview
-This is a Laravel 12 application using Filament v4 for admin UI and Tailwind CSS v4 for styling. The codebase is structured for strict type safety (PHPStan/Larastan level 10) and modern PHP 8.4 features. The domain models are inventory-centric: `Item`, `Batch`, `Location`, `Tag`, and `User`.
+**FreshGuard** is a home inventory management system for tracking food items, batches, and expiration dates. Built with Laravel 12, Filament v4 admin UI, and Tailwind CSS v4. Domain models: `Item`, `Batch`, `Location`, `User`. Uses DDEV for local development (SQLite for dev, configurable for prod).
 
 ## Architecture & Patterns
-- **Domain Models**: See `app/Models/`. All models use UUIDs as primary keys and Eloquent relationships are strictly typed and documented.
-	- Example: `Item` has many `Batch`es, belongs to a `Location`, and has many `Tag`s (many-to-many).
-- **Admin UI**: Built with Filament Resources (see `app/Filament/Resources/`). Each resource is modular: `Resource.php` (wires model), `Schemas/` (form fields), `Tables/` (table columns), `Pages/` (CRUD pages).
-- **Testing**: Uses Pest for feature and unit tests. Factories are in `database/factories/`. Tests are in `tests/Unit/Models/` and `tests/Feature/Filament/Resources/`. Assertions can be chained together.
-- **Strict Coding**: All code must use strict types, PSR-12, and be compatible with PHPStan level 10. See `phpstan.neon`.
+- **Domain Models**: All in `app/Models/` with UUIDs as primary keys (`HasUuids` trait), strict typing, and comprehensive PHPDoc.
+  - `Item`: has many `Batch`es, belongs to `Location`, stores tags as JSON array (`casts: ['tags' => 'array']`).
+  - `Batch`: belongs to `Item`, has `expires_at` datetime, auto-updates parent item quantity via model events (`booted()`).
+  - `Location`: self-referential (parent/children), has many `Item`s.
+  - Relationships: **Always cast return types** with `/** @var BelongsTo<Location, Item> */` before `return $this->belongsTo(...)`.
+- **Filament Resources**: Modular structure in `app/Filament/Resources/{ResourceName}/`:
+  - `ResourceName.php`: Routes model to Filament, defines navigation, title attribute.
+  - `Schemas/{FormName}.php`: Static `configure(Schema $schema)` method returns form components. Example: `ItemForm::configure($schema)`.
+  - `Tables/{TableName}.php`: Static `configure(Table $table)` method returns table columns/actions.
+  - `Pages/`: CRUD pages (e.g., `ManageItems`, `CreateItem`, `EditItem`).
+  - `RelationManagers/`: Nested resource tables (e.g., `BatchesRelationManager` on Item edit page).
+- **Testing**: Pest-based. Use `use function Pest\Livewire\livewire;` for Filament tests. Chain assertions. Database sorting uses `orderBy()`, NOT `sortBy()`. Factories for all test data.
+- **Strict Coding**: PHPStan level 10 enforced (`phpstan.neon`). Run `composer phpstan` before committing.
 
 ## Developer Workflows
-- **Local Dev**: Use `composer run dev` (runs PHP server, queue, logs, and Vite/Tailwind in parallel via `concurrently`).
-- **Build Assets**: `npm run build` (Vite + Tailwind).
-- **Testing**: `composer test` (runs Pest/PHPUnit, clears config cache). Coverage: `composer test:coverage`.
-- **Static Analysis**: `composer phpstan` (runs Larastan at level 10).
-- **Code Formatting**: Use **Laravel Pint** for all code formatting and style fixes. Run `composer pint` to format all files or `composer pint:dirty` to fix only changed files. Pint enforces PSR-12 compliance and Laravel best practices.
-- **Migrations/Seeders**: Use standard Laravel artisan commands. Factories and seeders are in `database/`.
+- **DDEV Required**: All commands prefixed with `ddev` (e.g., `ddev composer test`, `ddev artisan migrate`, `ddev npm run dev`).
+  - Start: `ddev start`, Stop: `ddev stop`, SSH: `ddev ssh`, Launch browser: `ddev launch`.
+  - Email testing: `ddev mailpit` (opens Mailpit for viewing dev emails).
+- **Local Dev**: `ddev composer dev` (runs PHP server, queue, pail logs, Vite in parallel via `concurrently`).
+- **Build Assets**: `ddev npm run build` (Vite + Tailwind production build).
+- **Testing**: `ddev composer test` (Pest, excludes disabled group). Coverage: `ddev composer test:coverage`.
+- **Static Analysis**: `ddev composer phpstan` (2GB memory limit).
+- **Code Formatting**: `ddev composer pint` (all files) or `ddev composer pint:dirty` (changed files only).
+- **Migrations**: `ddev artisan migrate`, `ddev artisan migrate:rollback`, `ddev artisan db:seed`.
+- **Deployment**: `ddev composer deploy` (optimizes Laravel & Filament caches).
 
 ## Project-Specific Conventions
-- **UUIDs**: All models use UUIDs as primary keys (`HasUuids`).
-- **Eloquent Relationships**: Always type-hint and document relationships. See `app/Models/Item.php` for examples.
-- **Filament Resource Structure**: Each resource is split into `Resource.php`, `Schemas/`, `Tables/`, and `Pages/` for modularity and testability.
-- **Testing Patterns**: Use Pest for all new tests. Factories are used for all model instantiations in tests.
-- **Translations**: Use `__('...')` for all user-facing strings (see Filament forms).
+- **UUIDs**: All models use UUIDs as primary keys (`HasUuids` trait).
+- **Eloquent Relationships**: Must type-hint with PHPDoc generics: `@return BelongsTo<Parent, Child>`. Cast before return statement.
+- **Filament Resource Structure**: Separate `Schemas/` and `Tables/` classes with static `configure()` methods for reusability and testing.
+- **Tags**: Stored as JSON array on `Item` model (not separate table). Use `TagsInput::make('tags')` with dynamic suggestions from existing tags.
+- **Quantity**: Item `quantity` is computed from batches, read-only in forms (hidden on create, read-only on edit).
+- **Localization**: All strings use `__('key')` for i18n. Filament forms/tables use label methods: `->label(__('Name'))`.
+- **Model Events**: `Batch` model uses `booted()` to auto-update parent `Item` quantity on save/delete.
 
 ## Integration Points
-- **Filament**: All admin CRUD is via Filament. See `app/Filament/Resources/` for resource definitions.
-- **Tailwind**: Configured via Vite (`vite.config.js`). Use utility classes in Blade and Filament components.
-- **Livewire**: Used by Filament for dynamic admin UI (see feature tests for Livewire usage).
-- **External Services**: Credentials and endpoints are managed via `config/services.php` and `.env`.
+- **Filament**: All admin CRUD via Filament resources. Custom components: `marcelorodrigo/filament-barcode-scanner-field` for barcode input.
+- **Tailwind**: Vite plugin config in `vite.config.js` includes DDEV-specific CORS for HMR.
+- **Livewire**: Filament uses Livewire; test with `livewire(PageClass::class)` (Pest helper).
+- **Barcode Scanner**: Custom Filament field `BarcodeInput::make('barcode')` for item forms.
 
 ## Key Files & Directories
-- `app/Models/` — Domain models with strict typing and relationships
-- `app/Filament/Resources/` — Filament resource modules (admin UI)
-- `database/factories/` — Model factories for tests and seeding
-- `tests/` — Pest-based unit and feature tests
-- `vite.config.js` — Vite + Tailwind config
-- `composer.json` — Scripts for dev, test, static analysis
-- `phpstan.neon` — PHPStan/Larastan config (level 10)
+- `app/Models/` — Domain models (strict types, UUIDs, relationships)
+- `app/Filament/Resources/` — Modular Filament resources (Resource, Schemas, Tables, Pages, RelationManagers)
+- `database/factories/` — Model factories for tests/seeders
+- `tests/Feature/Filament/Resources/` — Filament page/action tests
+- `tests/Unit/Models/` — Model unit tests
+- `composer.json` — Scripts: dev, test, phpstan, pint, deploy
+- `package.json` — Vite dev/build, Tailwind v4, concurrently
+- `vite.config.js` — DDEV-aware Vite + Tailwind config
+- `phpstan.neon` — Level 10 static analysis
 
 ## Example: Adding a New Resource
-1. Create Eloquent model in `app/Models/` with strict types and docblocks.
-2. Scaffold Filament resource: `app/Filament/Resources/{Resource}/` with `Resource.php`, `Schemas/`, `Tables/`, `Pages/`.
-3. Add factories and tests in `database/factories/` and `tests/`.
-4. Register routes/pages as needed in Filament resource.
+1. **Model**: Create in `app/Models/` with `declare(strict_types=1);`, `HasUuids`, PHPDoc (@property, @property-read, @method).
+2. **Factory**: Add to `database/factories/` with typed return values.
+3. **Migration**: Use `$table->uuid('id')->primary();` for UUID primary key.
+4. **Filament Resource**:
+   - Create `app/Filament/Resources/{Name}/{Name}Resource.php` (navigation, model, pages).
+   - Add `Schemas/{Name}Form.php` with static `configure(Schema $schema)`.
+   - Add `Tables/{Name}Table.php` with static `configure(Table $table)`.
+   - Create `Pages/` (List, Create, Edit) extending Filament base pages.
+5. **Tests**: Feature tests in `tests/Feature/Filament/Resources/{Name}/` using `livewire()` and chained assertions.
+6. **Run**: `ddev composer pint`, `ddev composer phpstan`, `ddev composer test`.
 
 ## Filament Testing Best Practices
 

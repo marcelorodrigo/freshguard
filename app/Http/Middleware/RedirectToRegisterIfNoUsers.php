@@ -18,11 +18,11 @@ class RedirectToRegisterIfNoUsers
     /**
      * Handle an incoming request.
      *
-     * @param Closure(Request): (Response) $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response|RedirectResponse
     {
-        if (!$this->isSafeRoute($request) && !Auth::check() && $this->noUsersExist()) {
+        if (! $this->isSafeRoute($request) && ! Auth::check() && $this->noUsersExist()) {
             return Redirect::route('filament.freshguard.auth.register');
         }
 
@@ -32,7 +32,7 @@ class RedirectToRegisterIfNoUsers
     private function noUsersExist(): bool
     {
         try {
-            return !User::query()->exists();
+            return ! User::query()->exists();
         } catch (Throwable) {
             // If there is an error connecting to the database or table is not yet created, assume no users exist
             return true;
@@ -42,6 +42,7 @@ class RedirectToRegisterIfNoUsers
     private function isSafeRoute(Request $request): bool
     {
         return $request->routeIs('filament.freshguard.auth.register') ||
+            $request->routeIs('filament.freshguard.auth.email-verification*') ||
             $request->routeIs('up');
     }
 }
