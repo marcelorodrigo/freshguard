@@ -68,15 +68,7 @@ class ItemForm
                             // Only populate tags if they are null/empty
                             $currentTags = $get('tags');
                             if (empty($currentTags) && ! empty($productData['categories_hierarchy'])) {
-                                $categories = is_array($productData['categories_hierarchy'])
-                                    ? array_values($productData['categories_hierarchy'])
-                                    : [];
-
-                                // Extract category names, removing 'en:' prefix
-                                $tags = array_map(
-                                    fn (string $category): string => str_replace('en:', '', $category),
-                                    array_filter($categories, 'is_string')
-                                );
+                                $tags = self::extractTagsFromCategories($productData['categories_hierarchy']);
 
                                 if (! empty($tags)) {
                                     $set('tags', $tags);
@@ -99,12 +91,11 @@ class ItemForm
                                     ->send();
                             }
                         } catch (\Exception $e) {
-                            Log::warning('Error fetching product data for barcode '.$state.': '.$e->getMessage());
-                            Notification::make()
-                                ->title(__('Error fetching product information'))
-                                ->body(__('Could not connect to product database.'))
-                                ->danger()
-                                ->send();
+                            Log::warning('Error fetching product data for barcode', [
+                                'barcode' => $state,
+                                'error' => $e->getMessage(),
+                                'exception' => get_class($e),
+                            ]);
                         }
                     }),
                 Select::make('location_id')
@@ -145,5 +136,20 @@ class ItemForm
                     })
                     ->placeholder(__('Add tags...')),
             ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function extractTagsFromCategories(mixed $categoriesHierarchy): array
+    {
+        $categories = is_array($categoriesHierarchy)
+            ? array_values($categoriesHierarchy)
+            : [];
+
+        return array_map(
+            fn (string $category): string => str_replace('en:', '', $category),
+            array_filter($categories, 'is_string')
+        );
     }
 }
