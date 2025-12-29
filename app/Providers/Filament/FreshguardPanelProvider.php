@@ -28,6 +28,10 @@ class FreshguardPanelProvider extends PanelProvider
             ->id('freshguard')
             ->path('freshguard')
             ->login()
+            ->registration()
+            ->passwordReset()
+            ->emailVerification()
+            ->emailChangeVerification()
             ->colors([
                 'primary' => Color::Amber,
             ])
