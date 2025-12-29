@@ -6,9 +6,14 @@ namespace App\Listeners;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Log;
 
 class SetFirstUserAsAdmin
 {
+    public function __construct(private Log $log)
+    {
+    }
+
     /**
      * Handle the event.
      * @param Registered $event
@@ -16,10 +21,12 @@ class SetFirstUserAsAdmin
      */
     public function handle(Registered $event): void
     {
+        /** @var User $user */
+        $user = $event->user;
+
+        $this->log->info('User registered', ['email' => $user->email]);
         // Check if this is the first user being registered
         if (User::query()->count() === 1) {
-            /** @var User $user */
-            $user = $event->user;
             $user->update(['is_admin' => true]);
         }
     }
