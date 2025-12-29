@@ -9,9 +9,11 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Log;
 use Marcelorodrigo\FilamentBarcodeScannerField\Forms\Components\BarcodeInput;
 use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
 
@@ -40,17 +42,27 @@ class ItemForm
                             $productData = OpenFoodFacts::barcode($state);
 
                             if (empty($productData)) {
+                                Notification::make()
+                                    ->title(__('Product not found'))
+                                    ->body(__('No product information found for this barcode.'))
+                                    ->warning()
+                                    ->send();
+
                                 return;
                             }
+
+                            $fieldsPopulated = [];
 
                             // Only populate if name is empty
                             if (empty($get('name')) && ! empty($productData['product_name'])) {
                                 $set('name', $productData['product_name']);
+                                $fieldsPopulated[] = __('name');
                             }
 
                             // Only populate if description is empty
                             if (empty($get('description')) && ! empty($productData['generic_name'])) {
                                 $set('description', $productData['generic_name']);
+                                $fieldsPopulated[] = __('description');
                             }
 
                             // Only populate tags if they are null/empty
@@ -68,10 +80,31 @@ class ItemForm
 
                                 if (! empty($tags)) {
                                     $set('tags', $tags);
+                                    $fieldsPopulated[] = __('tags');
                                 }
                             }
-                        } catch (\Exception) {
-                            // Silently fail if API call fails
+
+                            // Show success notification with populated fields
+                            if (! empty($fieldsPopulated)) {
+                                Notification::make()
+                                    ->title(__('Product data loaded'))
+                                    ->body(__('Populated: :fields', ['fields' => implode(', ', $fieldsPopulated)]))
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title(__('Product found'))
+                                    ->body(__('No empty fields to populate.'))
+                                    ->info()
+                                    ->send();
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning('Error fetching product data for barcode '.$state.': '.$e->getMessage());
+                            Notification::make()
+                                ->title(__('Error fetching product information'))
+                                ->body(__('Could not connect to product database.'))
+                                ->danger()
+                                ->send();
                         }
                     }),
                 Select::make('location_id')
