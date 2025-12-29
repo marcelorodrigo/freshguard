@@ -26,7 +26,7 @@ class FreshguardPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('freshguard')
-            ->path('freshguard')
+            ->path('')
             ->login()
             ->registration()
             ->passwordReset()
