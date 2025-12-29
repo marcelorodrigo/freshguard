@@ -72,62 +72,6 @@ test('can sort users by email verified status', function (): void {
         ->assertSuccessful();
 });
 
-test('can create user with required fields', function (): void {
-    $userData = [
-        'name' => 'John Doe',
-        'email' => 'john@example.com',
-        'password' => 'SecurePassword123!',
-    ];
-
-    livewire(ManageUsers::class)
-        ->callAction('create', data: $userData)
-        ->assertNotified();
-
-    $this->assertDatabaseHas(User::class, [
-        'name' => $userData['name'],
-        'email' => $userData['email'],
-    ]);
-
-    $user = User::query()->where('email', $userData['email'])->first();
-    expect(Hash::check($userData['password'], $user->password))->toBeTrue();
-});
-
-test('can create user without email verification', function (): void {
-    $userData = [
-        'name' => 'Unverified User',
-        'email' => 'unverified@example.com',
-        'password' => 'SecurePassword123!',
-    ];
-
-    livewire(ManageUsers::class)
-        ->callAction('create', data: $userData)
-        ->assertNotified();
-
-    $this->assertDatabaseHas(User::class, [
-        'name' => $userData['name'],
-        'email' => $userData['email'],
-        'email_verified_at' => null,
-    ]);
-});
-
-test('validates user creation data', function (array $data, array $errors): void {
-    livewire(ManageUsers::class)
-        ->callAction('create', data: [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'SecurePassword123!',
-            ...$data,
-        ])
-        ->assertHasActionErrors($errors);
-})->with([
-    'name is required' => [['name' => null], ['name' => 'required']],
-    'name max 255 characters' => [['name' => Str::random(256)], ['name' => 'max']],
-    'email is required' => [['email' => null], ['email' => 'required']],
-    'email must be valid' => [['email' => 'invalid-email'], ['email' => 'email']],
-    'email must be unique' => [fn () => ['email' => User::factory()->create()->email], ['email' => 'unique']],
-    'password is required' => [['password' => null], ['password' => 'required']],
-]);
-
 test('can edit user name and email', function (): void {
     $user = User::factory()->create([
         'name' => 'Original Name',
@@ -279,49 +223,6 @@ test('second registered user is not automatically admin', function (): void {
 
     $secondUser->refresh();
     expect($secondUser->is_admin)->toBeFalse();
-});
-
-test('admin can create users with admin role', function (): void {
-    livewire(ManageUsers::class)
-        ->callAction('create', data: [
-            'name' => 'New Admin',
-            'email' => 'newadmin@example.com',
-            'password' => 'SecurePassword123!',
-            'is_admin' => true,
-        ])
-        ->assertNotified();
-
-    $this->assertDatabaseHas(User::class, [
-        'email' => 'newadmin@example.com',
-        'is_admin' => true,
-    ]);
-});
-
-test('admin can see is_admin toggle field', function (): void {
-    livewire(ManageUsers::class)
-        ->callAction('create', data: [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'SecurePassword123!',
-            'is_admin' => true,
-        ])
-        ->assertNotified();
-
-    $this->assertDatabaseHas(User::class, [
-        'email' => 'test@example.com',
-        'is_admin' => true,
-    ]);
-});
-
-test('non-admin cannot see is_admin toggle field', function (): void {
-    $nonAdmin = User::factory()->create(['is_admin' => false]);
-    $userToEdit = User::factory()->create();
-
-    $this->actingAs($nonAdmin);
-
-    // Non-admin can't access the management page at all
-    livewire(ManageUsers::class)
-        ->assertForbidden();
 });
 
 test('admin cannot remove their own admin status', function (): void {

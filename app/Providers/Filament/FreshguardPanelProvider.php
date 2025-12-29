@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
-use App\Http\Middleware\RedirectToRegisterIfNoUsers;
-use App\Models\User;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -35,6 +33,7 @@ class FreshguardPanelProvider extends PanelProvider
             ->passwordReset()
             ->emailVerification()
             ->emailChangeVerification()
+            ->profile()
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -52,7 +51,6 @@ class FreshguardPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                RedirectToRegisterIfNoUsers::class,
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
@@ -64,13 +62,8 @@ class FreshguardPanelProvider extends PanelProvider
                 Authenticate::class,
             ]);
 
-        // Only enable registration if no users exist
-        try {
-            if (! User::query()->exists()) {
-                $panel->registration();
-            }
-        } catch (\Throwable) {
-            // If database is not ready, enable registration by default
+        // Enable registration based on configuration flag
+        if (config('freshguard.registrations_enabled')) {
             $panel->registration();
         }
 

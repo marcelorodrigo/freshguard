@@ -48,7 +48,7 @@ class UserForm
                     ->label(__('Administrator'))
                     ->helperText(__('Administrators can manage all users and access admin features.'))
                     ->visible(fn (): bool => Auth::user()?->isAdmin() ?? false)
-                    ->disabled(fn (string $context, User|null $record): bool => $context === 'edit' && $record?->id === Auth::id())
+                    ->disabled(fn (string $context, ?User $record): bool => $context === 'edit' && $record?->id === Auth::id())
                     ->dehydrated(),
             ]);
     }

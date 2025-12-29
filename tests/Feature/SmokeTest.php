@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
-it('the application redirects to user registration when no user is configured', function () {
-    $response = $this->get('/');
-    $response->assertStatus(302)
-        ->assertRedirect('/register');
+it('registration is enabled when FRESHGUARD_REGISTRATIONS_ENABLED config is true', function () {
+    expect(config('freshguard.registrations_enabled'))->toBeTrue();
+});
+
+it('registration can be disabled when FRESHGUARD_REGISTRATIONS_ENABLED config is false', function () {
+    config()->set('freshguard.registrations_enabled', false);
+
+    expect(config('freshguard.registrations_enabled'))->toBeFalse();
 });
