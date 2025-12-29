@@ -9,8 +9,11 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Marcelorodrigo\FilamentBarcodeScannerField\Forms\Components\BarcodeInput;
+use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
 
 class ItemForm
 {
@@ -25,7 +28,52 @@ class ItemForm
                 BarcodeInput::make('barcode')
                     ->maxLength(255)
                     ->default(null)
-                    ->label(__('Barcode')),
+                    ->label(__('Barcode'))
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state, ?string $old): void {
+                        // Only fetch if barcode changed and has a value
+                        if (empty($state) || $state === $old) {
+                            return;
+                        }
+
+                        try {
+                            $productData = OpenFoodFacts::barcode($state);
+
+                            if (empty($productData)) {
+                                return;
+                            }
+
+                            // Only populate if name is empty
+                            if (empty($get('name')) && ! empty($productData['product_name'])) {
+                                $set('name', $productData['product_name']);
+                            }
+
+                            // Only populate if description is empty
+                            if (empty($get('description')) && ! empty($productData['generic_name'])) {
+                                $set('description', $productData['generic_name']);
+                            }
+
+                            // Only populate tags if they are null/empty
+                            $currentTags = $get('tags');
+                            if (empty($currentTags) && ! empty($productData['categories_hierarchy'])) {
+                                $categories = is_array($productData['categories_hierarchy'])
+                                    ? array_values($productData['categories_hierarchy'])
+                                    : [];
+
+                                // Extract category names, removing 'en:' prefix
+                                $tags = array_map(
+                                    fn (string $category): string => str_replace('en:', '', $category),
+                                    array_filter($categories, 'is_string')
+                                );
+
+                                if (! empty($tags)) {
+                                    $set('tags', $tags);
+                                }
+                            }
+                        } catch (\Exception) {
+                            // Silently fail if API call fails
+                        }
+                    }),
                 Select::make('location_id')
                     ->relationship('location', 'name')
                     ->required()
