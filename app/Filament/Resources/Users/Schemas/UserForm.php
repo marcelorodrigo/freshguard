@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Models\User;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
 
 class UserForm
@@ -41,6 +44,12 @@ class UserForm
                     ->hidden(fn (string $context): bool => $context === 'create')
                     ->label(__('Email Verified At'))
                     ->helperText(__('Set to mark user email as verified.')),
+                Toggle::make('is_admin')
+                    ->label(__('Administrator'))
+                    ->helperText(__('Administrators can manage all users and access admin features.'))
+                    ->visible(fn (): bool => Auth::user()?->isAdmin() ?? false)
+                    ->disabled(fn (string $context, User|null $record): bool => $context === 'edit' && $record?->id === Auth::id())
+                    ->dehydrated(),
             ]);
     }
 }

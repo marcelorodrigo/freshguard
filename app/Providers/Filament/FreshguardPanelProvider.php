@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\RedirectToRegisterIfNoUsers;
+use App\Models\User;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -26,12 +27,11 @@ class FreshguardPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->id('freshguard')
             ->path('')
             ->login()
-            ->registration()
             ->passwordReset()
             ->emailVerification()
             ->emailChangeVerification()
@@ -63,5 +63,17 @@ class FreshguardPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+
+        // Only enable registration if no users exist
+        try {
+            if (! User::query()->exists()) {
+                $panel->registration();
+            }
+        } catch (\Throwable) {
+            // If database is not ready, enable registration by default
+            $panel->registration();
+        }
+
+        return $panel;
     }
 }
