@@ -6,6 +6,7 @@ use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Models\User;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Auth\Events\Registered;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -195,7 +196,7 @@ test('first registered user becomes admin automatically', function (): void {
     ];
 
     $user = User::create($userData);
-    event(new \Illuminate\Auth\Events\Registered($user));
+    event(new Registered($user));
 
     $user->refresh();
     expect($user->is_admin)->toBeTrue();
@@ -211,7 +212,7 @@ test('second registered user is not automatically admin', function (): void {
         'email' => 'first@example.com',
         'password' => 'password',
     ]);
-    event(new \Illuminate\Auth\Events\Registered($firstUser));
+    event(new Registered($firstUser));
 
     $secondUser = User::create([
         'name' => 'Second User',
