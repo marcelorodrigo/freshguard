@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Users\Actions;
 use Filament\Actions\Action;
 use Illuminate\Support\Facades\Artisan;
 use Jackiedo\DotenvEditor\Facades\DotenvEditor;
+use Livewire\Component;
 
 class ToggleRegistrationsAction
 {
@@ -28,7 +29,7 @@ class ToggleRegistrationsAction
             ->visible()
             ->action(function (Action $action): void {
                 $currentStatus = config('freshguard.registrations_enabled');
-                $newStatus = !$currentStatus;
+                $newStatus = ! $currentStatus;
 
                 // Persist the new status in the configuration
                 config(['freshguard.registrations_enabled' => $newStatus]);
@@ -43,7 +44,10 @@ class ToggleRegistrationsAction
             })
             ->after(function (Action $action): void {
                 // Dispatch event to refresh the Livewire component
-                $action->getLivewire()->dispatch('refresh');
+                $livewire = $action->getLivewire();
+                if ($livewire instanceof Component) {
+                    $livewire->dispatch('refresh');
+                }
             })
             ->successNotificationTitle(static fn (): string => config('freshguard.registrations_enabled')
                 ? __('Registrations enabled')
@@ -51,6 +55,3 @@ class ToggleRegistrationsAction
             );
     }
 }
-
-
-
