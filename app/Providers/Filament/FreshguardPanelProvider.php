@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
-use App\Http\Middleware\RedirectToRegisterIfNoUsers;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -26,15 +25,15 @@ class FreshguardPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $panel = $panel
             ->default()
             ->id('freshguard')
             ->path('')
             ->login()
-            ->registration()
             ->passwordReset()
             ->emailVerification()
             ->emailChangeVerification()
+            ->profile()
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -52,7 +51,6 @@ class FreshguardPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                RedirectToRegisterIfNoUsers::class,
                 AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
@@ -63,5 +61,12 @@ class FreshguardPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+
+        // Enable registration based on configuration flag
+        if (config('freshguard.registrations_enabled')) {
+            $panel->registration();
+        }
+
+        return $panel;
     }
 }

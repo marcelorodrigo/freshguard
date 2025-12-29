@@ -35,6 +35,14 @@ class UsersTable
                     ->falseColor('danger')
                     ->label(__('Verified'))
                     ->sortable(),
+                IconColumn::make('is_admin')
+                    ->boolean()
+                    ->trueIcon(Heroicon::OutlinedShieldCheck)
+                    ->falseIcon(Heroicon::OutlinedShieldExclamation)
+                    ->trueColor('primary')
+                    ->falseColor('gray')
+                    ->label(__('Admin'))
+                    ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -58,6 +66,6 @@ class UsersTable
                     DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('name', 'asc');
     }
 }
