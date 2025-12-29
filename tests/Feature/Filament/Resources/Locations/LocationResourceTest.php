@@ -25,6 +25,7 @@ test('can render page and see table records', function (): void {
 });
 
 test('can search locations by name', function (): void {
+    Location::query()->delete();
     $locations = Location::factory()->count(5)->create();
     $searchLocation = $locations->first();
 

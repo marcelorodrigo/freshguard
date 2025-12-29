@@ -11,7 +11,8 @@
         "jackiedo/dotenv-editor": "^1.1",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
-        "marcelorodrigo/filament-barcode-scanner-field": "^1.0"
+        "marcelorodrigo/filament-barcode-scanner-field": "^1.0",
+        "openfoodfacts/openfoodfacts-laravel": "^0.7.0"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.16",
