@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\Location;
@@ -18,19 +20,40 @@ class LocationFactory extends Factory
     public function definition(): array
     {
         $houseLocations = [
-            'Bedroom',
-            'Bathroom',
-            'Hallway',
-            'Dining Room',
             'Attic',
+            'Balcony',
             'Basement',
-            'Garage',
-            'Pantry',
+            'Bathroom',
+            'Bedroom',
             'Closet',
-            'Study',
+            'Cold Storage',
+            'Dining Room',
             'Entertainment Room',
+            'Entryway',
+            'Freezer Room',
+            'Garage',
+            'Garden Shed',
             'Guest Room',
+            'Hallway',
             'Home Office',
+            'Kitchen',
+            'Laundry Room',
+            'Library',
+            'Living Room',
+            'Mudroom',
+            'Music Room',
+            'Nursery',
+            'Pantry',
+            'Patio',
+            'Playroom',
+            'Porch',
+            'Server Closet',
+            'Storage Room',
+            'Study',
+            'Sunroom',
+            'Utility Room',
+            'Wine Cellar',
+            'Workshop',
         ];
 
         $locationDetails = [
@@ -54,7 +77,7 @@ class LocationFactory extends Factory
      */
     public function withParent(?Location $parent = null): self
     {
-        return $this->state(function (array $attributes) use ($parent) {
+        return $this->state(function () use ($parent) {
             return [
                 'parent_id' => $parent?->id ?? Location::factory()->create()->id,
             ];
