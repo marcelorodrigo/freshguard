@@ -42,6 +42,7 @@ class RedirectToRegisterIfNoUsers
     private function isSafeRoute(Request $request): bool
     {
         return $request->routeIs('filament.freshguard.auth.register') ||
+            $request->routeIs('filament.freshguard.auth.email-verification*') ||
             $request->routeIs('up');
     }
 }
