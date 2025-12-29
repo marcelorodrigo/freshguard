@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.4",
         "filament/filament": "^4.0",
+        "jackiedo/dotenv-editor": "^1.1",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "marcelorodrigo/filament-barcode-scanner-field": "^1.0"

@@ -149,60 +149,34 @@ Refer to the [Laravel Mail Documentation](https://laravel.com/docs/12.x/mail) fo
 
 ### User Registration Control
 
-FreshGuard provides a simple yet powerful system-wide flag to control whether new user registrations are allowed on your instance.
+FreshGuard provides a simple yet powerful system-wide flag to control whether new user registrations are allowed on your instance. You can manage this setting either via the Filament admin panel or by modifying your `.env` file.
 
-#### Enable or Disable Registrations
+#### Configuration Methods
 
-User registration is **enabled by default** to allow initial setup. You can control registration availability by setting the `FRESHGUARD_REGISTRATIONS_ENABLED` environment variable in your `.env` file.
+FreshGuard supports two methods to control user registrations:
 
-**To enable registrations (default):**
+##### Method 1: Filament Admin Panel (Recommended)
+
+The easiest way to toggle registrations is through the Filament admin panel:
+
+1. Log in to your FreshGuard admin panel at `https://freshguard.ddev.site/admin`
+2. Navigate to **Users** from the admin sidebar
+3. Click the **Enable Registrations** or **Disable Registrations** button in the header
+4. The setting is immediately updated and persisted to your `.env` file
+
+**Visual Indicators:**
+- 🟢 **Enable Registrations** (green lock-open icon) - Click to allow new user registrations
+- 🔴 **Disable Registrations** (red lock-closed icon) - Click to restrict registrations to existing users only
+
+The button label and icon change dynamically to show the current status and indicate the action that will be performed when clicked.
+
+##### Method 2: Environment Variable (.env)
+
+For server-side configuration, set the `FRESHGUARD_REGISTRATIONS_ENABLED` environment variable:
+
 ```env
 FRESHGUARD_REGISTRATIONS_ENABLED=true
 ```
-
-**To disable registrations:**
-```env
-FRESHGUARD_REGISTRATIONS_ENABLED=false
-```
-
-#### How It Works
-
-- When `FRESHGUARD_REGISTRATIONS_ENABLED=true`, the `/register` page is accessible and new users can create accounts
-- When `FRESHGUARD_REGISTRATIONS_ENABLED=false`, the registration page is disabled and inaccessible
-- The setting is checked at application boot time, so changes require restarting the application
-- Default is `true` to facilitate initial setup and admin onboarding
-
-#### Use Cases
-
-**Initial Setup:**
-- Leave enabled (`true`) during initial setup to create your first admin account
-- Once your admin account is created, you can disable registrations to prevent unauthorized account creation
-
-**Multi-User Instance:**
-- Keep enabled to allow team members to self-register
-- Disable when you want to manually control who gets access
-
-**Production Deployments:**
-- Recommended: Set to `false` in production unless you want public registrations
-- Ensure the first admin account is created before disabling
-
-#### Example Workflow
-
-```bash
-# 1. Initial setup - registrations enabled by default
-ddev start
-ddev artisan migrate
-# Visit https://freshguard.ddev.site/register and create your admin account
-
-# 2. Disable registrations for security
-# Edit .env:
-FRESHGUARD_REGISTRATIONS_ENABLED=false
-
-# 3. Restart the application
-ddev start
-# Registration page is now inaccessible
-```
-
 ### Development
 
 #### Available Commands
