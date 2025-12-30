@@ -28,11 +28,11 @@ RUN apk add --no-cache \
 WORKDIR /var/www/html
 
 # Configure Nginx
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY default.conf /etc/nginx/http.d/default.conf
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/default.conf /etc/nginx/http.d/default.conf
 
 # Configure Supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Copy application code
 COPY . .
