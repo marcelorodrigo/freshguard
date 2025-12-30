@@ -30,6 +30,7 @@ Thumbs.db
 /tests/
 phpunit.xml
 /phpstan.neon
+/.ddev/
 
 # CI/CD & Documentation
 .github/
@@ -42,3 +43,5 @@ sonar-project.properties
 /storage/framework/sessions/
 /storage/framework/views/
 
+# Composer Files
+/vendor/
