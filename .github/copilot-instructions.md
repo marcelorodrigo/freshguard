@@ -10,10 +10,10 @@
 ## PHP & Code Quality
 - Use PHP 8.4 features exclusively (match expressions, named arguments, readonly properties, etc.).
 - Follow PSR-12 coding standards and strict typing that meet PHPStan/Larastan level 10.
-- **All PHP files MUST use `declare(strict_types=1);` as first statement after opening tag** (Note: `Batch.php` currently missing this - fix when editing).
+- **All PHP files MUST use `declare(strict_types=1);` as first statement after opening tag** (Note: `Batch.php` and `Location.php` currently missing this - fix when editing).
 - Use strict types and type hints in all methods, properties, and return statements.
 - Document all model properties, relationships, and custom query scopes with PHPDoc @property, @property-read, @method tags for PHPStan.
-- Implement error handling and logging with Laravel's built-in features.
+- Implement error handling and logging with Laravel's built-in features (use `Log::info()`, `Log::warning()`, `Log::error()`).
 
 ## Laravel Core Practices
 - Use Laravel's built-in features, helpers, and directory structure.
@@ -34,16 +34,18 @@
 
 ## Architecture & Patterns
 - **Domain Models**: All in `app/Models/` with UUIDs as primary keys (`HasUuids` trait), strict typing, and comprehensive PHPDoc.
-  - `Item`: has many `Batch`es, belongs to `Location`, stores tags as JSON array (`casts: ['tags' => 'array']`).
-  - `Batch`: belongs to `Item`, has `expires_at` datetime, auto-updates parent item quantity via model events (`booted()`).
-  - `Location`: self-referential (parent/children), has many `Item`s.
+  - `Item`: has many `Batch`es, belongs to `Location`, stores tags as JSON array (`casts: ['tags' => 'array']`). Includes custom scope `withBatchesExpiringWithinDays()` for expiration queries.
+  - `Batch`: belongs to `Item`, has `expires_at` datetime (cast to 'datetime'), auto-updates parent item quantity via model events (`booted()` with `saved()` and `deleted()` callbacks).
+  - `Location`: self-referential (parent/children via `parent_id`), has items. Includes `expiration_notify_days` for location-level defaults.
+  - `User`: Uses auto-incrementing integer ID (not UUID), includes `is_admin` boolean flag. Implements `FilamentUser` and `MustVerifyEmail` interfaces. Admin check via `isAdmin()` method.
   - Relationships: **Always cast return types** with `/** @var BelongsTo<Location, Item> */` before `return $this->belongsTo(...)`.
 - **Filament Resources**: Modular structure in `app/Filament/Resources/{ResourceName}/`:
-  - `ResourceName.php`: Routes model to Filament, defines navigation, title attribute.
+  - `{ResourceName}Resource.php`: Routes model to Filament, defines navigation (icons use `BackedEnum` or string), title attribute, pages, and relation managers.
   - `Schemas/{FormName}.php`: Static `configure(Schema $schema)` method returns form components. Example: `ItemForm::configure($schema)`.
-  - `Tables/{TableName}.php`: Static `configure(Table $table)` method returns table columns/actions.
+  - `Tables/{TableName}.php`: Static `configure(Table $table)` method returns table columns/actions. Can use `modifyQueryUsing()` for subqueries (e.g., earliest batch expiration).
   - `Pages/`: CRUD pages (e.g., `ManageItems`, `CreateItem`, `EditItem`).
   - `RelationManagers/`: Nested resource tables (e.g., `BatchesRelationManager` on Item edit page).
+  - `Actions/`: Custom actions (e.g., `ToggleRegistrationsAction` for user management).
 - **Testing**: Pest-based. Use `use function Pest\Livewire\livewire;` for Filament tests. Chain assertions. Database sorting uses `orderBy()`, NOT `sortBy()`. Factories for all test data.
 - **Strict Coding**: PHPStan level 10 enforced (`phpstan.neon`). Run `composer phpstan` before committing.
 
@@ -60,23 +62,32 @@
 - **Deployment**: `ddev composer deploy` (optimizes Laravel & Filament caches).
 
 ## Project-Specific Conventions
-- **UUIDs**: All models use UUIDs as primary keys (`HasUuids` trait).
+- **UUIDs**: All models use UUIDs as primary keys (`HasUuids` trait) EXCEPT `User` which uses auto-incrementing integer IDs.
 - **Eloquent Relationships**: Must type-hint with PHPDoc generics: `@return BelongsTo<Parent, Child>`. Cast before return statement.
 - **Filament Resource Structure**: Separate `Schemas/` and `Tables/` classes with static `configure()` methods for reusability and testing.
-- **Tags**: Stored as JSON array on `Item` model (not separate table). Use `TagsInput::make('tags')` with dynamic suggestions from existing tags.
-- **Quantity**: Item `quantity` is computed from batches, read-only in forms (hidden on create, read-only on edit).
+- **Tags**: Stored as JSON array on `Item` model (not separate table). Use `TagsInput::make('tags')` with dynamic suggestions from existing tags (query all items, flatten, unique, sort).
+- **Quantity**: Item `quantity` is computed from batches via `Batch` model events, read-only in forms (hidden on create, read-only on edit with helper text).
+- **Barcode Auto-Population**: When barcode is entered/scanned in `ItemForm`, it automatically fetches product data from OpenFoodFacts API and populates empty fields (name, description, tags from categories). Shows notifications for success/failure/warnings.
+- **Expiration Tracking**: Items have `expiration_notify_days` field. Tables can show `earliest_batch_expiration` via subquery in `modifyQueryUsing()`.
 - **Localization**: All strings use `__('key')` for i18n. Filament forms/tables use label methods: `->label(__('Name'))`.
-- **Model Events**: `Batch` model uses `booted()` to auto-update parent `Item` quantity on save/delete.
+- **Model Events**: `Batch` model uses `booted()` with `saved()` and `deleted()` events to auto-update parent `Item` quantity via `updateItemQuantity()` method.
+- **Admin System**: First registered user automatically becomes admin (via `SetFirstUserAsAdmin` listener). Admins can toggle registrations via `ToggleRegistrationsAction` (updates .env using `jackiedo/dotenv-editor`). Config stored in `config/freshguard.php`.
+- **User Policies**: `UserPolicy` ensures only admins can view/create users, users can view/edit themselves, admins can't delete themselves.
 
 ## Integration Points
 - **Filament**: All admin CRUD via Filament resources. Custom components: `marcelorodrigo/filament-barcode-scanner-field` for barcode input.
-- **Tailwind**: Vite plugin config in `vite.config.js` includes DDEV-specific CORS for HMR.
+- **OpenFoodFacts**: `openfoodfacts/openfoodfacts-laravel` package integrated in `ItemForm` for automatic product data lookup by barcode. Fetches name, description (generic_name), and tags (from categories_hierarchy). Only populates empty fields.
+- **Tailwind**: Vite plugin config in `vite.config.js` includes DDEV-specific CORS for HMR (`origin` config for `.ddev.site` domains).
 - **Livewire**: Filament uses Livewire; test with `livewire(PageClass::class)` (Pest helper).
-- **Barcode Scanner**: Custom Filament field `BarcodeInput::make('barcode')` for item forms.
+- **Barcode Scanner**: `BarcodeInput::make('barcode')` field with `live(onBlur: true)` and `afterStateUpdated()` callback triggers OpenFoodFacts lookup.
+- **Dotenv Editor**: `jackiedo/dotenv-editor` used in `ToggleRegistrationsAction` to persist config changes to `.env` file dynamically.
 
 ## Key Files & Directories
 - `app/Models/` — Domain models (strict types, UUIDs, relationships)
 - `app/Filament/Resources/` — Modular Filament resources (Resource, Schemas, Tables, Pages, RelationManagers)
+- `app/Listeners/` — Event listeners (e.g., `SetFirstUserAsAdmin` for auto-admin on first registration)
+- `app/Policies/` — Authorization policies (e.g., `UserPolicy` for admin/user permissions)
+- `config/freshguard.php` — Application-specific configuration (registrations_enabled)
 - `database/factories/` — Model factories for tests/seeders
 - `tests/Feature/Filament/Resources/` — Filament page/action tests
 - `tests/Unit/Models/` — Model unit tests
