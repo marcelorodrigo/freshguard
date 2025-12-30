@@ -40,9 +40,6 @@ COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 # Copy application code
 COPY . /var/www/html
 
-# Install PHP dependencies (production only)
-RUN composer install --optimize-autoloader --no-dev
-
 # Create Laravel required directories
 RUN mkdir -p storage/framework/cache/data \
     && mkdir -p storage/framework/sessions \
@@ -50,6 +47,13 @@ RUN mkdir -p storage/framework/cache/data \
     && mkdir -p storage/framework/views \
     && mkdir -p storage/logs \
     && mkdir -p bootstrap/cache
+
+# Install PHP dependencies (production only)
+RUN composer install --optimize-autoloader --no-dev
+
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
 # Expose port
 EXPOSE 80
