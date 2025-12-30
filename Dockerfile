@@ -15,8 +15,7 @@ RUN mkdir -p storage/framework/cache/data \
 # Install PHP dependencies (production only)
 RUN composer install --optimize-autoloader --no-dev
 
-RUN composer deploy \
-    && chown -R www-data:www-data /var/www/html \
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
 
