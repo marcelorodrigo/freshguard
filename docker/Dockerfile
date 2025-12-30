@@ -37,6 +37,17 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Install Composer
 COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 
+# Copy application code
+COPY . /var/www/html
+
+# Create Laravel required directories
+RUN mkdir -p storage/framework/cache/data \
+    && mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/testing \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/logs \
+    && mkdir -p bootstrap/cache
+
 # Expose port
 EXPOSE 80
 

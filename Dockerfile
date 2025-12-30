@@ -1,16 +1,5 @@
 # PHP application stage
-FROM marcelorodrigo/freshguard
-
-# Copy application code
-COPY . /var/www/html
-
-# Create Laravel required directories
-RUN mkdir -p storage/framework/cache/data \
-    && mkdir -p storage/framework/sessions \
-    && mkdir -p storage/framework/testing \
-    && mkdir -p storage/framework/views \
-    && mkdir -p storage/logs \
-    && mkdir -p bootstrap/cache
+FROM marcelorodrigo/freshguard:latest
 
 # Install PHP dependencies (production only)
 RUN composer install --optimize-autoloader --no-dev
