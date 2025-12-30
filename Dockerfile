@@ -5,7 +5,6 @@ FROM php:8.5.1-fpm-alpine3.23 AS base
 RUN apk add --no-cache \
     freetype-dev \
     gifsicle \
-    git \
     icu-dev \
     jpegoptim \
     libjpeg-turbo-dev \
@@ -15,14 +14,13 @@ RUN apk add --no-cache \
     nginx \
     nodejs \
     npm \
-    oniguruma-dev \
     optipng \
     pngquant \
     supervisor \
     unzip \
-    zip \
- && docker-php-ext-configure gd --with-freetype --with-jpeg \
- && docker-php-ext-install exif gd intl pdo_mysql zip
+    zip
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+RUN docker-php-ext-install exif gd intl pdo_mysql zip
 
 # Set working directory
 WORKDIR /var/www/html
