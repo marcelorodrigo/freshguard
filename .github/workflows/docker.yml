@@ -44,7 +44,7 @@ jobs:
           platforms: linux/amd64
           tags: marcelorodrigo/freshguard:latest
   build-arm64:
-    name: Build and Push AMD64
+    name: Build and Push ARM64
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
