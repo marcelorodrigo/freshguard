@@ -40,6 +40,9 @@ COPY --from=composer/composer:latest /usr/bin/composer /usr/bin/composer
 # Copy application code
 COPY . /var/www/html
 
+# Install PHP dependencies (production only)
+RUN composer install --optimize-autoloader --no-dev
+
 # Create Laravel required directories
 RUN mkdir -p storage/framework/cache/data \
     && mkdir -p storage/framework/sessions \
