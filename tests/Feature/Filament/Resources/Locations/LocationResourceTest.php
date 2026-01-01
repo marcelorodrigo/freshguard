@@ -26,7 +26,9 @@ test('can render page and see table records', function (): void {
 
 test('can search locations by name', function (): void {
     Location::query()->delete();
-    $locations = Location::factory()->count(5)->create();
+    $locations = collect(range(1, 5))->map(function ($i) {
+        return Location::factory()->create(['name' => 'Test Location '.$i]);
+    });
     $searchLocation = $locations->first();
 
     livewire(ManageLocations::class)
@@ -35,7 +37,8 @@ test('can search locations by name', function (): void {
         ->assertCanNotSeeTableRecords($locations->skip(1));
 });
 
-test('can create location', function (): void {
+test('can create location', function () {
+    /** @var \Illuminate\Foundation\Testing\TestCase $this */
     $newLocation = Location::factory()->make();
 
     livewire(ManageLocations::class)
@@ -47,7 +50,7 @@ test('can create location', function (): void {
         ])
         ->assertNotified();
 
-    $this->assertDatabaseHas(Location::class, [
+    $this->assertDatabaseHas('locations', [
         'name' => $newLocation->name,
         'description' => $newLocation->description,
         'expiration_notify_days' => $newLocation->expiration_notify_days,
@@ -89,7 +92,8 @@ test('can edit location', function (): void {
         ])
         ->assertNotified();
 
-    $this->assertDatabaseHas(Location::class, [
+    /** @var \Illuminate\Foundation\Testing\TestCase $this */
+    $this->assertDatabaseHas('locations', [
         'id' => $location->id,
         'name' => 'Updated Name',
         'description' => 'Updated Description',

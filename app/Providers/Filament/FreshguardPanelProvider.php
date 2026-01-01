@@ -42,9 +42,9 @@ class FreshguardPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-             ->widgets([
-                 ExpiringItemsWidget::class,
-                 \App\Filament\Widgets\ExpiredItemsWidget::class,
+            ->widgets([
+                ExpiringItemsWidget::class,
+                \App\Filament\Widgets\ExpiredItemsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
