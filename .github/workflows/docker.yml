@@ -1,11 +1,9 @@
 name: Docker Publish
 
 on:
-#  push:
-#    branches: [master]
-#    tags: ['v*']
+  push:
+    branches: [master]
   workflow_dispatch:
-
 concurrency:
   group: docker-publish-${{ github.ref }}
   cancel-in-progress: true
