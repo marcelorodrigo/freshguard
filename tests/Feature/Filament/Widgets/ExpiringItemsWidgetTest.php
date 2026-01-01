@@ -46,6 +46,43 @@ it('shows only items with at least one batch (and exp date), sorted by earliest 
         ->assertCanSeeTableRecords($expected, inOrder: true);
 });
 
+it('does not show items that have only expired batches', function () {
+    Carbon::setTestNow('2026-01-01');
+    $location = Location::factory()->create();
+
+    // Expired only
+    $itemExpired = Item::factory()->for($location)->create(['name' => 'Yogurt expired']);
+    Batch::factory()->for($itemExpired)->create([
+        'expires_at' => Carbon::now()->subDay(),
+    ]);
+
+    // One expired, one future (should show)
+    $itemMixed = Item::factory()->for($location)->create(['name' => 'Cheese mixed']);
+    Batch::factory()->for($itemMixed)->create([
+        'expires_at' => Carbon::now()->subDay(),
+    ]);
+    Batch::factory()->for($itemMixed)->create([
+        'expires_at' => Carbon::now()->addDay(),
+    ]);
+
+    // All future (should show)
+    $itemFuture = Item::factory()->for($location)->create(['name' => 'Milk fresh']);
+    Batch::factory()->for($itemFuture)->create([
+        'expires_at' => Carbon::now()->addDays(2),
+    ]);
+
+    // No batches (should not show)
+    $itemNoBatch = Item::factory()->for($location)->create(['name' => 'Eggs no batch']);
+
+    // Widget should only show Cheese mixed and Milk fresh
+    $expected = [$itemMixed, $itemFuture];
+
+    livewire(ExpiringItemsWidget::class)
+        ->assertSuccessful()
+        ->assertCanSeeTableRecords($expected)
+        ->assertCanNotSeeTableRecords([$itemExpired, $itemNoBatch]);
+});
+
 it('shows correct columns: name, location.name, earliest_batch_expiration, quantity', function () {
     $location = Location::factory()->create(['name' => 'TestLoc']);
     $item = Item::factory()->for($location)->create(['name' => 'Milk', 'quantity' => 10]);
