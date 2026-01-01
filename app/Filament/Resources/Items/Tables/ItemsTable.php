@@ -40,11 +40,6 @@ class ItemsTable
                     ->numeric()
                     ->sortable()
                     ->label(__('Quantity')),
-                TextColumn::make('expiration_notify_days')
-                    ->numeric()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->label(__('Expiration Alert (Days)')),
                 TextColumn::make('earliest_batch_expiration')
                     ->date()
                     ->sortable()

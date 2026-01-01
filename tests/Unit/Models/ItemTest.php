@@ -31,7 +31,6 @@ test('fillable attributes', function () {
         'description',
         'tags',
         'quantity',
-        'expiration_notify_days',
     ]);
 });
 
@@ -66,16 +65,6 @@ test('factory creates item with optional description', function () {
     // Create item without description
     $itemWithoutDescription = Item::factory()->withoutDescription()->create();
     expect($itemWithoutDescription->description)->toBeNull();
-});
-
-test('factory creates item with default expiration notify days', function () {
-    $item = Item::factory()->create();
-    expect($item->expiration_notify_days)->toBe(0);
-});
-
-test('factory creates item with custom expiration notify days', function () {
-    $item = Item::factory()->withExpirationNotifyDays(7)->create();
-    expect($item->expiration_notify_days)->toBe(7);
 });
 
 test('creates with minimal attributes', function () {
@@ -116,14 +105,6 @@ test('updates attributes', function () {
         'description' => 'Updated Description',
         'location_id' => $newLocation->id,
     ]);
-});
-
-test('updates expiration notify days', function () {
-    $item = Item::factory()->create();
-    expect($item->expiration_notify_days)->toBe(0);
-
-    $item->update(['expiration_notify_days' => 10]);
-    expect($item->expiration_notify_days)->toBe(10);
 });
 
 test('deletes item', function () {

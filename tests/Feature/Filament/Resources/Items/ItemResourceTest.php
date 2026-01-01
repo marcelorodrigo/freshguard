@@ -54,7 +54,6 @@ test('can create item with required fields', function (): void {
             'barcode' => $newItem->barcode,
             'description' => $newItem->description,
             'location_id' => $location->id,
-            'expiration_notify_days' => $newItem->expiration_notify_days,
             'tags' => ['Promotion', 'Healthy'],
         ])
         ->assertNotified();
@@ -63,7 +62,6 @@ test('can create item with required fields', function (): void {
         'name' => $newItem->name,
         'description' => $newItem->description,
         'location_id' => $location->id,
-        'expiration_notify_days' => $newItem->expiration_notify_days,
     ]);
 
     $item = Item::where('name', $newItem->name)->first();
@@ -80,7 +78,6 @@ test('validates item creation data', function (array $data, array $errors): void
             'barcode' => $newItem->barcode,
             'description' => $newItem->description,
             'location_id' => $location->id,
-            'expiration_notify_days' => $newItem->expiration_notify_days,
             ...$data,
         ])
         ->assertHasActionErrors($errors);
@@ -88,8 +85,6 @@ test('validates item creation data', function (array $data, array $errors): void
     'name is required' => [['name' => null], ['name' => 'required']],
     'name max 255 characters' => [['name' => Str::random(256)], ['name' => 'max']],
     'location_id is required' => [['location_id' => null], ['location_id' => 'required']],
-    'expiration_notify_days must be integer' => [['expiration_notify_days' => 'invalid'], ['expiration_notify_days' => 'integer']],
-    'expiration_notify_days min value 0' => [['expiration_notify_days' => -1], ['expiration_notify_days' => 'min']],
 ]);
 
 test('can edit item', function (): void {
@@ -99,7 +94,6 @@ test('can edit item', function (): void {
         'name' => 'Original Item',
         'barcode' => '1234567890123',
         'description' => 'Original Description',
-        'expiration_notify_days' => 10,
         'tags' => ['Promotion'],
     ]);
 
@@ -109,7 +103,6 @@ test('can edit item', function (): void {
             'barcode' => '1234567890123',
             'description' => 'Updated Description',
             'location_id' => $location->id,
-            'expiration_notify_days' => 20,
             'tags' => ['Important', 'Healthy'],
         ])
         ->assertNotified();
@@ -118,7 +111,6 @@ test('can edit item', function (): void {
         'id' => $item->id,
         'name' => 'Updated Item',
         'description' => 'Updated Description',
-        'expiration_notify_days' => 20,
     ]);
 
     $item->refresh();

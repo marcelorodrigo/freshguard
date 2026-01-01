@@ -23,7 +23,6 @@ class ItemFactory extends Factory
             'name' => fake()->words(3, true),
             'barcode' => fake()->ean13(),
             'description' => fake()->sentence(),
-            'expiration_notify_days' => 0,
         ];
     }
 
@@ -64,15 +63,5 @@ class ItemFactory extends Factory
                 'tags' => $tags,
             ];
         });
-    }
-
-    /**
-     * Set a specific expiration notification days value.
-     */
-    public function withExpirationNotifyDays(int $days): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'expiration_notify_days' => $days,
-        ]);
     }
 }

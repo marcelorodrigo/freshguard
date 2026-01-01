@@ -20,7 +20,6 @@ test('can load page with correct form data', function (): void {
         'name' => 'Test Item',
         'barcode' => '1234567890123',
         'description' => 'Test Description',
-        'expiration_notify_days' => 7,
         'tags' => ['Tag1', 'Tag2'],
     ]);
 
@@ -31,7 +30,6 @@ test('can load page with correct form data', function (): void {
             'barcode' => '1234567890123',
             'description' => 'Test Description',
             'location_id' => $location->id,
-            'expiration_notify_days' => 7,
             'tags' => ['Tag1', 'Tag2'],
         ]);
 });
@@ -53,7 +51,6 @@ test('can update item', function (): void {
             'barcode' => '1234567890123',
             'description' => 'Updated Description',
             'location_id' => $newLocation->id,
-            'expiration_notify_days' => 14,
         ])
         ->call('save')
         ->assertNotified();
@@ -63,7 +60,6 @@ test('can update item', function (): void {
         'name' => 'Updated Name',
         'description' => 'Updated Description',
         'location_id' => $newLocation->id,
-        'expiration_notify_days' => 14,
     ]);
 });
 

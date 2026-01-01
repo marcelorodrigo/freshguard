@@ -115,12 +115,6 @@ class ItemForm
                     ->helperText(__('The quantity is computed from all batches'))
                     ->label(__('Quantity'))
                     ->hidden(static fn ($record) => is_null($record)),
-                TextInput::make('expiration_notify_days')
-                    ->integer()
-                    ->suffix(__('days'))
-                    ->minValue(0)
-                    ->default(0)
-                    ->label(__('Notify before expiration')),
                 TagsInput::make('tags')
                     ->label(__('Tags'))
                     ->suggestions(function (): array {
