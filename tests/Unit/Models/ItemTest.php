@@ -31,7 +31,6 @@ test('fillable attributes', function () {
         'description',
         'tags',
         'quantity',
-        'expiration_notify_days',
     ]);
 });
 
@@ -66,16 +65,6 @@ test('factory creates item with optional description', function () {
     // Create item without description
     $itemWithoutDescription = Item::factory()->withoutDescription()->create();
     expect($itemWithoutDescription->description)->toBeNull();
-});
-
-test('factory creates item with default expiration notify days', function () {
-    $item = Item::factory()->create();
-    expect($item->expiration_notify_days)->toBe(0);
-});
-
-test('factory creates item with custom expiration notify days', function () {
-    $item = Item::factory()->withExpirationNotifyDays(7)->create();
-    expect($item->expiration_notify_days)->toBe(7);
 });
 
 test('creates with minimal attributes', function () {
@@ -116,28 +105,6 @@ test('updates attributes', function () {
         'description' => 'Updated Description',
         'location_id' => $newLocation->id,
     ]);
-});
-
-test('updates expiration notify days', function () {
-    $item = Item::factory()->create();
-    expect($item->expiration_notify_days)->toBe(0);
-
-    $item->update(['expiration_notify_days' => 10]);
-    expect($item->expiration_notify_days)->toBe(10);
-});
-
-/**
- * @covers \App\Models\Item::getEffectiveExpirationNotifyDaysAttribute
- * @covers \App\Models\Location::expiration_notify_days
- */
-test('effective expiration notify days uses item value if set, otherwise falls back to location', function () {
-    $location = \App\Models\Location::factory()->create(['expiration_notify_days' => 99]);
-    // Case 1: Item value > 0 takes priority
-    $itemWithCustom = \App\Models\Item::factory()->for($location)->create(['expiration_notify_days' => 7]);
-    expect($itemWithCustom->effective_expiration_notify_days)->toBe(7);
-    // Case 2: Item value is 0, uses location value
-    $itemWithDefault = \App\Models\Item::factory()->for($location)->create(['expiration_notify_days' => 0]);
-    expect($itemWithDefault->effective_expiration_notify_days)->toBe(99);
 });
 
 test('deletes item', function () {
