@@ -3,6 +3,21 @@ name: Docker Publish
 on:
   push:
     branches: [master]
+    paths:
+      - 'docker/**'
+      - '.dockerignore'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.env.example'
+      - 'app/**'
+      - 'bootstrap/**'
+      - 'config/**'
+      - 'public/**'
+      - 'resources/**'
+      - 'routes/**'
+      - '.github/workflows/docker.yml'
   workflow_dispatch:
 concurrency:
   group: docker-publish-${{ github.ref }}
