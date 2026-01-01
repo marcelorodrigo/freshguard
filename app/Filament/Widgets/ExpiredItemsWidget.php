@@ -12,13 +12,13 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 
-class ExpiringItemsWidget extends BaseWidget implements HasTable
+class ExpiredItemsWidget extends BaseWidget implements HasTable
 {
     use InteractsWithTable;
 
     public function getHeading(): string
     {
-        return __('Next Expiring Items');
+        return __('Expired Items');
     }
 
     public function table(Table $table): Table
@@ -27,7 +27,7 @@ class ExpiringItemsWidget extends BaseWidget implements HasTable
             ->query($this->getQuery())
             ->defaultPaginationPageOption(10)
             ->paginated([10])
-            ->defaultSort('earliest_batch_expiration', 'asc')
+            ->defaultSort('earliest_batch_expiration', 'desc')
             ->heading($this->getHeading())
             ->emptyStateHeading($this->getEmptyStateHeading())
             ->emptyStateDescription($this->getEmptyStateDescription())
@@ -42,7 +42,7 @@ class ExpiringItemsWidget extends BaseWidget implements HasTable
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('earliest_batch_expiration')
-                    ->label(__('Expiring In'))
+                    ->label(__('Expired On'))
                     ->date()
                     ->sortable(),
                 TextColumn::make('quantity')
@@ -53,7 +53,7 @@ class ExpiringItemsWidget extends BaseWidget implements HasTable
     }
 
     /**
-     * Returns query for the next 10 items with the soonest (non-null) batch expirations.
+     * Query for items whose earliest batch expiration is in the past.
      *
      * @return Builder<Item>
      */
@@ -71,22 +71,40 @@ class ExpiringItemsWidget extends BaseWidget implements HasTable
                     ->whereNotNull('expires_at')
                     ->orderBy('expires_at')
                     ->limit(1),
-            ]);
+            ])
+            ->whereRaw('(
+                select min(batches.expires_at)
+                from batches
+                where batches.item_id = items.id
+                    and batches.expires_at is not null
+            ) < ?', [now()]);
+    }
 
+    /**
+     * Add custom styling to distinguish expired items widget visually.
+     */
+    /**
+     * @return array<string, string>
+     */
+    public function getExtraAttributes(): array
+    {
+        return [
+            'class' => 'bg-red-50 border-l-4 border-red-300',
+        ];
     }
 
     public function getEmptyStateIcon(): ?string
     {
-        return 'heroicon-o-sparkles';
+        return 'heroicon-o-archive-box-x-mark';
     }
 
     public function getEmptyStateHeading(): ?string
     {
-        return __('Next Expiring Items');
+        return __('Expired Items');
     }
 
     public function getEmptyStateDescription(): ?string
     {
-        return __('All tracked items have sufficient shelf life.');
+        return __('Great job! No tracked products have expired.');
     }
 }
