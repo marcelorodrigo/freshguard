@@ -43,7 +43,7 @@ it('shows only items with at least one batch (and exp date), sorted by earliest 
 
     livewire(ExpiringItemsWidget::class)
         ->assertSuccessful()
-         ->assertCanSeeTableRecords($expected, inOrder: true);
+        ->assertCanSeeTableRecords($expected, inOrder: true);
 });
 
 it('shows correct columns: name, location.name, earliest_batch_expiration, quantity', function () {

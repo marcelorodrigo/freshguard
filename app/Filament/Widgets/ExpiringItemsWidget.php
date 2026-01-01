@@ -27,6 +27,7 @@ class ExpiringItemsWidget extends BaseWidget implements HasTable
             ->query($this->getQuery())
             ->defaultPaginationPageOption(10)
             ->paginated([10])
+            ->defaultSort('earliest_batch_expiration', 'asc')
             ->columns([
                 TextColumn::make('name')
                     ->label(__('Item'))
@@ -66,8 +67,7 @@ class ExpiringItemsWidget extends BaseWidget implements HasTable
                     ->whereNotNull('expires_at')
                     ->orderBy('expires_at')
                     ->limit(1),
-            ])
-            ->orderBy('earliest_batch_expiration', 'asc')
-            ->limit(10);
+            ]);
+
     }
 }
