@@ -37,7 +37,8 @@ test('can search locations by name', function (): void {
         ->assertCanNotSeeTableRecords($locations->skip(1));
 });
 
-test('can create location', function (): void {
+test('can create location', function () {
+    /** @var \Illuminate\Foundation\Testing\TestCase $this */
     $newLocation = Location::factory()->make();
 
     livewire(ManageLocations::class)
@@ -49,12 +50,12 @@ test('can create location', function (): void {
         ])
         ->assertNotified();
 
-    expect(Location::where([
+    $this->assertDatabaseHas('locations', [
         'name' => $newLocation->name,
         'description' => $newLocation->description,
         'expiration_notify_days' => $newLocation->expiration_notify_days,
         'parent_id' => null,
-    ])->exists())->toBeTrue();
+    ]);
 });
 
 test('validates location creation data', function (array $data, array $errors): void {
