@@ -26,7 +26,9 @@ test('can render page and see table records', function (): void {
 
 test('can search locations by name', function (): void {
     Location::query()->delete();
-    $locations = Location::factory()->count(5)->create();
+    $locations = collect(range(1,5))->map(function ($i) {
+        return Location::factory()->create(['name' => 'Test Location ' . $i]);
+    });
     $searchLocation = $locations->first();
 
     livewire(ManageLocations::class)
@@ -47,12 +49,12 @@ test('can create location', function (): void {
         ])
         ->assertNotified();
 
-    $this->assertDatabaseHas(Location::class, [
+    expect(Location::where([
         'name' => $newLocation->name,
         'description' => $newLocation->description,
         'expiration_notify_days' => $newLocation->expiration_notify_days,
         'parent_id' => null,
-    ]);
+    ])->exists())->toBeTrue();
 });
 
 test('validates location creation data', function (array $data, array $errors): void {
@@ -89,12 +91,12 @@ test('can edit location', function (): void {
         ])
         ->assertNotified();
 
-    $this->assertDatabaseHas(Location::class, [
+    expect(Location::where([
         'id' => $location->id,
         'name' => 'Updated Name',
         'description' => 'Updated Description',
         'expiration_notify_days' => 20,
-    ]);
+    ])->exists())->toBeTrue();
 });
 
 test('can delete location', function (): void {
