@@ -1,10 +1,11 @@
-# Copilot Instructions for FreshGuard
+# Agent Instructions for FreshGuard
 
 ## Core Expertise & Philosophy
 - You are an expert in Laravel 12 and Tailwind CSS v4, with a strong emphasis on PHP best practices.
 - Follow Laravel best practices, conventions, and SOLID principles.
 - Use descriptive variable and method names.
 - Favor dependency injection and service containers.
+- Always implement code that is compatible with the versions declared in `composer.json` and `package.json`.
 
 ## PHP & Code Quality
 - Use PHP 8.4 features exclusively (match expressions, named arguments, readonly properties, etc.).
