@@ -92,12 +92,13 @@ test('can edit location', function (): void {
         ])
         ->assertNotified();
 
-    expect(Location::where([
+    /** @var \Illuminate\Foundation\Testing\TestCase $this */
+    $this->assertDatabaseHas('locations', [
         'id' => $location->id,
         'name' => 'Updated Name',
         'description' => 'Updated Description',
         'expiration_notify_days' => 20,
-    ])->exists())->toBeTrue();
+    ]);
 });
 
 test('can delete location', function (): void {
