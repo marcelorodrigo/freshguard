@@ -62,13 +62,14 @@ class ExpiringItemsWidget extends BaseWidget implements HasTable
         return Item::query()
             ->with(['location'])
             ->whereHas('batches', function ($q) {
-                $q->whereNotNull('expires_at');
+                $q->whereNotNull('expires_at')->where('expires_at', '>=', now());
             })
             ->addSelect([
                 'earliest_batch_expiration' => \App\Models\Batch::query()
                     ->select('expires_at')
                     ->whereColumn('item_id', 'items.id')
                     ->whereNotNull('expires_at')
+                    ->where('expires_at', '>=', now())
                     ->orderBy('expires_at')
                     ->limit(1),
             ]);
