@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Location $location
  * @property-read Collection<int, Batch> $batches
+ * @property-read int $effective_expiration_notify_days Effective notify days, item or fallback to location
  *
  * @method static Builder<static> withBatchesExpiringWithinDays(int $days)
  *
@@ -100,5 +101,22 @@ class Item extends Model
             $query->where('expires_at', '>=', Carbon::now())
                 ->where('expires_at', '<=', Carbon::now()->addDays($days));
         });
+    }
+
+    /**
+     * Get the effective expiration notify days for this item.
+     *
+     * Returns the item's own expiration_notify_days value if set and >0,
+     * otherwise falls back to the associated location's expiration_notify_days value.
+     *
+     * @return int Effective notify-before-expiration days
+     */
+    public function getEffectiveExpirationNotifyDaysAttribute(): int
+    {
+        if ($this->expiration_notify_days > 0) {
+            return $this->expiration_notify_days;
+        }
+
+        return $this->location->expiration_notify_days;
     }
 }

@@ -126,6 +126,20 @@ test('updates expiration notify days', function () {
     expect($item->expiration_notify_days)->toBe(10);
 });
 
+/**
+ * @covers \App\Models\Item::getEffectiveExpirationNotifyDaysAttribute
+ * @covers \App\Models\Location::expiration_notify_days
+ */
+test('effective expiration notify days uses item value if set, otherwise falls back to location', function () {
+    $location = \App\Models\Location::factory()->create(['expiration_notify_days' => 99]);
+    // Case 1: Item value > 0 takes priority
+    $itemWithCustom = \App\Models\Item::factory()->for($location)->create(['expiration_notify_days' => 7]);
+    expect($itemWithCustom->effective_expiration_notify_days)->toBe(7);
+    // Case 2: Item value is 0, uses location value
+    $itemWithDefault = \App\Models\Item::factory()->for($location)->create(['expiration_notify_days' => 0]);
+    expect($itemWithDefault->effective_expiration_notify_days)->toBe(99);
+});
+
 test('deletes item', function () {
     $item = Item::factory()->create();
     $itemId = $item->id;

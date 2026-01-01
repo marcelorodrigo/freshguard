@@ -1,4 +1,3 @@
-
 # Copilot Instructions for FreshGuard
 
 ## Core Expertise & Philosophy
@@ -14,6 +13,7 @@
 - Use strict types and type hints in all methods, properties, and return statements.
 - Document all model properties, relationships, and custom query scopes with PHPDoc @property, @property-read, @method tags for PHPStan.
 - Implement error handling and logging with Laravel's built-in features (use `Log::info()`, `Log::warning()`, `Log::error()`).
+- **Never use `@phpstan-ignore-next-line`. Always fix the real PHPStan-reported errors instead.**
 
 ## Laravel Core Practices
 - Use Laravel's built-in features, helpers, and directory structure.
