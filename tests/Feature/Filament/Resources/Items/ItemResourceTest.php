@@ -44,6 +44,16 @@ test('can sort items by name', function (): void {
         ->assertCanSeeTableRecords($items->sortByDesc('name'), inOrder: true);
 });
 
+test('can search items by barcode', function (): void {
+    $items = Item::factory()->count(2)->create();
+    $searchItem = $items->first();
+
+    livewire(ManageItems::class)
+        ->searchTable($searchItem->barcode)
+        ->assertCanSeeTableRecords([$searchItem])
+        ->assertCanNotSeeTableRecords($items->skip(1));
+});
+
 test('can create item with required fields', function (): void {
     $location = Location::factory()->create();
     $newItem = Item::factory()->make();
