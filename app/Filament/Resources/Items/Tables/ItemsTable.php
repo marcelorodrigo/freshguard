@@ -36,6 +36,10 @@ class ItemsTable
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Tags')),
+                TextColumn::make('barcode')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->label(__('Barcode')),
                 TextColumn::make('quantity')
                     ->numeric()
                     ->sortable()
