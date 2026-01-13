@@ -3,88 +3,67 @@ name: Docker Publish
 on:
   push:
     branches: [master]
-    paths:
-      - 'docker/**'
-      - '.dockerignore'
-      - 'composer.json'
-      - 'composer.lock'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.env.example'
-      - 'app/**'
-      - 'bootstrap/**'
-      - 'config/**'
-      - 'public/**'
-      - 'resources/**'
-      - 'routes/**'
-      - '.github/workflows/docker.yml'
+  pull_request:
+    branches: [master]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag'
+        required: true
+        default: 'manual'
+        type: string
+
 concurrency:
   group: docker-publish-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-amd64:
-    name: Build and Push AMD64
+  build:
+    name: Build and Push
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
       packages: write
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          fetch-depth: 1
           fetch-tags: false
           show-progress: false
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
+
+      - name: Determine Docker tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfile
+          file: ./Dockerfile
           push: true
-          platforms: linux/amd64
-          tags: marcelorodrigo/freshguard:latest
-  build-arm64:
-    name: Build and Push ARM64
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-tags: false
-          show-progress: false
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          push: true
-          platforms: linux/arm64
-          tags: marcelorodrigo/freshguard:latest
+          platforms: linux/amd64,linux/arm64
+          tags: marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
