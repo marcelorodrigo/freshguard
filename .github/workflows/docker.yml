@@ -3,88 +3,136 @@ name: Docker Publish
 on:
   push:
     branches: [master]
-    paths:
-      - 'docker/**'
-      - '.dockerignore'
-      - 'composer.json'
-      - 'composer.lock'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.env.example'
-      - 'app/**'
-      - 'bootstrap/**'
-      - 'config/**'
-      - 'public/**'
-      - 'resources/**'
-      - 'routes/**'
-      - '.github/workflows/docker.yml'
+  pull_request:
+    branches: [master]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag'
+        required: true
+        default: 'manual'
+        type: string
+
 concurrency:
   group: docker-publish-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-amd64:
-    name: Build and Push AMD64
+  build:
+    name: Build and Push
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
       packages: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
+          fetch-depth: 1
           fetch-tags: false
           show-progress: false
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
+
+      - name: Determine Docker tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            printf 'tag=pr-%s\n' "$PR_NUMBER" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            printf 'tag=%s\n' "$INPUT_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create PR comment (build started)
+        if: github.event_name == 'pull_request'
+        id: create-comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const comment = `🚀 Docker build started for tag: \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+            
+            Building for platforms: linux/amd64, linux/arm64...`;
+            
+            const { data: created } = await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+            core.setOutput('comment_id', created.id);
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfile
+          file: ./Dockerfile
           push: true
-          platforms: linux/amd64
-          tags: marcelorodrigo/freshguard:latest
-  build-arm64:
-    name: Build and Push ARM64
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+          platforms: linux/amd64,linux/arm64
+          tags: marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update PR comment (build completed)
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
         with:
-          fetch-tags: false
-          show-progress: false
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./docker/Dockerfile
-          push: true
-          platforms: linux/arm64
-          tags: marcelorodrigo/freshguard:latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const commentId = parseInt('${{ steps.create-comment.outputs.comment_id }}');
+            const buildSuccess = '${{ job.status }}' === 'success';
+            
+            let updateComment;
+            if (buildSuccess) {
+              updateComment = `✅ Docker image published!
+            
+              **Image:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+              **Platforms:** linux/amd64, linux/arm64
+              **Status:** Ready to use`;
+            } else {
+              updateComment = `❌ Docker build failed!
+            
+              **Tag:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+              **Status:** Build or push failed
+              
+              Check the [workflow logs](${context.payload.pull_request.html_url}/checks) for details.`;
+            }
+            
+            if (commentId) {
+              await github.rest.issues.updateComment({
+                comment_id: commentId,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: updateComment
+              });
+            } else {
+              // Fallback: create a new comment if comment ID is not available
+              // This handles edge cases where the create-comment step didn't run
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: updateComment
+              });
+            }
+

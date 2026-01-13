@@ -1,47 +1,91 @@
+# =============================================================================
 # Git & Version Control
+# =============================================================================
 .git/
 .gitattributes
+.gitignore
 
+# =============================================================================
 # IDE & Editor
+# =============================================================================
 .idea/
+.vscode/
 .editorconfig
+*.swp
+*.swo
 
-# Environment & Config
+# =============================================================================
+# Environment & Config (keep .env.example for reference)
+# =============================================================================
 .env
 .env.*
+!.env.example
 
-# Node.js & Build Tools
-/node_modules/
-/public/build/
-/public/hot/
+# =============================================================================
+# Development Tools
+# =============================================================================
+.ddev/
+database/database.sqlite
+
+
+# =============================================================================
+# Node.js & Build Tools (built in Docker multi-stage)
+# =============================================================================
+node_modules/
+public/build/
+public/hot/
 npm*.log
+yarn*.log
+pnpm-lock.yaml
 
-# Filament Build Assets (rebuilds in container)
-/public/fonts/filament/
-/public/css/filament/
-/public/js/filament/
-
-# OS & System
-.DS_Store
-Thumbs.db
-.phpunit.result.cache
-
-# Testing & Development
-/tests/
+# =============================================================================
+# Testing & Quality Tools
+# =============================================================================
+tests/
 phpunit.xml
-/phpstan.neon
-/.ddev/
+.phpunit.cache/
+.phpunit.result.cache
+phpstan.neon
+coverage/
+storage/logs/clover.xml
 
+# =============================================================================
 # CI/CD & Documentation
+# =============================================================================
 .github/
 README.md
+CHANGELOG.md
+AGENTS.md
 sonar-project.properties
 
-# Storage Files (should use volumes in Docker)
-/storage/app/
-/storage/framework/cache/
-/storage/framework/sessions/
-/storage/framework/views/
+# =============================================================================
+# OS & System Files
+# =============================================================================
+.DS_Store
+Thumbs.db
+*.log
 
-# Composer Files
-/vendor/
+# =============================================================================
+# Storage (use volumes in production, exclude generated content)
+# =============================================================================
+storage/app/public/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+
+# Keep .gitkeep files
+!storage/app/.gitkeep
+!storage/app/public/.gitkeep
+!storage/framework/.gitkeep
+!storage/framework/cache/.gitkeep
+!storage/framework/sessions/.gitkeep
+!storage/framework/views/.gitkeep
+!storage/logs/.gitkeep
+!bootstrap/cache/.gitkeep
+
+# =============================================================================
+# Composer (installed in Docker build)
+# =============================================================================
+vendor/
