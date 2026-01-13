@@ -36,11 +36,15 @@ jobs:
 
       - name: Determine Docker tag
         id: tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            printf 'tag=pr-%s\n' "$PR_NUMBER" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            printf 'tag=%s\n' "$INPUT_TAG" >> $GITHUB_OUTPUT
           else
             echo "tag=latest" >> $GITHUB_OUTPUT
           fi
