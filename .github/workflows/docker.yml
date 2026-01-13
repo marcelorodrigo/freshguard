@@ -51,6 +51,7 @@ jobs:
 
       - name: Create PR comment (build started)
         if: github.event_name == 'pull_request'
+        id: create-comment
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -66,7 +67,7 @@ jobs:
               body: comment
             });
             
-            core.saveState('comment_id', created.id);
+            core.setOutput('comment_id', created.id);
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -93,40 +94,29 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Update PR comment (build completed)
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const stateFile = process.env.RUNNER_TEMP + '/comment-id.txt';
+            const commentId = parseInt('${{ steps.create-comment.outputs.comment_id }}');
+            const buildSuccess = '${{ job.status }}' === 'success';
             
-            // Try to get comment ID from previous step
-            let commentId = null;
-            try {
-              commentId = parseInt(fs.readFileSync(stateFile, 'utf8'));
-            } catch (e) {
-              // If we can't find it, try to find existing comment
-              const comments = await github.rest.issues.listComments({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo
-              });
+            let updateComment;
+            if (buildSuccess) {
+              updateComment = `✅ Docker image published!
+            
+              **Image:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+              **Platforms:** linux/amd64, linux/arm64
+              **Status:** Ready to use`;
+            } else {
+              updateComment = `❌ Docker build failed!
+            
+              **Tag:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+              **Status:** Build or push failed
               
-              const botComment = comments.data.find(c => 
-                c.body.includes('Docker build') && c.user.type === 'Bot'
-              );
-              
-              if (botComment) {
-                commentId = botComment.id;
-              }
+              Check the [workflow logs](${context.payload.pull_request.html_url}/checks) for details.`;
             }
-            
-            const updateComment = `✅ Docker image published!
-            
-            **Image:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
-            **Platforms:** linux/amd64, linux/arm64
-            **Status:** Ready to use`;
             
             if (commentId) {
               await github.rest.issues.updateComment({
@@ -136,7 +126,8 @@ jobs:
                 body: updateComment
               });
             } else {
-              // Fallback: create a new comment if we couldn't find the original
+              // Fallback: create a new comment if comment ID is not available
+              // This handles edge cases where the create-comment step didn't run
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
