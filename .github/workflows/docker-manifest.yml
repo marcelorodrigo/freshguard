@@ -1,0 +1,88 @@
+name: Docker Manifest (Multi-Arch)
+
+# This workflow creates multi-arch manifest after both AMD64 and ARM64 images are published.
+# It runs on a schedule to combine the -amd64 and -arm64 tags into unified 'latest' tag.
+on:
+  schedule:
+    # Run every hour on master branch to ensure latest manifest is always up-to-date
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag to manifest (default: latest)'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  manifest:
+    name: Create Multi-Arch Manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [[ -n "$INPUT_TAG" ]]; then
+            printf 'tag=%s\n' "$INPUT_TAG" >> $GITHUB_OUTPUT
+          else
+            printf 'tag=latest\n' >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create and push multi-arch manifest
+        run: |
+          TAG=${{ steps.tag.outputs.tag }}
+          IMAGE=marcelorodrigo/freshguard
+          
+          # Pull both architecture images to ensure they exist
+          docker pull ${IMAGE}:${TAG}-amd64 || exit 1
+          docker pull ${IMAGE}:${TAG}-arm64 || exit 1
+          
+          # Create manifest combining both architectures
+          docker manifest create ${IMAGE}:${TAG} \
+            --amend ${IMAGE}:${TAG}-amd64 \
+            --amend ${IMAGE}:${TAG}-arm64
+          
+          # Annotate architectures
+          docker manifest annotate ${IMAGE}:${TAG} \
+            ${IMAGE}:${TAG}-amd64 --os linux --arch amd64
+          docker manifest annotate ${IMAGE}:${TAG} \
+            ${IMAGE}:${TAG}-arm64 --os linux --arch arm64
+          
+          # Push manifest to registry
+          docker manifest push ${IMAGE}:${TAG}
+          
+          echo "✅ Multi-arch manifest created for ${IMAGE}:${TAG}"
+          echo "   - AMD64: ${IMAGE}:${TAG}-amd64"
+          echo "   - ARM64: ${IMAGE}:${TAG}-arm64"
+
+      - name: Publish manifest summary
+        if: success()
+        run: |
+          TAG=${{ steps.tag.outputs.tag }}
+          echo "### Docker Manifest Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** \`marcelorodrigo/freshguard:${TAG}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Architectures:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`marcelorodrigo/freshguard:${TAG}-amd64\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`marcelorodrigo/freshguard:${TAG}-arm64\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Multi-arch manifest created" >> $GITHUB_STEP_SUMMARY
