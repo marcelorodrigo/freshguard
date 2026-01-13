@@ -17,9 +17,8 @@ jobs:
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          image_name: freshguard
-          protected_tags: 'latest'
-          tag_pattern: 'pr-*'
-          retention_days: 30
+          organization: marcelorodrigo
+          repositories: freshguard
+          pr-retention_days: 30
           dry_run: true
-        continue-on-error: true
+          verbose: true
