@@ -1,0 +1,49 @@
+name: Scheduled Docker Cleanup
+
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    name: Clean Old Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Cleanup old PR tags (retention 30 days)
+        uses: lostlink/docker-cleanup@v1
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image_name: freshguard
+          tag_pattern: 'pr-*'
+          retention_days: 30
+          dry_run: false
+        continue-on-error: true
+
+      - name: Cleanup old commit tags (retention 14 days)
+        uses: lostlink/docker-cleanup@v1
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image_name: freshguard
+          tag_pattern: 'sha-*'
+          retention_days: 14
+          dry_run: false
+        continue-on-error: true
+
+      - name: Log cleanup summary
+        if: always()
+        run: |
+          echo "### Scheduled Docker Cleanup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered:** Scheduled weekly cleanup" >> $GITHUB_STEP_SUMMARY
+          echo "**PR Tags:** Cleaned tags older than 30 days (pattern: \`pr-*\`)" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit Tags:** Cleaned tags older than 14 days (pattern: \`sha-*\`)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Protected Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\` (always kept)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`main\` (always kept)" >> $GITHUB_STEP_SUMMARY
+          echo "- Semantic version tags (always kept)" >> $GITHUB_STEP_SUMMARY

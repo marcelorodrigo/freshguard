@@ -3,8 +3,12 @@ name: Docker Publish
 on:
   push:
     branches: [master]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [master]
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -40,9 +44,21 @@ jobs:
           INPUT_TAG: ${{ github.event.inputs.tag }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          REF: ${{ github.ref }}
+          RELEASE_NAME: ${{ github.event.release.name }}
         run: |
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
             printf 'tag=pr-%s\n' "$PR_NUMBER" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_NAME" == "push" && "$REF" =~ ^refs/tags/v[0-9] ]]; then
+            # Extract version from tag (e.g., refs/tags/v1.2.3 -> v1.2.3)
+            VERSION="${REF#refs/tags/}"
+            printf 'tag=%s\n' "$VERSION" >> $GITHUB_OUTPUT
+            printf 'is_release=true\n' >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_NAME" == "release" ]]; then
+            # Use release tag name (e.g., v1.2.3)
+            VERSION="${RELEASE_NAME#v}"
+            printf 'tag=v%s\n' "$VERSION" >> $GITHUB_OUTPUT
+            printf 'is_release=true\n' >> $GITHUB_OUTPUT
           elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             printf 'tag=%s\n' "$INPUT_TAG" >> $GITHUB_OUTPUT
           else
@@ -81,6 +97,19 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Generate image tags
+        id: image-tags
+        env:
+          IS_RELEASE: ${{ steps.tag.outputs.is_release }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            # For releases, tag as both version and latest
+            printf 'tags=marcelorodrigo/freshguard:%s,marcelorodrigo/freshguard:latest\n' "$TAG" >> $GITHUB_OUTPUT
+          else
+            printf 'tags=marcelorodrigo/freshguard:%s\n' "$TAG" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push
         id: build
         uses: docker/build-push-action@v6
@@ -89,7 +118,7 @@ jobs:
           file: ./Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}
+          tags: ${{ steps.image-tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -136,3 +165,15 @@ jobs:
               });
             }
 
+      - name: Publish release summary
+        if: steps.tag.outputs.is_release == 'true' && success()
+        run: |
+          echo "### Docker Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Images Pushed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\` (linux/amd64, linux/arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`marcelorodrigo/freshguard:latest\` (linux/amd64, linux/arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
