@@ -1,0 +1,31 @@
+name: Docker Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    name: Delete PR Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Delete Docker image tag from Docker Hub
+        uses: lostlink/docker-cleanup@v1.0.1
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          image_name: freshguard
+          tag_pattern: pr-${{ github.event.pull_request.number }}
+          dry_run: false
+        continue-on-error: true
+
+      - name: Log cleanup summary
+        if: always()
+        run: |
+          echo "### Docker Cleanup Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR Number:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tag:** \`marcelorodrigo/freshguard:pr-${{ github.event.pull_request.number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Cleanup completed (or already deleted)" >> $GITHUB_STEP_SUMMARY
