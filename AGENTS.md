@@ -10,12 +10,25 @@
 ## PHP & Code Quality
 - Use PHP 8.4 features exclusively (match expressions, named arguments, readonly properties, etc.).
 - Follow PSR-12 coding standards and strict typing that meet PHPStan/Larastan level 10.
-- **All PHP files MUST use `declare(strict_types=1);` as first statement after opening tag** (Note: `Batch.php` and `Location.php` currently missing this - fix when editing).
+- **All PHP files MUST use `declare(strict_types=1);` as first statement after opening tag**.
+  - **Known issue**: `Batch.php` and `Location.php` currently missing this - fix when editing these files.
 - Use strict types and type hints in all methods, properties, and return statements.
-- Document all model properties, relationships, and custom query scopes with PHPDoc @property, @property-read, @method tags for PHPStan.
+- Document all model properties, relationships, and custom query scopes with PHPDoc:
+  - Use `@property`, `@property-read`, `@method`, `@mixin` tags for PHPStan level 10 compatibility
+  - For relationships, cast return types before return: `/** @var BelongsTo<Parent, Child> */ return $this->belongsTo(...);`
+  - Example for Item model:
+    ```php
+    /**
+     * @property uuid $id
+     * @property string $name
+     * @property-read Illuminate\Database\Eloquent\Collection<Batch> $batches
+     * @method static Builder withBatchesExpiringWithinDays(int $days)
+     */
+    class Item extends Model
+    ```
 - Implement error handling and logging with Laravel's built-in features (use `Log::info()`, `Log::warning()`, `Log::error()`).
 - **Never use `@phpstan-ignore-next-line`. Always fix the real PHPStan-reported errors instead.**
-- **After every implementation or change, always run PHPStan, tests, and Pint to ensure code quality and correctness.**
+- **After every implementation or change, always run**: `ddev composer pint` → `ddev composer phpstan` → `ddev composer test`
 
 ## Laravel Core Practices
 - Use Laravel's built-in features, helpers, and directory structure.
@@ -35,27 +48,53 @@
 **FreshGuard** is a home inventory management system for tracking food items, batches, and expiration dates. Built with Laravel 12, Filament v4 admin UI, and Tailwind CSS v4. Domain models: `Item`, `Batch`, `Location`, `User`. Uses DDEV for local development (SQLite for dev, configurable for prod).
 
 ## Architecture & Patterns
-- **Domain Models**: All in `app/Models/` with UUIDs as primary keys (`HasUuids` trait), strict typing, and comprehensive PHPDoc.
-  - `Item`: has many `Batch`es, belongs to `Location`, stores tags as JSON array (`casts: ['tags' => 'array']`). Includes custom scope `withBatchesExpiringWithinDays()` for expiration queries.
-  - `Batch`: belongs to `Item`, has `expires_at` datetime (cast to 'datetime'), auto-updates parent item quantity via model events (`booted()` with `saved()` and `deleted()` callbacks).
-  - `Location`: self-referential (parent/children via `parent_id`), has items. Includes `expiration_notify_days` for location-level defaults.
-  - `User`: Uses auto-incrementing integer ID (not UUID), includes `is_admin` boolean flag. Implements `FilamentUser` and `MustVerifyEmail` interfaces. Admin check via `isAdmin()` method.
-  - Relationships: **Always cast return types** with `/** @var BelongsTo<Location, Item> */` before `return $this->belongsTo(...)`.
-- **Filament Resources**: Modular structure in `app/Filament/Resources/{ResourceName}/`:
-  - `{ResourceName}Resource.php`: Routes model to Filament, defines navigation (icons use `BackedEnum` or string), title attribute, pages, and relation managers.
-  - `Schemas/{FormName}.php`: Static `configure(Schema $schema)` method returns form components. Example: `ItemForm::configure($schema)`.
-  - `Tables/{TableName}.php`: Static `configure(Table $table)` method returns table columns/actions. Can use `modifyQueryUsing()` for subqueries (e.g., earliest batch expiration).
-  - `Pages/`: CRUD pages (e.g., `ManageItems`, `CreateItem`, `EditItem`).
-  - `RelationManagers/`: Nested resource tables (e.g., `BatchesRelationManager` on Item edit page).
-  - `Actions/`: Custom actions (e.g., `ToggleRegistrationsAction` for user management).
-- **Testing**: Pest-based. Use `use function Pest\Livewire\livewire;` for Filament tests. Chain assertions. Database sorting uses `orderBy()`, NOT `sortBy()`. Factories for all test data.
-- **Strict Coding**: PHPStan level 10 enforced (`phpstan.neon`). Run `composer phpstan` before committing.
+
+### **Domain Models**
+All in `app/Models/` with UUIDs as primary keys (`HasUuids` trait), strict typing, and comprehensive PHPDoc.
+- `Item`: has many `Batch`es, belongs to `Location`, stores tags as JSON array (`casts: ['tags' => 'array']`). Includes custom scope `withBatchesExpiringWithinDays()` for expiration queries.
+- `Batch`: belongs to `Item`, has `expires_at` datetime (cast to 'datetime'), auto-updates parent item quantity via model events (`booted()` with `saved()` and `deleted()` callbacks).
+- `Location`: self-referential (parent/children via `parent_id`), has items. Includes `expiration_notify_days` for location-level defaults.
+- `User`: Uses auto-incrementing integer ID (not UUID), includes `is_admin` boolean flag. Implements `FilamentUser` and `MustVerifyEmail` interfaces. Admin check via `isAdmin()` method.
+- **Relationships**: **Always cast return types** with `/** @var BelongsTo<Location, Item> */` before `return $this->belongsTo(...)`.
+
+### **Filament Resources**
+Modular structure in `app/Filament/Resources/{ResourceName}/`:
+- `{ResourceName}Resource.php`: Routes model to Filament, defines navigation (icons use `BackedEnum` or string), title attribute, pages, and relation managers.
+- `Schemas/{FormName}.php`: Static `configure(Schema $schema)` method returns form components. Example: `ItemForm::configure($schema)`.
+- `Tables/{TableName}.php`: Static `configure(Table $table)` method returns table columns/actions. Can use `modifyQueryUsing()` for subqueries (e.g., earliest batch expiration).
+- `Pages/`: CRUD pages (e.g., `ManageItems`, `CreateItem`, `EditItem`).
+- `RelationManagers/`: Nested resource tables (e.g., `BatchesRelationManager` on Item edit page).
+- `Actions/`: Custom actions (e.g., `ToggleRegistrationsAction` for user management).
+
+### **Critical Design Patterns**
+- **No Service Layer**: Business logic lives in Eloquent models and model events, not separate classes. Use `Model::booted()` with hooks (`saved()`, `deleted()`) for side effects.
+- **No Repository Pattern**: Direct Eloquent queries—no abstraction layer. Models are the data access pattern.
+- **Model Events for Sync**: `Batch` model auto-syncs parent `Item.quantity` via `booted()` events—never manually update parent quantities.
+- **Read-Only Fields**: Computed fields like `Item.quantity` are read-only in forms (hidden on create, read-only helper text on edit).
+- **Admin by Default**: First registered user becomes admin (via `SetFirstUserAsAdmin` listener). Check `User::isAdmin()` in policies/middleware.
+
+### **Testing**
+- **Framework**: Pest-based with `pestphp/pest-plugin-livewire` for Filament.
+- **Helper**: Use `use function Pest\Livewire\livewire;` for testing Filament pages/components.
+- **Assertions**: Chain assertions for readability. Example: `livewire(Page::class)->fillForm([...])->call('save')->assertNotified()`.
+- **Database Queries**: Use `orderBy()` for sorting (SQL), NOT `collection::sortBy()` (PHP sorts differently).
+- **Factories**: All test data via factories in `database/factories/`. Use `->make()` for form population, `->create()` for database assertions.
+
+### **Code Quality**
+- **PHPStan Level 10**: Enforced in `phpstan.neon`. Run `ddev composer phpstan` before committing.
+- **Formatting**: Laravel Pint enforces PSR-12. Use `ddev composer pint` (all files) or `ddev composer pint:dirty` (changed only).
+- **Test Coverage**: Aim for comprehensive coverage. Run `ddev composer test:coverage` to generate report.
 
 ## Developer Workflows
 - **DDEV Required**: All commands prefixed with `ddev` (e.g., `ddev composer test`, `ddev artisan migrate`, `ddev npm run dev`).
   - Start: `ddev start`, Stop: `ddev stop`, SSH: `ddev ssh`, Launch browser: `ddev launch`.
   - Email testing: `ddev mailpit` (opens Mailpit for viewing dev emails).
-- **Local Dev**: `ddev composer dev` (runs PHP server, queue, pail logs, Vite in parallel via `concurrently`).
+- **Local Dev**: `ddev composer dev` runs all services in parallel via `concurrently`:
+  - **PHP Server** (port 8000): `php artisan serve`
+  - **Queue Worker** (processes jobs): `php artisan queue:listen --tries=1`
+  - **Logs Stream** (real-time pail): `php artisan pail --timeout=0`
+  - **Vite Dev Server** (HMR for CSS/JS): `npm run dev`
+  - Stop with Ctrl+C (kills all 4 processes).
 - **Build Assets**: `ddev npm run build` (Vite + Tailwind production build).
 - **Testing**: `ddev composer test` (Pest, excludes disabled group). Coverage: `ddev composer test:coverage`.
 - **Static Analysis**: `ddev composer phpstan` (2GB memory limit).
