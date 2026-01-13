@@ -1,10 +1,14 @@
-name: Docker Publish (AMD64)
+name: Docker Publish
 
 on:
   push:
     branches: [master]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [master]
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -14,14 +18,14 @@ on:
         type: string
 
 concurrency:
-  group: docker-publish-amd64-${{ github.ref }}
+  group: docker-publish-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build and Push AMD64
+    name: Build and Push
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
@@ -41,9 +45,20 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REF: ${{ github.ref }}
+          RELEASE_NAME: ${{ github.event.release.name }}
         run: |
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
             printf 'tag=pr-%s\n' "$PR_NUMBER" >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_NAME" == "push" && "$REF" =~ ^refs/tags/v[0-9] ]]; then
+            # Extract version from tag (e.g., refs/tags/v1.2.3 -> v1.2.3)
+            VERSION="${REF#refs/tags/}"
+            printf 'tag=%s\n' "$VERSION" >> $GITHUB_OUTPUT
+            printf 'is_release=true\n' >> $GITHUB_OUTPUT
+          elif [[ "$EVENT_NAME" == "release" ]]; then
+            # Use release tag name (e.g., v1.2.3)
+            VERSION="${RELEASE_NAME#v}"
+            printf 'tag=v%s\n' "$VERSION" >> $GITHUB_OUTPUT
+            printf 'is_release=true\n' >> $GITHUB_OUTPUT
           elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             printf 'tag=%s\n' "$INPUT_TAG" >> $GITHUB_OUTPUT
           else
@@ -57,9 +72,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const comment = `🚀 Docker AMD64 build started for tag: \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+            const comment = `🚀 Docker build started for tag: \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
             
-            Building for platform: linux/amd64...`;
+            Building for platforms: linux/amd64, linux/arm64...`;
             
             const { data: created } = await github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -69,6 +84,9 @@ jobs:
             });
             
             core.setOutput('comment_id', created.id);
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -82,18 +100,24 @@ jobs:
       - name: Generate image tags
         id: image-tags
         env:
+          IS_RELEASE: ${{ steps.tag.outputs.is_release }}
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
-          printf 'tags=marcelorodrigo/freshguard:%s-amd64\n' "$TAG" >> $GITHUB_OUTPUT
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            # For releases, tag as both version and latest
+            printf 'tags=marcelorodrigo/freshguard:%s,marcelorodrigo/freshguard:latest\n' "$TAG" >> $GITHUB_OUTPUT
+          else
+            printf 'tags=marcelorodrigo/freshguard:%s\n' "$TAG" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Build and push AMD64
+      - name: Build and push
         id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.image-tags.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -109,13 +133,13 @@ jobs:
             
             let updateComment;
             if (buildSuccess) {
-              updateComment = `✅ Docker AMD64 image published!
+              updateComment = `✅ Docker image published!
             
-              **Image:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}-amd64\`
-              **Platform:** linux/amd64
+              **Image:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+              **Platforms:** linux/amd64, linux/arm64
               **Status:** Ready to use`;
             } else {
-              updateComment = `❌ Docker AMD64 build failed!
+              updateComment = `❌ Docker build failed!
             
               **Tag:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
               **Status:** Build or push failed
@@ -132,6 +156,7 @@ jobs:
               });
             } else {
               // Fallback: create a new comment if comment ID is not available
+              // This handles edge cases where the create-comment step didn't run
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
@@ -139,3 +164,16 @@ jobs:
                 body: updateComment
               });
             }
+
+      - name: Publish release summary
+        if: steps.tag.outputs.is_release == 'true' && success()
+        run: |
+          echo "### Docker Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Images Pushed:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\` (linux/amd64, linux/arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`marcelorodrigo/freshguard:latest\` (linux/amd64, linux/arm64)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
