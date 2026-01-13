@@ -21,16 +21,5 @@ jobs:
           protected_tags: 'latest'
           tag_pattern: 'pr-*'
           retention_days: 30
-          dry_run: false
-        continue-on-error: true
-
-      - name: Cleanup old commit tags (retention 14 days)
-        uses: lostlink/docker-cleanup@v1.0.1
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          image_name: freshguard
-          tag_pattern: 'sha-*'
-          retention_days: 14
-          dry_run: false
+          dry_run: true
         continue-on-error: true
