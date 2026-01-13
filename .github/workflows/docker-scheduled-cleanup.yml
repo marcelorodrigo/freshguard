@@ -19,6 +19,6 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           organization: marcelorodrigo
           repositories: freshguard
-          pr-retention_days: 30
+          pr-retention-days: 30
           dry_run: true
           verbose: true
