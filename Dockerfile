@@ -1,7 +1,7 @@
 ############################################
 # Stage 1: Build frontend assets
 ############################################
-FROM node:24-alpine AS assets
+FROM node:25-alpine AS assets
 WORKDIR /app
 
 # Copy package files for better layer caching
