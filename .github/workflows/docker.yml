@@ -68,7 +68,7 @@ jobs:
       - name: Create PR comment (build started)
         if: github.event_name == 'pull_request'
         id: create-comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -124,7 +124,7 @@ jobs:
 
       - name: Update PR comment (build completed)
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
