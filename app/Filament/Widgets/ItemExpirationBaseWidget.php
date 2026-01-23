@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use App\Models\Batch;
 use App\Models\Item;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -75,7 +76,7 @@ abstract class ItemExpirationBaseWidget extends BaseWidget implements HasTable
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('name')
+            TextColumn::make('item.name')
                 ->label(__('Item'))
                 ->searchable()
                 ->sortable(),
@@ -83,7 +84,7 @@ abstract class ItemExpirationBaseWidget extends BaseWidget implements HasTable
                 ->label(__('Location'))
                 ->searchable()
                 ->sortable(),
-            TextColumn::make('earliest_batch_expiration')
+            TextColumn::make('expires_at')
                 ->label($this->getExpirationColumnLabel())
                 ->date()
                 ->sortable(),
@@ -109,18 +110,8 @@ abstract class ItemExpirationBaseWidget extends BaseWidget implements HasTable
      */
     protected function buildBaseQuery(): Builder
     {
-        return Item::query()
-            ->with(['location'])
-            ->whereHas('batches', function ($q) {
-                $q->whereNotNull('expires_at');
-            })
-            ->addSelect([
-                'earliest_batch_expiration' => \App\Models\Batch::query()
-                    ->select('expires_at')
-                    ->whereColumn('item_id', 'items.id')
-                    ->whereNotNull('expires_at')
-                    ->orderBy('expires_at')
-                    ->limit(1),
-            ]);
+        return Batch::query()
+            ->with(['item', 'location'])
+            ->whereNotNull('expires_at');
     }
 }

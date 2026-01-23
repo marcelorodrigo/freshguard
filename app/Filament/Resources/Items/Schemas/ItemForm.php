@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Items\Schemas;
 
 use App\Models\Item;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -98,12 +97,7 @@ class ItemForm
                             ]);
                         }
                     }),
-                Select::make('location_id')
-                    ->relationship('location', 'name')
-                    ->required()
-                    ->searchable()
-                    ->preload()
-                    ->label(__('Location')),
+
                 Textarea::make('description')
                     ->maxLength(1000)
                     ->nullable()

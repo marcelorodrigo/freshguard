@@ -24,7 +24,6 @@ class ItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'location_id' => ['required', 'uuid', 'exists:locations,id'],
             'name' => ['required', 'max:255'],
             'barcode' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'max:255'],
