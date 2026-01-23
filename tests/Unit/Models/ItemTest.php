@@ -25,7 +25,6 @@ test('fillable attributes', function () {
     $item = new Item;
 
     expect($item->getFillable())->toBe([
-        'location_id',
         'name',
         'barcode',
         'description',
@@ -52,7 +51,6 @@ test('factory creates valid item', function () {
     $this->assertDatabaseHas('items', [
         'id' => $item->id,
         'name' => $item->name,
-        'location_id' => $item->location_id,
         'quantity' => 0, // Default quantity
     ]);
 });
@@ -71,14 +69,12 @@ test('creates with minimal attributes', function () {
     $location = Location::factory()->create();
 
     $item = Item::create([
-        'location_id' => $location->id,
         'name' => 'Test Item',
     ]);
 
     $this->assertDatabaseHas('items', [
         'id' => $item->id,
         'name' => 'Test Item',
-        'location_id' => $location->id,
     ]);
     expect($item->description)->toBeNull();
 });
@@ -91,19 +87,16 @@ test('updates attributes', function () {
     $item->update([
         'name' => 'Updated Name',
         'description' => 'Updated Description',
-        'location_id' => $newLocation->id,
     ]);
 
     expect($item->id)->toBe($originalId)
         ->and($item->name)->toBe('Updated Name')
-        ->and($item->description)->toBe('Updated Description')
-        ->and($item->location_id)->toBe($newLocation->id);
+        ->and($item->description)->toBe('Updated Description');
 
     $this->assertDatabaseHas('items', [
         'id' => $originalId,
         'name' => 'Updated Name',
         'description' => 'Updated Description',
-        'location_id' => $newLocation->id,
     ]);
 });
 

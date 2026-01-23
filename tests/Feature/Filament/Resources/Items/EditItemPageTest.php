@@ -16,7 +16,6 @@ uses(RefreshDatabase::class);
 test('can load page with correct form data', function (): void {
     $location = Location::factory()->create();
     $item = Item::factory()->create([
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'barcode' => '1234567890123',
         'description' => 'Test Description',

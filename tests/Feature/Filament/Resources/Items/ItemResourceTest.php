@@ -20,7 +20,6 @@ test('can render page and see table records', function (): void {
         ->assertCanSeeTableRecords($items)
         ->assertCountTableRecords(5)
         ->assertCanRenderTableColumn('name')
-        ->assertCanRenderTableColumn('location.name')
         ->assertCanRenderTableColumn('quantity');
 });
 
@@ -55,7 +54,6 @@ test('can search items by barcode', function (): void {
 });
 
 test('can create item with required fields', function (): void {
-    $location = Location::factory()->create();
     $newItem = Item::factory()->make();
 
     livewire(ManageItems::class)
@@ -63,7 +61,6 @@ test('can create item with required fields', function (): void {
             'name' => $newItem->name,
             'barcode' => $newItem->barcode,
             'description' => $newItem->description,
-            'location_id' => $location->id,
             'tags' => ['Promotion', 'Healthy'],
         ])
         ->assertNotified();
@@ -71,7 +68,6 @@ test('can create item with required fields', function (): void {
     $this->assertDatabaseHas(Item::class, [
         'name' => $newItem->name,
         'description' => $newItem->description,
-        'location_id' => $location->id,
     ]);
 
     $item = Item::where('name', $newItem->name)->first();
@@ -79,7 +75,6 @@ test('can create item with required fields', function (): void {
 });
 
 test('validates item creation data', function (array $data, array $errors): void {
-    $location = Location::factory()->create();
     $newItem = Item::factory()->make();
 
     livewire(ManageItems::class)
@@ -87,14 +82,12 @@ test('validates item creation data', function (array $data, array $errors): void
             'name' => $newItem->name,
             'barcode' => $newItem->barcode,
             'description' => $newItem->description,
-            'location_id' => $location->id,
             ...$data,
         ])
         ->assertHasActionErrors($errors);
 })->with([
     'name is required' => [['name' => null], ['name' => 'required']],
     'name max 255 characters' => [['name' => Str::random(256)], ['name' => 'max']],
-    'location_id is required' => [['location_id' => null], ['location_id' => 'required']],
 ]);
 
 test('can edit item', function (): void {

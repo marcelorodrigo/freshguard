@@ -58,4 +58,4 @@ return new class extends Migration
             //
         });
     }
-};
+};w
