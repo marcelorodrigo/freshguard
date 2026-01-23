@@ -12,7 +12,10 @@ class ItemsInLocationWidget extends TableWidget
 {
     public ?string $locationId = null;
 
-    public function locationId(string $id): static
+    /**
+     * Fluent configuration of location ID for widget building
+     */
+    public function locationId(string $id): self
     {
         $this->locationId = $id;
 

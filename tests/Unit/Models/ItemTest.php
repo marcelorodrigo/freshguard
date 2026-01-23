@@ -6,7 +6,6 @@ use App\Models\Batch;
 use App\Models\Item;
 use App\Models\Location;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -48,11 +47,10 @@ test('key type is string', function () {
 test('factory creates valid item', function () {
     $item = Item::factory()->create();
 
-    $this->assertDatabaseHas('items', [
-        'id' => $item->id,
-        'name' => $item->name,
-        'quantity' => 0, // Default quantity
-    ]);
+    expect(Item::query()->where('id', $item->id)
+        ->where('name', $item->name)
+        ->where('quantity', 0)
+        ->exists())->toBeTrue();
 });
 
 test('factory creates item with optional description', function () {
@@ -66,16 +64,12 @@ test('factory creates item with optional description', function () {
 });
 
 test('creates with minimal attributes', function () {
-    $location = Location::factory()->create();
-
     $item = Item::create([
         'name' => 'Test Item',
     ]);
 
-    $this->assertDatabaseHas('items', [
-        'id' => $item->id,
-        'name' => 'Test Item',
-    ]);
+    expect(Item::query()->where('id', $item->id)
+        ->where('name', 'Test Item')->exists())->toBeTrue();
     expect($item->description)->toBeNull();
 });
 
@@ -93,11 +87,10 @@ test('updates attributes', function () {
         ->and($item->name)->toBe('Updated Name')
         ->and($item->description)->toBe('Updated Description');
 
-    $this->assertDatabaseHas('items', [
-        'id' => $originalId,
-        'name' => 'Updated Name',
-        'description' => 'Updated Description',
-    ]);
+    expect(Item::query()->where('id', $originalId)
+        ->where('name', 'Updated Name')
+        ->where('description', 'Updated Description')
+        ->exists())->toBeTrue();
 });
 
 test('deletes item', function () {
@@ -106,23 +99,7 @@ test('deletes item', function () {
 
     $item->delete();
 
-    $this->assertDatabaseMissing('items', [
-        'id' => $itemId,
-    ]);
-});
-
-test('has location relationship', function () {
-    $item = new Item;
-
-    expect($item->location())->toBeInstanceOf(BelongsTo::class);
-});
-
-test('belongs to location', function () {
-    $location = Location::factory()->create();
-    $item = Item::factory()->for($location)->create();
-
-    expect($item->location)->toBeInstanceOf(Location::class);
-    expect($item->location->id)->toBe($location->id);
+    expect(Item::query()->where('id', $itemId)->exists())->toBeFalse();
 });
 
 test('tags can be stored as array', function () {

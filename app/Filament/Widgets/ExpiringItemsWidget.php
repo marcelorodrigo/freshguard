@@ -34,6 +34,9 @@ class ExpiringItemsWidget extends ItemExpirationBaseWidget
         return __('All tracked items have sufficient shelf life.');
     }
 
+    /**
+     * @return Builder<Batch>
+     */
     protected function buildQuery(): Builder
     {
         return Batch::query()

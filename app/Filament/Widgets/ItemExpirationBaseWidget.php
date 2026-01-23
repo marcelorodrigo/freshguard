@@ -64,7 +64,7 @@ abstract class ItemExpirationBaseWidget extends BaseWidget implements HasTable
      * Build the query with widget-specific filters.
      * Subclasses implement their own filtering logic.
      *
-     * @return Builder<Item>
+     * @return Builder<Batch>
      */
     abstract protected function buildQuery(): Builder;
 
@@ -106,7 +106,7 @@ abstract class ItemExpirationBaseWidget extends BaseWidget implements HasTable
     /**
      * Build the base query with common selections.
      *
-     * @return Builder<Item>
+     * @return Builder<Batch>
      */
     protected function buildBaseQuery(): Builder
     {

@@ -11,11 +11,16 @@ class ViewLocation extends ViewRecord
 {
     protected static string $resource = LocationResource::class;
 
+    /**
+     * @return array<class-string<\Filament\Widgets\Widget>|\Filament\Widgets\WidgetConfiguration>
+     */
     protected function getHeaderWidgets(): array
     {
+        /** @var \App\Models\Location $record */
+        $record = $this->record;
+
         return [
-            \App\Filament\Resources\Locations\Widgets\ItemsInLocationWidget::make()
-                ->locationId($this->record->id),
+            fn () => \App\Filament\Resources\Locations\Widgets\ItemsInLocationWidget::make()->locationId($record->id),
         ];
     }
 }

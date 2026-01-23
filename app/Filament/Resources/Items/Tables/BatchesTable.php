@@ -51,7 +51,10 @@ class BatchesTable
                     ])
                     ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
                         if (! empty($data['expires_at'])) {
-                            $query->whereDate('expires_at', $data['expires_at']);
+                            $date = is_string($data['expires_at']) ? $data['expires_at'] : null;
+                            if ($date !== null) {
+                                $query->whereDate('expires_at', $date);
+                            }
                         }
                     }),
             ])

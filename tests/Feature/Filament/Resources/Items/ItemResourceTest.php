@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Filament\Resources\Items\Pages\ManageItems;
 use App\Models\Item;
-use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
@@ -65,10 +64,10 @@ test('can create item with required fields', function (): void {
         ])
         ->assertNotified();
 
-    $this->assertDatabaseHas(Item::class, [
+    expect(Item::where([
         'name' => $newItem->name,
         'description' => $newItem->description,
-    ]);
+    ])->exists())->toBeTrue();
 
     $item = Item::where('name', $newItem->name)->first();
     expect($item->tags)->toBe(['Promotion', 'Healthy']);
@@ -91,9 +90,7 @@ test('validates item creation data', function (array $data, array $errors): void
 ]);
 
 test('can edit item', function (): void {
-    $location = Location::factory()->create();
     $item = Item::factory()->create([
-        'location_id' => $location->id,
         'name' => 'Original Item',
         'barcode' => '1234567890123',
         'description' => 'Original Description',
@@ -105,16 +102,15 @@ test('can edit item', function (): void {
             'name' => 'Updated Item',
             'barcode' => '1234567890123',
             'description' => 'Updated Description',
-            'location_id' => $location->id,
             'tags' => ['Important', 'Healthy'],
         ])
         ->assertNotified();
 
-    $this->assertDatabaseHas(Item::class, [
+    expect(Item::where([
         'id' => $item->id,
         'name' => 'Updated Item',
         'description' => 'Updated Description',
-    ]);
+    ])->exists())->toBeTrue();
 
     $item->refresh();
     expect($item->tags)->toBe(['Important', 'Healthy']);
