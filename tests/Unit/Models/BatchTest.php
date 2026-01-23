@@ -112,13 +112,43 @@ test('an item can exist in multiple locations through batches', function () {
         ->and($batches->pluck('location_id'))->toContain($locationB->id);
 });
 
+test('item quantity is sum of all batches across all locations', function () {
+    $item = Item::factory()->create();
+    $locationA = Location::factory()->create();
+    $locationB = Location::factory()->create();
+    $locationC = Location::factory()->create();
+    $expA = now()->addDays(2);
+    $expB = now()->addDays(5);
+    $expC = now()->addDays(10);
+    Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $locationA->id,
+        'expires_at' => $expA,
+        'quantity' => 7,
+    ]);
+    Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $locationB->id,
+        'expires_at' => $expB,
+        'quantity' => 12,
+    ]);
+    Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $locationC->id,
+        'expires_at' => $expC,
+        'quantity' => 4,
+    ]);
+    $item->refresh();
+    expect($item->quantity)->toBe(23);
+});
+
 test('migration merges duplicate batches by summing quantities', function () {
     $item = Item::factory()->create();
     $location = Location::factory()->create();
     $expiresAt = now()->addDays(15)->startOfDay();
 
     // Insert duplicates directly bypassing model (simulate pre-migration state)
-    \DB::table('batches')->insert([
+    \Illuminate\Support\Facades\\DB::table('batches')->insert([
         [
             'id' => uuid_create(),
             'item_id' => $item->id,
@@ -143,7 +173,7 @@ test('migration merges duplicate batches by summing quantities', function () {
     require base_path('database/migrations/2026_01_23_142146_migrate_batch_location_and_merge_duplicates.php');
     (new (require base_path('database/migrations/2026_01_23_142146_migrate_batch_location_and_merge_duplicates.php')))->up();
 
-    $finalBatches = \DB::table('batches')->where([
+    $finalBatches = \\DB::table('batches')->where([
         'item_id' => $item->id,
         'location_id' => $location->id,
         'expires_at' => $expiresAt->format('Y-m-d H:i:s'),

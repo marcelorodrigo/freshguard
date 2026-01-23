@@ -34,16 +34,48 @@ class BatchSeeder extends Seeder
             // Pick 1-3 random locations for this item
             $itemLocations = $locations->random(min(3, $locations->count()));
             foreach ($itemLocations as $location) {
-                // 1-3 batches per (item, location)
+                // Create 1-3 batches per (item, location) with unique expirations
+                $expiresAtDates = [];
                 $batchCount = fake()->numberBetween(1, 3);
                 for ($i = 0; $i < $batchCount; $i++) {
+                    do {
+                        $expiration = now()->addDays(fake()->numberBetween(1, 180))->toDateString();
+                    } while (in_array($expiration, $expiresAtDates, true));
+                    $expiresAtDates[] = $expiration;
+
                     Batch::factory()->create([
                         'item_id' => $item->id,
                         'location_id' => $location->id,
-                        'expires_at' => now()->addDays(fake()->numberBetween(1, 180)),
+                        'expires_at' => $expiration,
                         'quantity' => fake()->numberBetween(1, 50),
                     ]);
                 }
+            }
+        }
+
+        // Deliberately attempt to create a duplicate batch (test edge case):
+        if ($items->count() > 0 && $locations->count() > 0) {
+            $item = $items->first();
+            $location = $locations->first();
+            $expiration = now()->addDays(90)->toDateString();
+            // Create first batch
+            Batch::factory()->create([
+                'item_id' => $item->id,
+                'location_id' => $location->id,
+                'expires_at' => $expiration,
+                'quantity' => 10,
+            ]);
+            // Attempt to create duplicate - wrap in try/catch for tests or keep commented for validation demonstration
+            try {
+                Batch::factory()->create([
+                    'item_id' => $item->id,
+                    'location_id' => $location->id,
+                    'expires_at' => $expiration,
+                    'quantity' => 10,
+                ]);
+            } catch (\Exception $e) {
+                // This should trigger uniqueness violation if constraints are in place
+                // Log/ignore for test
             }
         }
 

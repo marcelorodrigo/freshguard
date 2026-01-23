@@ -44,6 +44,7 @@ test('can render table columns', function (): void {
 
 test('can create batch', function (): void {
     $item = Item::factory()->create();
+    $location = \App\Models\Location::factory()->create();
     $expiresAt = Carbon::now()->addDays(30);
 
     livewire(BatchesRelationManager::class, [
@@ -51,6 +52,7 @@ test('can create batch', function (): void {
         'pageClass' => EditItem::class,
     ])
         ->callAction(TestAction::make(CreateAction::class)->table(), [
+            'location_id' => $location->id,
             'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
             'quantity' => 50,
         ])
@@ -58,8 +60,40 @@ test('can create batch', function (): void {
 
     $this->assertDatabaseHas(Batch::class, [
         'item_id' => $item->id,
+        'location_id' => $location->id,
+        'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
         'quantity' => 50,
     ]);
+});
+
+test('cannot create duplicate batch for same (item,location,expires_at): validation error', function (): void {
+    $item = Item::factory()->create();
+    $location = \App\Models\Location::factory()->create();
+    $expiresAt = Carbon::now()->addDays(7);
+
+    // First creation successful
+    livewire(BatchesRelationManager::class, [
+        'ownerRecord' => $item,
+        'pageClass' => EditItem::class,
+    ])
+        ->callAction(TestAction::make(CreateAction::class)->table(), [
+            'location_id' => $location->id,
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+            'quantity' => 5,
+        ])
+        ->assertNotified();
+
+    // Second with same triplet: should raise validation error
+    livewire(BatchesRelationManager::class, [
+        'ownerRecord' => $item,
+        'pageClass' => EditItem::class,
+    ])
+        ->callAction(TestAction::make(CreateAction::class)->table(), [
+            'location_id' => $location->id,
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+            'quantity' => 15,
+        ])
+        ->assertHasActionErrors(['expires_at' => 'unique']);
 });
 
 test('can edit batch', function (): void {
