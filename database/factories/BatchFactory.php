@@ -19,6 +19,7 @@ class BatchFactory extends Factory
     {
         return [
             'item_id' => Item::factory(),
+            'location_id' => Location::factory(),
             'expires_at' => $this->faker->dateTimeBetween('tomorrow', '+1 year'),
             'quantity' => $this->faker->numberBetween(1, 100),
         ];

@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon $updated_at
  * @property-read Location|null $parent
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Location> $children
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Batch> $batches
  *
  * @method static LocationFactory factory($count = null, $state = [])
  */
@@ -61,5 +62,16 @@ class Location extends Model
     {
         /** @var HasMany<Location,Location> */
         return $this->hasMany(Location::class, 'parent_id');
+    }
+
+    /**
+     * Get the batches for this location.
+     *
+     * @return HasMany<Location, Batch>
+     */
+    public function batches(): HasMany
+    {
+        /** @var HasMany<Location,Batch> */
+        return $this->hasMany(Batch::class, 'location_id');
     }
 }

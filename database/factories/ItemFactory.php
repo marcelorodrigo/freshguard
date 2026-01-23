@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Item;
-use App\Models\Location;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,7 +18,6 @@ class ItemFactory extends Factory
     public function definition(): array
     {
         return [
-            'location_id' => Location::factory(),
             'name' => fake()->words(3, true),
             'barcode' => fake()->ean13(),
             'description' => fake()->sentence(),

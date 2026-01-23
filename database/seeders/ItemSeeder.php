@@ -25,80 +25,38 @@ class ItemSeeder extends Seeder
             ['Promotion'],
         ];
 
-        if ($locations->count() > 0) {
-            // Create items for each location with different configurations
-            foreach ($locations as $location) {
-                // Create 4 items with description and tags
-                Item::factory()
-                    ->count(4)
-                    ->for($location)
-                    ->withTags($sampleTags[array_rand($sampleTags)])
-                    ->create();
+        // Globally create items. Items are not tied to locations.
+        // 10 items with tags and description
+        Item::factory()
+            ->count(10)
+            ->withTags($sampleTags[array_rand($sampleTags)])
+            ->create();
 
-                // Create 3 items with description but without tags
-                Item::factory()
-                    ->count(3)
-                    ->for($location)
-                    ->create();
+        // 5 items with description but without tags
+        Item::factory()
+            ->count(5)
+            ->create();
 
-                // Create 3 items without description but with tags
-                Item::factory()
-                    ->count(3)
-                    ->for($location)
-                    ->withoutDescription()
-                    ->withTags()
-                    ->create();
+        // 5 items without description but with tags
+        Item::factory()
+            ->count(5)
+            ->withoutDescription()
+            ->withTags()
+            ->create();
 
-                // Create 2 items with 30-day expiration notification
-                Item::factory()
-                    ->count(2)
-                    ->for($location)
-                    ->withExpirationNotifyDays(30)
-                    ->withTags(['Important', 'Healthy'])
-                    ->create();
+        // 3 items with 30-day expiration notification
+        Item::factory()
+            ->count(3)
+            ->withExpirationNotifyDays(30)
+            ->withTags(['Important', 'Healthy'])
+            ->create();
 
-                // Create 2 items with 60-day expiration notification
-                Item::factory()
-                    ->count(2)
-                    ->for($location)
-                    ->withExpirationNotifyDays(60)
-                    ->withTags()
-                    ->create();
-            }
-        } else {
-            // If no locations exist, create items with their own locations
+        // 3 items with 60-day expiration notification
+        Item::factory()
+            ->count(3)
+            ->withExpirationNotifyDays(60)
+            ->withTags()
+            ->create();
 
-            // 10 items with tags and description
-            Item::factory()
-                ->count(10)
-                ->withTags($sampleTags[array_rand($sampleTags)])
-                ->create();
-
-            // 5 items with description but without tags
-            Item::factory()
-                ->count(5)
-                ->create();
-
-            // 5 items without description but with tags
-            Item::factory()
-                ->count(5)
-                ->withoutDescription()
-                ->withTags()
-                ->create();
-
-            // 3 items with 30-day expiration notification
-            Item::factory()
-                ->count(3)
-                ->withExpirationNotifyDays(30)
-                ->withTags(['Important', 'Healthy'])
-                ->create();
-
-            // 3 items with 60-day expiration notification
-            Item::factory()
-                ->count(3)
-                ->withExpirationNotifyDays(60)
-                ->withTags()
-                ->create();
-        }
     }
 }

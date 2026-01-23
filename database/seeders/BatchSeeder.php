@@ -22,36 +22,30 @@ class BatchSeeder extends Seeder
             return;
         }
 
-        // Create different batches for each item
+        // Get all locations
+        $locations = \App\Models\Location::all();
+        if ($locations->count() === 0) {
+            $this->command->info('No locations found. Skipping batch seeding.');
+
+            return;
+        }
+
         foreach ($items as $item) {
-            // Create a batch that expires soon (within 7 days)
-            Batch::factory()->create([
-                'item_id' => $item->id,
-                'expires_at' => now()->addDays(fake()->numberBetween(1, 7)),
-                'quantity' => fake()->numberBetween(1, 5),
-            ]);
-
-            // Create a batch that expires in medium term (within 30 days)
-            Batch::factory()->create([
-                'item_id' => $item->id,
-                'expires_at' => now()->addDays(fake()->numberBetween(8, 30)),
-                'quantity' => fake()->numberBetween(5, 15),
-            ]);
-
-            // Create a batch that expires in long term
-            Batch::factory()->create([
-                'item_id' => $item->id,
-                'expires_at' => now()->addDays(fake()->numberBetween(31, 180)),
-                'quantity' => fake()->numberBetween(10, 50),
-            ]);
-
-            // fake()->numberBetweenomly add 1-2 more batches for some items
-            if (fake()->numberBetween(0, 1)) {
-                $extraBatches = fake()->numberBetween(1, 2);
-                Batch::factory($extraBatches)->create([
-                    'item_id' => $item->id,
-                ]);
+            // Pick 1-3 random locations for this item
+            $itemLocations = $locations->random(min(3, $locations->count()));
+            foreach ($itemLocations as $location) {
+                // 1-3 batches per (item, location)
+                $batchCount = fake()->numberBetween(1, 3);
+                for ($i = 0; $i < $batchCount; $i++) {
+                    Batch::factory()->create([
+                        'item_id' => $item->id,
+                        'location_id' => $location->id,
+                        'expires_at' => now()->addDays(fake()->numberBetween(1, 180)),
+                        'quantity' => fake()->numberBetween(1, 50),
+                    ]);
+                }
             }
         }
+
     }
 }
