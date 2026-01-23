@@ -30,10 +30,18 @@ class LocationResource extends Resource
         return LocationsTable::configure($table);
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            \App\Filament\Resources\Locations\RelationManagers\BatchesRelationManager::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => ManageLocations::route('/'),
+            'view' => \App\Filament\Resources\Locations\Pages\ViewLocation::route('/{record}'),
         ];
     }
 }

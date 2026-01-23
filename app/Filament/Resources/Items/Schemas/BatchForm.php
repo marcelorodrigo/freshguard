@@ -15,6 +15,20 @@ class BatchForm
     {
         return $schema
             ->components([
+                // Item dropdown - required
+                \Filament\Forms\Components\Select::make('item_id')
+                    ->relationship('item', 'name')
+                    ->required()
+                    ->searchable()
+                    ->preload()
+                    ->label(__('Item')),
+                // Location dropdown - required
+                \Filament\Forms\Components\Select::make('location_id')
+                    ->relationship('location', 'name')
+                    ->required()
+                    ->searchable()
+                    ->preload()
+                    ->label(__('Location')),
                 DatePicker::make('expires_at')
                     ->required()
                     ->default(Carbon::now()->addDays(7))

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Filament\Resources\Items\RelationManagers;
+namespace App\Filament\Resources\Locations\RelationManagers;
 
 use App\Filament\Resources\Items\Schemas\BatchForm;
 use App\Filament\Resources\Items\Tables\BatchesTable;
@@ -24,6 +24,7 @@ class BatchesRelationManager extends RelationManager
 
     public function form(Schema $schema): Schema
     {
+        // You may want to restrict item/location selection here or use readonly fields
         return BatchForm::configure($schema);
     }
 
@@ -31,9 +32,9 @@ class BatchesRelationManager extends RelationManager
     {
         $table = BatchesTable::configure($table);
 
-        // Remove 'Item' column since we know the parent
+        // Remove 'Location' column since we know the parent
         $table = $table->columns(collect($table->getColumns())
-            ->reject(fn ($col) => $col->getName() === 'item.name')
+            ->reject(fn ($col) => $col->getName() === 'location.name')
             ->all()
         );
 
