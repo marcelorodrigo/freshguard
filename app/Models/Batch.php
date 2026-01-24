@@ -12,11 +12,13 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property string $item_id
+ * @property string $location_id
  * @property Carbon $expires_at
  * @property int $quantity
  * @property Carbon $created_at
  * @property Carbon|null $updated_at
  * @property-read Item $item
+ * @property-read Location $location
  **/
 class Batch extends Model
 {
@@ -66,6 +68,17 @@ class Batch extends Model
     {
         /** @var BelongsTo<Item, Batch> */
         return $this->belongsTo(Item::class);
+    }
+
+    /**
+     * Get the location that owns the batch.
+     *
+     * @return BelongsTo<Location, Batch>
+     */
+    public function location(): BelongsTo
+    {
+        /** @var BelongsTo<Location, Batch> */
+        return $this->belongsTo(Location::class);
     }
 
     /**
