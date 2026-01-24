@@ -78,7 +78,7 @@ class ItemForm
                             // Show success notification with populated fields
                             if (! empty($fieldsPopulated)) {
                                 Notification::make()
-                                    ->title(__('Product data loaded'))
+                                    ->title(__('Product data lo§aded'))
                                     ->body(__('Populated: :fields', ['fields' => implode(', ', $fieldsPopulated)]))
                                     ->success()
                                     ->send();

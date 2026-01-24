@@ -13,6 +13,10 @@ class BatchesTable
     {
         return $table
             ->columns([
+                TextColumn::make('location.name')
+                    ->sortable()
+                    ->searchable()
+                    ->label(__('Location')),
                 TextColumn::make('expires_at')
                     ->dateTime('Y-m-d')
                     ->sortable()
