@@ -63,7 +63,7 @@ test('can create item with required fields', function (): void {
             'name' => $newItem->name,
             'barcode' => $newItem->barcode,
             'description' => $newItem->description,
-            'location_id' => $location->id,
+
             'tags' => ['Promotion', 'Healthy'],
         ])
         ->assertNotified();
@@ -71,7 +71,7 @@ test('can create item with required fields', function (): void {
     $this->assertDatabaseHas(Item::class, [
         'name' => $newItem->name,
         'description' => $newItem->description,
-        'location_id' => $location->id,
+
     ]);
 
     $item = Item::where('name', $newItem->name)->first();
@@ -87,20 +87,20 @@ test('validates item creation data', function (array $data, array $errors): void
             'name' => $newItem->name,
             'barcode' => $newItem->barcode,
             'description' => $newItem->description,
-            'location_id' => $location->id,
+
             ...$data,
         ])
         ->assertHasActionErrors($errors);
 })->with([
     'name is required' => [['name' => null], ['name' => 'required']],
     'name max 255 characters' => [['name' => Str::random(256)], ['name' => 'max']],
-    'location_id is required' => [['location_id' => null], ['location_id' => 'required']],
+
 ]);
 
 test('can edit item', function (): void {
     $location = Location::factory()->create();
     $item = Item::factory()->create([
-        'location_id' => $location->id,
+
         'name' => 'Original Item',
         'barcode' => '1234567890123',
         'description' => 'Original Description',
@@ -112,7 +112,7 @@ test('can edit item', function (): void {
             'name' => 'Updated Item',
             'barcode' => '1234567890123',
             'description' => 'Updated Description',
-            'location_id' => $location->id,
+
             'tags' => ['Important', 'Healthy'],
         ])
         ->assertNotified();

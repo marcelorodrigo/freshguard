@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 test('can load page with correct form data', function (): void {
     $location = Location::factory()->create();
     $item = Item::factory()->create([
-        'location_id' => $location->id,
+
         'name' => 'Test Item',
         'barcode' => '1234567890123',
         'description' => 'Test Description',
@@ -29,7 +29,7 @@ test('can load page with correct form data', function (): void {
             'name' => 'Test Item',
             'barcode' => '1234567890123',
             'description' => 'Test Description',
-            'location_id' => $location->id,
+
             'tags' => ['Tag1', 'Tag2'],
         ]);
 });
@@ -37,7 +37,7 @@ test('can load page with correct form data', function (): void {
 test('can update item', function (): void {
     $location = Location::factory()->create();
     $item = Item::factory()->create([
-        'location_id' => $location->id,
+
         'name' => 'Original Name',
         'barcode' => '1234567890123',
         'description' => 'Original Description',
@@ -50,7 +50,7 @@ test('can update item', function (): void {
             'name' => 'Updated Name',
             'barcode' => '1234567890123',
             'description' => 'Updated Description',
-            'location_id' => $newLocation->id,
+
         ])
         ->call('save')
         ->assertNotified();
@@ -59,7 +59,7 @@ test('can update item', function (): void {
         'id' => $item->id,
         'name' => 'Updated Name',
         'description' => 'Updated Description',
-        'location_id' => $newLocation->id,
+
     ]);
 });
 

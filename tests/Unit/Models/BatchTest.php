@@ -26,6 +26,7 @@ test('it belongs to an item', function () {
 test('it has correct fillable attributes', function () {
     $expected = [
         'item_id',
+        'location_id',
         'expires_at',
         'quantity',
     ];

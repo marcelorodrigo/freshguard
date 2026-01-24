@@ -48,7 +48,7 @@ test('factory creates valid item', function () {
     $this->assertDatabaseHas('items', [
         'id' => $item->id,
         'name' => $item->name,
-        'quantity' => 0, // Default quantity
+        'quantity' => null, // Default is null until batches are added
     ]);
 });
 
@@ -104,7 +104,6 @@ test('deletes item', function () {
         'id' => $itemId,
     ]);
 });
-
 
 test('has batches relationship', function () {
     $item = new Item;

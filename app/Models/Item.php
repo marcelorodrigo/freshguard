@@ -84,4 +84,38 @@ class Item extends Model
                 ->where('expires_at', '<=', Carbon::now()->addDays($days));
         });
     }
+
+    /**
+     * Get the item quantity, defaulting to 0 if unset/null.
+     */
+    public function getQuantityAttribute($value): int
+    {
+        return $value ?? 0;
+    }
+
+    /**
+     * Eloquent relationship for Filament table compatibility: gets location of batch with earliest expiration.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Location, Item>|null
+     */
+    public function location()
+    {
+        $batch = $this->batches()->orderBy('expires_at')->first();
+        if ($batch) {
+            return $batch->location(); // returns the BelongsTo<Location, Batch>
+        }
+
+        // Return a "null" relationship (Filament will interpret as null location)
+        return null;
+    }
+
+    /**
+     * Accessor for app convenience: returns Location model instance or null.
+     */
+    public function getLocationAttribute(): ?Location
+    {
+        $batch = $this->batches()->orderBy('expires_at')->first();
+
+        return $batch ? $batch->location : null;
+    }
 }

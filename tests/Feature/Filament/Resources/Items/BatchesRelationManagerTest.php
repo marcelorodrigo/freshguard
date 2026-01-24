@@ -45,6 +45,7 @@ test('can render table columns', function (): void {
 test('can create batch', function (): void {
     $item = Item::factory()->create();
     $expiresAt = Carbon::now()->addDays(30);
+    $location = \App\Models\Location::factory()->create();
 
     livewire(BatchesRelationManager::class, [
         'ownerRecord' => $item,
@@ -53,6 +54,7 @@ test('can create batch', function (): void {
         ->callAction(TestAction::make(CreateAction::class)->table(), [
             'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
             'quantity' => 50,
+            'location_id' => $location->id,
         ])
         ->assertNotified();
 

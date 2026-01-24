@@ -67,9 +67,11 @@ test('custom messages are defined', function () use (&$request) {
 
 test('valid data passes validation', function () use (&$request) {
     $item = Item::factory()->create();
+    $location = \App\Models\Location::factory()->create();
 
     $data = [
         'item_id' => $item->id,
+        'location_id' => $location->id,
         'expires_at' => now()->addDays(1)->format('Y-m-d'),
         'quantity' => 10,
     ];

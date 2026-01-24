@@ -95,7 +95,7 @@ test('validation fails with name too long', function () {
         ->and($validator->errors()->toArray())->toHaveKey('name');
 });
 
-test('validation fails with description too long', function ()  {
+test('validation fails with description too long', function () {
     $request = new ItemRequest;
 
     $data = [
