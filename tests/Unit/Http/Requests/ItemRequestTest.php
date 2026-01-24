@@ -3,24 +3,16 @@
 declare(strict_types=1);
 
 use App\Http\Requests\ItemRequest;
-use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
-$location = null;
-
-beforeEach(function () use (&$location) {
-    $location = Location::factory()->create();
-});
-
-test('validation passes with valid data', function () use (&$location) {
+test('validation passes with valid data', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'tags' => ['Promotion', 'Healthy'],
@@ -32,11 +24,10 @@ test('validation passes with valid data', function () use (&$location) {
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation passes with emojis', function () use (&$location) {
+test('validation passes with emojis', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => '📦',
         'description' => 'Special item 😊',
         'tags' => ['Promotion'],
@@ -48,11 +39,10 @@ test('validation passes with emojis', function () use (&$location) {
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation passes with null description', function () use (&$location) {
+test('validation passes with null description', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => null,
         'tags' => ['Important'],
@@ -64,11 +54,10 @@ test('validation passes with null description', function () use (&$location) {
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation passes without tags', function () use (&$location) {
+test('validation passes without tags', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
     ];
@@ -79,55 +68,10 @@ test('validation passes without tags', function () use (&$location) {
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation fails without location id', function () use (&$location) {
+test('validation fails without name', function () {
     $request = new ItemRequest;
 
     $data = [
-        'name' => 'Test Item',
-        'description' => 'Test Description',
-    ];
-
-    $validator = Validator::make($data, $request->rules());
-
-    expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->toArray())->toHaveKey('location_id');
-});
-
-test('validation fails with invalid location id', function () use (&$location) {
-    $request = new ItemRequest;
-
-    $data = [
-        'location_id' => 'not-a-uuid',
-        'name' => 'Test Item',
-        'description' => 'Test Description',
-    ];
-
-    $validator = Validator::make($data, $request->rules());
-
-    expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->toArray())->toHaveKey('location_id');
-});
-
-test('validation fails with nonexistent location id', function () use (&$location) {
-    $request = new ItemRequest;
-
-    $data = [
-        'location_id' => Str::uuid()->toString(),
-        'name' => 'Test Item',
-        'description' => 'Test Description',
-    ];
-
-    $validator = Validator::make($data, $request->rules());
-
-    expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->toArray())->toHaveKey('location_id');
-});
-
-test('validation fails without name', function () use (&$location) {
-    $request = new ItemRequest;
-
-    $data = [
-        'location_id' => $location->id,
         'description' => 'Test Description',
     ];
 
@@ -137,11 +81,10 @@ test('validation fails without name', function () use (&$location) {
         ->and($validator->errors()->toArray())->toHaveKey('name');
 });
 
-test('validation fails with name too long', function () use (&$location) {
+test('validation fails with name too long', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => Str::repeat('a', 256),
         'description' => 'Test Description',
     ];
@@ -152,11 +95,10 @@ test('validation fails with name too long', function () use (&$location) {
         ->and($validator->errors()->toArray())->toHaveKey('name');
 });
 
-test('validation fails with description too long', function () use (&$location) {
+test('validation fails with description too long', function ()  {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => Str::repeat('a', 256),
     ];
@@ -167,11 +109,10 @@ test('validation fails with description too long', function () use (&$location) 
         ->and($validator->errors()->toArray())->toHaveKey('description');
 });
 
-test('validation fails with invalid tags format', function () use (&$location) {
+test('validation fails with invalid tags format', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'tags' => 'not-an-array',
@@ -183,11 +124,10 @@ test('validation fails with invalid tags format', function () use (&$location) {
         ->and($validator->errors()->toArray())->toHaveKey('tags');
 });
 
-test('validation fails with non-string tag', function () use (&$location) {
+test('validation fails with non-string tag', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'tags' => [123],
@@ -199,11 +139,10 @@ test('validation fails with non-string tag', function () use (&$location) {
         ->and($validator->errors()->toArray())->toHaveKey('tags.0');
 });
 
-test('validation fails with tag too long', function () use (&$location) {
+test('validation fails with tag too long', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'tags' => [Str::repeat('a', 51)],
@@ -215,11 +154,10 @@ test('validation fails with tag too long', function () use (&$location) {
         ->and($validator->errors()->toArray())->toHaveKey('tags.0');
 });
 
-test('validation passes with tag at max length', function () use (&$location) {
+test('validation passes with tag at max length', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'tags' => [Str::repeat('a', 50)],
@@ -231,11 +169,10 @@ test('validation passes with tag at max length', function () use (&$location) {
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation passes with many tags', function () use (&$location) {
+test('validation passes with many tags', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'tags' => ['Organic', 'Promotion', 'Important', 'Healthy', 'Sale', 'Frozen'],
@@ -247,11 +184,10 @@ test('validation passes with many tags', function () use (&$location) {
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation passes with expiration notify days', function () use (&$location) {
+test('validation passes with expiration notify days', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'expiration_notify_days' => 5,
@@ -263,11 +199,10 @@ test('validation passes with expiration notify days', function () use (&$locatio
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation passes with expiration notify days zero', function () use (&$location) {
+test('validation passes with expiration notify days zero', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'expiration_notify_days' => 0,
@@ -279,11 +214,10 @@ test('validation passes with expiration notify days zero', function () use (&$lo
         ->and($validator->fails())->toBeFalse();
 });
 
-test('validation fails with negative expiration notify days', function () use (&$location) {
+test('validation fails with negative expiration notify days', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'expiration_notify_days' => -1,
@@ -295,11 +229,10 @@ test('validation fails with negative expiration notify days', function () use (&
         ->and($validator->errors()->toArray())->toHaveKey('expiration_notify_days');
 });
 
-test('validation fails with non integer expiration notify days', function () use (&$location) {
+test('validation fails with non integer expiration notify days', function () {
     $request = new ItemRequest;
 
     $data = [
-        'location_id' => $location->id,
         'name' => 'Test Item',
         'description' => 'Test Description',
         'expiration_notify_days' => 'not-a-number',
