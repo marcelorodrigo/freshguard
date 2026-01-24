@@ -53,7 +53,6 @@ class ItemSeeder extends Seeder
                 Item::factory()
                     ->count(2)
                     ->for($location)
-                    ->withExpirationNotifyDays(30)
                     ->withTags(['Important', 'Healthy'])
                     ->create();
 
@@ -61,7 +60,6 @@ class ItemSeeder extends Seeder
                 Item::factory()
                     ->count(2)
                     ->for($location)
-                    ->withExpirationNotifyDays(60)
                     ->withTags()
                     ->create();
             }
@@ -89,14 +87,12 @@ class ItemSeeder extends Seeder
             // 3 items with 30-day expiration notification
             Item::factory()
                 ->count(3)
-                ->withExpirationNotifyDays(30)
                 ->withTags(['Important', 'Healthy'])
                 ->create();
 
             // 3 items with 60-day expiration notification
             Item::factory()
                 ->count(3)
-                ->withExpirationNotifyDays(60)
                 ->withTags()
                 ->create();
         }
