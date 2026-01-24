@@ -98,12 +98,6 @@ class ItemForm
                             ]);
                         }
                     }),
-                Select::make('location_id')
-                    ->relationship('location', 'name')
-                    ->required()
-                    ->searchable()
-                    ->preload()
-                    ->label(__('Location')),
                 Textarea::make('description')
                     ->maxLength(1000)
                     ->nullable()
