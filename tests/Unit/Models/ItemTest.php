@@ -4,9 +4,7 @@ namespace Tests\Unit\Models;
 
 use App\Models\Batch;
 use App\Models\Item;
-use App\Models\Location;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -25,7 +23,6 @@ test('fillable attributes', function () {
     $item = new Item;
 
     expect($item->getFillable())->toBe([
-        'location_id',
         'name',
         'barcode',
         'description',
@@ -48,11 +45,9 @@ test('key type is string', function () {
 
 test('factory creates valid item', function () {
     $item = Item::factory()->create();
-
     $this->assertDatabaseHas('items', [
         'id' => $item->id,
         'name' => $item->name,
-        'location_id' => $item->location_id,
         'quantity' => 0, // Default quantity
     ]);
 });
@@ -68,17 +63,13 @@ test('factory creates item with optional description', function () {
 });
 
 test('creates with minimal attributes', function () {
-    $location = Location::factory()->create();
-
     $item = Item::create([
-        'location_id' => $location->id,
         'name' => 'Test Item',
     ]);
 
     $this->assertDatabaseHas('items', [
         'id' => $item->id,
         'name' => 'Test Item',
-        'location_id' => $location->id,
     ]);
     expect($item->description)->toBeNull();
 });
@@ -86,24 +77,20 @@ test('creates with minimal attributes', function () {
 test('updates attributes', function () {
     $item = Item::factory()->create();
     $originalId = $item->id;
-    $newLocation = Location::factory()->create();
 
     $item->update([
         'name' => 'Updated Name',
         'description' => 'Updated Description',
-        'location_id' => $newLocation->id,
     ]);
 
     expect($item->id)->toBe($originalId)
         ->and($item->name)->toBe('Updated Name')
-        ->and($item->description)->toBe('Updated Description')
-        ->and($item->location_id)->toBe($newLocation->id);
+        ->and($item->description)->toBe('Updated Description');
 
     $this->assertDatabaseHas('items', [
         'id' => $originalId,
         'name' => 'Updated Name',
         'description' => 'Updated Description',
-        'location_id' => $newLocation->id,
     ]);
 });
 
@@ -118,73 +105,6 @@ test('deletes item', function () {
     ]);
 });
 
-test('has location relationship', function () {
-    $item = new Item;
-
-    expect($item->location())->toBeInstanceOf(BelongsTo::class);
-});
-
-test('belongs to location', function () {
-    $location = Location::factory()->create();
-    $item = Item::factory()->for($location)->create();
-
-    expect($item->location)->toBeInstanceOf(Location::class);
-    expect($item->location->id)->toBe($location->id);
-});
-
-test('tags can be stored as array', function () {
-    $item = Item::factory()->create([
-        'tags' => ['Promotion', 'Healthy', 'Important'],
-    ]);
-
-    expect($item->tags)->toBeArray()
-        ->and($item->tags)->toHaveCount(3)
-        ->and($item->tags)->toContain('Promotion')
-        ->and($item->tags)->toContain('Healthy')
-        ->and($item->tags)->toContain('Important');
-});
-
-test('tags can be null', function () {
-    $item = Item::factory()->create([
-        'tags' => null,
-    ]);
-
-    expect($item->tags)->toBeNull();
-});
-
-test('tags can be updated', function () {
-    $item = Item::factory()->create([
-        'tags' => ['Promotion'],
-    ]);
-
-    expect($item->tags)->toHaveCount(1);
-
-    $item->update([
-        'tags' => ['Promotion', 'Healthy', 'Organic'],
-    ]);
-
-    $item->refresh();
-
-    expect($item->tags)->toHaveCount(3)
-        ->and($item->tags)->toContain('Healthy')
-        ->and($item->tags)->toContain('Organic');
-});
-
-test('withTags factory method creates item with specified tags', function () {
-    $item = Item::factory()->withTags(['Custom', 'Tags'])->create();
-
-    expect($item->tags)->toBeArray()
-        ->and($item->tags)->toHaveCount(2)
-        ->and($item->tags)->toContain('Custom')
-        ->and($item->tags)->toContain('Tags');
-});
-
-test('withTags factory method creates item with random tags when no args provided', function () {
-    $item = Item::factory()->withTags()->create();
-
-    expect($item->tags)->toBeArray()
-        ->and($item->tags)->not->toBeEmpty();
-});
 
 test('has batches relationship', function () {
     $item = new Item;
