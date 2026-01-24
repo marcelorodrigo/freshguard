@@ -24,6 +24,7 @@ class ItemSeeder extends Seeder
                 if ($numTags > 1) {
                     $tags = array_merge($tags, fake()->randomElements($otherTags, $numTags - 1));
                 }
+
                 return ['tags' => $tags];
             })
             ->create();
