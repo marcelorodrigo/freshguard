@@ -25,6 +25,7 @@ class StoreBatchRequest extends FormRequest
     {
         return [
             'item_id' => ['required', 'string', 'uuid', 'exists:items,id'],
+            'location_id' => ['required', 'uuid', 'exists:locations,id'],
             'expires_at' => ['required', 'date', 'after_or_equal:today'],
             'quantity' => ['required', 'integer', 'min:1'],
         ];
@@ -38,6 +39,8 @@ class StoreBatchRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'location_id.required' => 'A location must be selected.',
+            'location_id.exists' => 'The selected location does not exist.',
             'item_id.required' => 'An item must be selected.',
             'item_id.exists' => 'The selected item does not exist.',
             'expires_at.required' => 'The expiration date is required.',
