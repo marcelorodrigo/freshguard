@@ -3,11 +3,10 @@
 namespace Database\Factories;
 
 use App\Models\Item;
-use App\Models\Location;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Item>
+ * @extends Factory<Item>
  */
 class ItemFactory extends Factory
 {
@@ -19,7 +18,6 @@ class ItemFactory extends Factory
     public function definition(): array
     {
         return [
-            'location_id' => Location::factory(),
             'name' => fake()->words(3, true),
             'barcode' => fake()->ean13(),
             'description' => fake()->sentence(),
@@ -51,9 +49,9 @@ class ItemFactory extends Factory
      */
     public function withTags(array $tags = []): static
     {
-        $defaultTags = ['Promotion', 'Healthy', 'Dessert', 'Important', 'Organic', 'Frozen'];
 
-        return $this->state(function () use ($tags, $defaultTags) {
+        return $this->state(function () use ($tags) {
+            $defaultTags = ['Promotion', 'Healthy', 'Dessert', 'Important', 'Organic', 'Frozen'];
             if (empty($tags)) {
                 // If no tags specified, use 1-3 random default tags
                 $tags = fake()->randomElements($defaultTags, fake()->numberBetween(1, 3));
