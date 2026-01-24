@@ -18,7 +18,7 @@ return new class extends Migration
         Schema::table('batches', function (Blueprint $table) {
             $table->foreignUuid('location_id')
                 ->nullable()
-                ->after('id');
+                ->after('item_id');
         });
 
         // Migrate location_id data from items to batches
