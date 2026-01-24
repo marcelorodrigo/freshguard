@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +17,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Only proceed if items.location_id exists
+        if (! Schema::hasColumn('items', 'location_id')) {
+            return;
+        }
+
         Schema::table('batches', function (Blueprint $table) {
             $table->foreignUuid('location_id')
                 ->nullable()
@@ -46,6 +53,11 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Only proceed if batches.location_id exists
+        if (! Schema::hasColumn('batches', 'location_id')) {
+            return;
+        }
+
         // Add location_id back to items table as nullable
         Schema::table('items', function (Blueprint $table) {
             $table->foreignUuid('location_id')

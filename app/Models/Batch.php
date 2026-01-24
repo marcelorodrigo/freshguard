@@ -34,6 +34,7 @@ class Batch extends Model
      */
     protected $fillable = [
         'item_id',
+        'location_id',
         'expires_at',
         'quantity',
     ];
