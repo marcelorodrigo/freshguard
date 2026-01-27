@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Filament\Resources\Items\Pages\ManageItems;
 use App\Models\Item;
-use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
@@ -55,7 +54,6 @@ test('can search items by barcode', function (): void {
 });
 
 test('can create item with required fields', function (): void {
-    $location = Location::factory()->create();
     $newItem = Item::factory()->make();
 
     livewire(ManageItems::class)
@@ -79,7 +77,6 @@ test('can create item with required fields', function (): void {
 });
 
 test('validates item creation data', function (array $data, array $errors): void {
-    $location = Location::factory()->create();
     $newItem = Item::factory()->make();
 
     livewire(ManageItems::class)
@@ -98,7 +95,6 @@ test('validates item creation data', function (array $data, array $errors): void
 ]);
 
 test('can edit item', function (): void {
-    $location = Location::factory()->create();
     $item = Item::factory()->create([
 
         'name' => 'Original Item',

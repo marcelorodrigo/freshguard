@@ -40,11 +40,11 @@ class UpdateBatchRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'location_id.exists' => 'The selected location does not exist.',
-            'item_id.exists' => 'The selected item does not exist.',
-            'expires_at.after_or_equal' => 'The expiration date must be today or in the future.',
-            'quantity.integer' => 'The quantity must be a whole number.',
-            'quantity.min' => 'The quantity cannot be negative.',
+            'location_id.exists' => __('The selected location does not exist.'),
+            'item_id.exists' => __('The selected item does not exist.'),
+            'expires_at.after_or_equal' => __('The expiration date must be today or in the future.'),
+            'quantity.integer' => __('The quantity must be a whole number.'),
+            'quantity.min' => __('The quantity cannot be negative.'),
         ];
     }
 }

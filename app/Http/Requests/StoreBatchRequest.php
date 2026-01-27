@@ -40,15 +40,15 @@ class StoreBatchRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'location_id.required' => 'A location must be selected.',
-            'location_id.exists' => 'The selected location does not exist.',
-            'item_id.required' => 'An item must be selected.',
-            'item_id.exists' => 'The selected item does not exist.',
-            'expires_at.required' => 'The expiration date is required.',
-            'expires_at.after_or_equal' => 'The expiration date must be today or in the future.',
-            'quantity.required' => 'The quantity is required.',
-            'quantity.integer' => 'The quantity must be a whole number.',
-            'quantity.min' => 'The quantity must be at least 1.',
+            'location_id.required' => __('A location must be selected.'),
+            'location_id.exists' => __('The selected location does not exist.'),
+            'item_id.required' => __('An item must be selected.'),
+            'item_id.exists' => __('The selected item does not exist.'),
+            'expires_at.required' => __('The expiration date is required.'),
+            'expires_at.after_or_equal' => __('The expiration date must be today or in the future.'),
+            'quantity.required' => __('The quantity is required.'),
+            'quantity.integer' => __('The quantity must be a whole number.'),
+            'quantity.min' => __('The quantity must be at least 1.'),
         ];
     }
 }
