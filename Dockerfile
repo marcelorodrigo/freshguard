@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ############################################
 # Stage 1: Build frontend assets
 ############################################
@@ -8,7 +9,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --ignore-scripts
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+  npm ci --ignore-scripts --cache /root/.npm --prefer-offline --no-audit --progress=false
 
 # Copy source files needed for Vite/Tailwind build
 COPY resources/ resources/
@@ -37,7 +39,17 @@ RUN install-php-extensions intl gd exif
 USER www-data
 
 ############################################
-# Stage 3: Production image
+# Stage 3: Composer Install
+############################################
+FROM base AS composer
+WORKDIR /var/www/html
+# Copy composer files for better layer caching
+COPY --chown=www-data:www-data composer.json composer.lock ./
+# Install Composer dependencies
+RUN composer install --optimize-autoloader --no-dev --no-interaction --no-progress --no-scripts
+
+############################################
+# Stage 4: Production image
 ############################################
 FROM base AS production
 
@@ -46,6 +58,9 @@ COPY --chown=www-data:www-data . /var/www/html
 
 # Copy built assets from Node stage (overwrites source public/build)
 COPY --from=assets --chown=www-data:www-data /app/public/build /var/www/html/public/build
+
+# Copy vendor from composer layer for dependency cache
+COPY --from=composer /var/www/html/vendor /var/www/html/vendor
 
 # Ensure storage and cache directories exist and are writable
 USER root
