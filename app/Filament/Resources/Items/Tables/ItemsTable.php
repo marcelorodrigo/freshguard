@@ -24,7 +24,6 @@ class ItemsTable
                     ->sortable()
                     ->label(__('Name')),
                 TextColumn::make('location.name')
-                    ->searchable()
                     ->sortable()
                     ->label(__('Location')),
                 TextColumn::make('description')

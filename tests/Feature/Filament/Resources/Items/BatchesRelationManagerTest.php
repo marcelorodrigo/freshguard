@@ -6,6 +6,7 @@ use App\Filament\Resources\Items\Pages\EditItem;
 use App\Filament\Resources\Items\RelationManagers\BatchesRelationManager;
 use App\Models\Batch;
 use App\Models\Item;
+use App\Models\Location;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -39,12 +40,14 @@ test('can render table columns', function (): void {
         'pageClass' => EditItem::class,
     ])
         ->assertCanRenderTableColumn('expires_at')
+        ->assertCanRenderTableColumn('location.name')
         ->assertCanRenderTableColumn('quantity');
 });
 
 test('can create batch', function (): void {
     $item = Item::factory()->create();
     $expiresAt = Carbon::now()->addDays(30);
+    $location = Location::factory()->create();
 
     livewire(BatchesRelationManager::class, [
         'ownerRecord' => $item,
@@ -53,6 +56,7 @@ test('can create batch', function (): void {
         ->callAction(TestAction::make(CreateAction::class)->table(), [
             'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
             'quantity' => 50,
+            'location_id' => $location->id,
         ])
         ->assertNotified();
 

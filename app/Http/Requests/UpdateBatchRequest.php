@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBatchRequest extends FormRequest
@@ -19,11 +20,12 @@ class UpdateBatchRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
+            'location_id' => ['sometimes', 'uuid', 'exists:locations,id'],
             'item_id' => ['sometimes', 'string', 'uuid', 'exists:items,id'],
             'expires_at' => ['sometimes', 'date', 'after_or_equal:today'],
             'quantity' => ['sometimes', 'integer', 'min:0'],
@@ -38,10 +40,11 @@ class UpdateBatchRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'item_id.exists' => 'The selected item does not exist.',
-            'expires_at.after_or_equal' => 'The expiration date must be today or in the future.',
-            'quantity.integer' => 'The quantity must be a whole number.',
-            'quantity.min' => 'The quantity cannot be negative.',
+            'location_id.exists' => __('The selected location does not exist.'),
+            'item_id.exists' => __('The selected item does not exist.'),
+            'expires_at.after_or_equal' => __('The expiration date must be today or in the future.'),
+            'quantity.integer' => __('The quantity must be a whole number.'),
+            'quantity.min' => __('The quantity cannot be negative.'),
         ];
     }
 }
