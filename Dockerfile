@@ -43,10 +43,12 @@ USER www-data
 ############################################
 FROM base AS composer
 WORKDIR /var/www/html
+ENV COMPOSER_CACHE_DIR=/var/www/.composer/cache
 # Copy composer files for better layer caching
 COPY --chown=www-data:www-data composer.json composer.lock ./
 # Install Composer dependencies
-RUN composer install --optimize-autoloader --no-dev --no-interaction --no-progress --no-scripts
+RUN --mount=type=cache,id=composer-cache,target=/var/www/.composer/cache \
+  composer install --optimize-autoloader --no-dev --no-interaction --no-progress --no-scripts
 
 ############################################
 # Stage 4: Production image
