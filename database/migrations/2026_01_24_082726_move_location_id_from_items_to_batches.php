@@ -25,7 +25,8 @@ return new class extends Migration
         Schema::table('batches', function (Blueprint $table) {
             $table->foreignUuid('location_id')
                 ->nullable()
-                ->after('item_id');
+                ->after('item_id')
+                ->constrained('locations');
         });
 
         // Migrate location_id data from items to batches
@@ -37,9 +38,7 @@ return new class extends Migration
 
         // Make location_id NOT NULL after migration
         Schema::table('batches', function (Blueprint $table) {
-            $table->foreignUuid('location_id')
-                ->nullable(false)
-                ->change();
+            $table->uuid('location_id')->nullable(false)->change(); // Only change nullability; do not recreate FK/column
         });
 
         // Drop location_id from items table
@@ -62,7 +61,8 @@ return new class extends Migration
         Schema::table('items', function (Blueprint $table) {
             $table->foreignUuid('location_id')
                 ->nullable()
-                ->after('id');
+                ->after('id')
+                ->constrained('locations');
         });
 
         // Reverse: move location_id from batches back to items
@@ -77,7 +77,7 @@ return new class extends Migration
         Schema::table('items', function (Blueprint $table) {
             $table->foreignUuid('location_id')
                 ->nullable(false)
-                ->change();
+                ->change(); // Only change nullability, FK is already present
         });
 
         // Drop location_id from batches table
