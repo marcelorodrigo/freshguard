@@ -32,7 +32,7 @@ FreshGuard is built with modern, battle-tested technologies designed for reliabi
 - **Frontend**: Tailwind CSS v4 - Utility-first CSS for responsive, beautiful interfaces
 - **Admin Panel**: Filament - A beautiful TALL stack admin panel built on Laravel
 - **Database**: MariaDB with support for other production databases
-- **Language**: PHP 8.4 with strict types and comprehensive type hints
+- **Language**: PHP 8.5 with strict types and comprehensive type hints
 
 ### Architecture Highlights
 
