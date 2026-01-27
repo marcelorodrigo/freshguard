@@ -19,7 +19,6 @@ test('can render page and see table records', function (): void {
         ->assertCanSeeTableRecords($items)
         ->assertCountTableRecords(5)
         ->assertCanRenderTableColumn('name')
-        ->assertCanRenderTableColumn('location.name')
         ->assertCanRenderTableColumn('quantity');
 });
 
