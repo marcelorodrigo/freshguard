@@ -31,8 +31,8 @@ FreshGuard is built with modern, battle-tested technologies designed for reliabi
 - **Framework**: Laravel 12 - A powerful PHP framework with expressive syntax and elegant solutions
 - **Frontend**: Tailwind CSS v4 - Utility-first CSS for responsive, beautiful interfaces
 - **Admin Panel**: Filament - A beautiful TALL stack admin panel built on Laravel
-- **Database**: SQLite (development) with support for production databases
-- **Language**: PHP 8.4 with strict types and comprehensive type hints
+- **Database**: MariaDB with support for other production databases
+- **Language**: PHP 8.5 with strict types and comprehensive type hints
 
 ### Architecture Highlights
 
@@ -56,9 +56,10 @@ FreshGuard is built with modern, battle-tested technologies designed for reliabi
 
 ### Requirements
 
-- PHP 8.4+
+- PHP 8.5+
 - Composer
 - Node.js & npm (for frontend assets)
+- MariaDB
 
 ### Installation
 

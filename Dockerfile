@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 ############################################
 # Stage 1: Build frontend assets
 ############################################
@@ -8,7 +9,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --ignore-scripts
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+  npm ci --ignore-scripts --cache /root/.npm --prefer-offline --no-audit --progress=false
 
 # Copy source files needed for Vite/Tailwind build
 COPY resources/ resources/
