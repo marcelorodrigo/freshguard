@@ -39,19 +39,7 @@ RUN install-php-extensions intl gd exif
 USER www-data
 
 ############################################
-# Stage 3: Composer Install
-############################################
-FROM base AS composer
-WORKDIR /var/www/html
-ENV COMPOSER_CACHE_DIR=/var/www/.composer/cache
-# Copy composer files for better layer caching
-COPY --chown=www-data:www-data composer.json composer.lock ./
-# Install Composer dependencies
-RUN --mount=type=cache,id=composer-cache,target=/var/www/.composer/cache \
-  composer install --optimize-autoloader --no-dev --no-interaction --no-progress --no-scripts
-
-############################################
-# Stage 4: Production image
+# Stage 3: Production image
 ############################################
 FROM base AS production
 
@@ -60,9 +48,6 @@ COPY --chown=www-data:www-data . /var/www/html
 
 # Copy built assets from Node stage (overwrites source public/build)
 COPY --from=assets --chown=www-data:www-data /app/public/build /var/www/html/public/build
-
-# Copy vendor from composer layer for dependency cache
-COPY --from=composer /var/www/html/vendor /var/www/html/vendor
 
 # Ensure storage and cache directories exist and are writable
 USER root
