@@ -16,7 +16,7 @@
         "resend/resend-php": "^1.1"
     },
     "require-dev": {
-        "barryvdh/laravel-debugbar": "^3.16",
+        "barryvdh/laravel-debugbar": "^4.0",
         "fakerphp/faker": "^1.23",
         "larastan/larastan": "^3.4",
         "laravel/pail": "^1.2.2",
