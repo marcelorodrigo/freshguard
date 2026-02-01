@@ -12,6 +12,11 @@ class BatchesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->contentGrid([
+                'sm' => 1,
+                'md' => 1,
+                'lg' => 1,
+            ])
             ->columns([
                 TextColumn::make('location.name')
                     ->sortable()
