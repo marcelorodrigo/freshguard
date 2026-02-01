@@ -18,7 +18,7 @@ class BatchesTable
                     ->searchable()
                     ->label(__('Location')),
                 TextColumn::make('expires_at')
-                    ->dateTime('Y-m-d')
+                    ->dateTime('d-m-Y')
                     ->sortable()
                     ->searchable()
                     ->label(__('Expiration Date')),
@@ -27,7 +27,7 @@ class BatchesTable
                     ->sortable()
                     ->label(__('Quantity')),
                 TextColumn::make('created_at')
-                    ->dateTime('Y-m-d H:i')
+                    ->dateTime('d-m-Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label(__('Created At')),

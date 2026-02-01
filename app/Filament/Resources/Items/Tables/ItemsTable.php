@@ -23,9 +23,6 @@ class ItemsTable
                     ->searchable()
                     ->sortable()
                     ->label(__('Name')),
-                TextColumn::make('location.name')
-                    ->sortable()
-                    ->label(__('Location')),
                 TextColumn::make('description')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
