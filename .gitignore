@@ -29,3 +29,6 @@ yarn-error.log
 /public/fonts/filament/
 /public/css/filament/
 /public/js/filament/
+
+# Filament vendor packages
+/public/css/marcelorodrigo/
