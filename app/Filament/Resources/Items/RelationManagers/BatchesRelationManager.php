@@ -37,7 +37,7 @@ class BatchesRelationManager extends RelationManager
                     ->label(__('New Batch'))
                     ->icon('heroicon-o-plus'),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make()
                     ->label(__('Edit'))
                     ->icon('heroicon-o-pencil'),
