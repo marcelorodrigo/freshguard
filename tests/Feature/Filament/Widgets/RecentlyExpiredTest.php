@@ -6,12 +6,17 @@ use App\Filament\Widgets\RecentlyExpired;
 use App\Models\Batch;
 use App\Models\Item;
 use App\Models\Location;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
 use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->actingAs(User::factory()->create());
+});
 
 test('displays only expired batches sorted by earliest expiration', function (): void {
     $item = Item::factory()->create();
@@ -54,9 +59,7 @@ test('displays only expired batches sorted by earliest expiration', function ():
         'quantity' => 60,
     ]);
 
-    $expectedOrder = collect([$expiredBatch3, $expiredBatch2, $expiredBatch1])
-        ->sortBy('expires_at')
-        ->values();
+    $expectedOrder = collect([$expiredBatch3, $expiredBatch2, $expiredBatch1]);
 
     livewire(RecentlyExpired::class)
         ->assertSuccessful()
