@@ -14,14 +14,13 @@ Build / Lint / Test (DDEV-aware)
 - Static analysis: `ddev composer phpstan` (2GB memory configured in composer script)
 - Run full test suite: `ddev composer test` (runs `php artisan test --exclude-group disabled`)
 - Run test coverage: `ddev composer test:coverage`
-- Run a single test file (example):
-  `ddev composer test -- --filter tests/Unit/ItemTest.php`
-- Run a single test class or method (examples):
-  `ddev composer test -- --filter "ItemTest::it_updates_quantity"`
-  or for Pest directly: `ddev ssh` then `vendor/bin/pest tests/Unit/ItemTest.php --filter="it updates quantity"`
+- Run a single test file/class/method (use artisan directly):
+  `ddev artisan test --exclude-group disabled --filter="SmokeTest"`
+  `ddev artisan test --exclude-group disabled --filter="ItemTest::it_updates_quantity"`
+  `ddev artisan test --exclude-group disabled tests/Unit/ItemTest.php`
 
 Composer scripts (quick reference)
-- `composer test` — run tests (wrapped by DDEV in workflows)
+- `ddev composer test` — run tests (wrapped by DDEV in workflows)
 - `composer pint` / `pint:dirty` — code formatting
 - `composer phpstan` — static analysis
 
@@ -99,7 +98,7 @@ When to ask questions
 
 Next steps for contributors
 1) Run formatting and static analysis: `ddev composer pint && ddev composer phpstan`.
-2) Run the single test you're working on with `ddev composer test -- --filter "YourTest::method"`.
+2) Run the single test you're working on with `ddev artisan test --exclude-group disabled --filter "YourTest::method"`.
 3) Open a small PR with focused changes and the three-checks green in CI.
 
 ===
