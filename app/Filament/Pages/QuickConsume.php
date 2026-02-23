@@ -25,6 +25,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use UnitEnum;
 
@@ -213,20 +214,30 @@ class QuickConsume extends Page
             return;
         }
 
-        /** @var Batch|null $batch */
-        $batch = Batch::query()->find($batchId);
+        $itemName = DB::transaction(function () use ($batchId): ?string {
+            $batch = Batch::query()
+                ->where('id', $batchId)
+                ->lockForUpdate()
+                ->first();
 
-        if ($batch === null || $batch->quantity <= 0) {
+            if ($batch === null || $batch->quantity <= 0) {
+                return null;
+            }
+
+            $itemName = $batch->item->name;
+
+            if ($batch->quantity === 1) {
+                $batch->delete();
+            } else {
+                $batch->quantity--;
+                $batch->save();
+            }
+
+            return $itemName;
+        });
+
+        if ($itemName === null) {
             return;
-        }
-
-        $itemName = $batch->item->name;
-
-        if ($batch->quantity === 1) {
-            $batch->delete();
-        } else {
-            $batch->quantity--;
-            $batch->save();
         }
 
         Notification::make()
