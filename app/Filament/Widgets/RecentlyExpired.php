@@ -48,7 +48,7 @@ class RecentlyExpired extends TableWidget
                 TextColumn::make('expires_at')
                     ->label(__('Expiration Date'))
                     ->date('d-m-Y')
-                    ->visibleFrom('md')
+                    ->visibleFrom('md'),
             ])
             ->recordUrl(fn (Batch $record): string => ItemResource::getUrl('edit', ['record' => $record->item]))
             ->paginated(false)
