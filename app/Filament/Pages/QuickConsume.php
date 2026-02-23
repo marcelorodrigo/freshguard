@@ -22,6 +22,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Url;
 use UnitEnum;
@@ -76,8 +78,7 @@ class QuickConsume extends Page
 
         $this->searchResults = Item::query()
             ->with([
-                'batches' => /** @param \Illuminate\Database\Eloquent\Builder<\App\Models\Batch> $query */ function (mixed $query) {
-                    /** @var \Illuminate\Database\Eloquent\Builder<Batch> $query */
+                'batches' => function (Relation $query): Relation {
                     return $query
                         ->with('location')
                         ->where('quantity', '>', 0)
@@ -89,7 +90,7 @@ class QuickConsume extends Page
                     ->orWhere('barcode', 'like', "%{$search}%")
                     ->orWhere('description', 'like', "%{$search}%");
             })
-            ->whereHas('batches', fn ($q) => $q->where('quantity', '>', 0))
+            ->whereHas('batches', fn (Builder $q): Builder => $q->where('quantity', '>', 0))
             ->limit(10)
             ->get();
     }
