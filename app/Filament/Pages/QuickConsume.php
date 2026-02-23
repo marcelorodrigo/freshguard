@@ -27,17 +27,22 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
-use UnitEnum;
 
 class QuickConsume extends Page
 {
-    protected static ?string $navigationLabel = 'Quick Consume';
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;
 
-    protected static string|null|UnitEnum $navigationGroup = 'Inventory';
-
     protected static ?int $navigationSort = 10;
+
+    public static function navigationLabel(): ?string
+    {
+        return __('filament.navigation.quick_consume');
+    }
+
+    public static function navigationGroup(): ?string
+    {
+        return __('filament.navigation.inventory');
+    }
 
     protected string $view = 'filament.pages.quick-consume';
 
