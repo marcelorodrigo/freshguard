@@ -46,7 +46,10 @@ class QuickConsume extends Page
 
     public function mount(): void
     {
-        $this->searchResults = collect();
+        /** @var Collection<int, Item> $searchResults */
+        $searchResults = collect();
+
+        $this->searchResults = $searchResults;
 
         if (strlen($this->search) >= 2) {
             $this->performSearch();
@@ -56,7 +59,10 @@ class QuickConsume extends Page
     public function updatedSearch(): void
     {
         if (strlen($this->search) < 2) {
-            $this->searchResults = collect();
+            /** @var Collection<int, Item> $searchResults */
+            $searchResults = collect();
+
+            $this->searchResults = $searchResults;
 
             return;
         }
@@ -70,14 +76,20 @@ class QuickConsume extends Page
 
         $this->searchResults = Item::query()
             ->with([
-                'batches' => fn ($query) => $query
-                    ->with('location')
-                    ->orderBy('expires_at'),
+                'batches' => /** @param \Illuminate\Database\Eloquent\Builder<\App\Models\Batch> $query */ function (mixed $query) {
+                    /** @var \Illuminate\Database\Eloquent\Builder<Batch> $query */
+                    return $query
+                        ->with('location')
+                        ->where('quantity', '>', 0)
+                        ->orderBy('expires_at');
+                },
             ])
             ->where(function ($query) use ($search): void {
                 $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
+                    ->orWhere('barcode', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             })
+            ->whereHas('batches', fn ($q) => $q->where('quantity', '>', 0))
             ->limit(10)
             ->get();
     }
@@ -125,7 +137,7 @@ class QuickConsume extends Page
                 TextEntry::make('name')
                     ->label('')
                     ->weight(FontWeight::Bold)
-                    ->tooltip(fn ($record) => $record->description)
+                    ->tooltip(fn (mixed $record): string => ($record instanceof Item) ? ($record->description ?? '') : '')
                     ->size(TextSize::Large),
                 RepeatableEntry::make('batches')
                     ->table([
@@ -154,9 +166,6 @@ class QuickConsume extends Page
                                     ->modalDescription(__('quick-consume.action.confirm.description'))
                                     ->action(function (Batch $batch): void {
                                         $this->consumeBatch($batch->id);
-                                    })
-                                    ->after(function (): void {
-                                        $this->dispatch('$refresh');
                                     })
                             ),
                     ]),
@@ -215,7 +224,8 @@ class QuickConsume extends Page
         if ($batch->quantity === 1) {
             $batch->delete();
         } else {
-            $batch->decrement('quantity');
+            $batch->quantity--;
+            $batch->save();
         }
 
         Notification::make()

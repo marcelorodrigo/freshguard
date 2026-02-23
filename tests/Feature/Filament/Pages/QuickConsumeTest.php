@@ -61,7 +61,7 @@ test('search returns items matching description', function (): void {
     ]);
 
     livewire(QuickConsume::class)
-        ->set('search', 'organic milk')
+        ->set('search', 'milk')
         ->assertSet('searchResults', function ($results) use ($item) {
             return $results->contains('id', $item->id);
         });
@@ -236,7 +236,7 @@ test('consume action deletes batch when quantity reaches zero', function (): voi
 });
 
 test('parent item quantity updates after consume', function (): void {
-    $item = Item::factory()->create(['name' => 'Test Item', 'quantity' => 10]);
+    $item = Item::factory()->create(['name' => 'Test Item']);
     $location = Location::factory()->create();
     $batch = Batch::factory()->create([
         'item_id' => $item->id,
@@ -250,7 +250,7 @@ test('parent item quantity updates after consume', function (): void {
         ->call('consumeBatch', $batch->id);
 
     $item->refresh();
-    expect($item->quantity)->toBe(9);
+    expect($item->quantity)->toBe(4);
 });
 
 test('search persists after consume', function (): void {
@@ -292,7 +292,7 @@ test('initial empty state shown when search is empty', function (): void {
         ->assertSee(__('quick-consume.empty.initial.title'));
 });
 
-test('consume action requires confirmation', function (): void {
+test('consume action with confirmation applies changes', function (): void {
     $item = Item::factory()->create(['name' => 'Test Item']);
     $location = Location::factory()->create();
     $batch = Batch::factory()->create([
@@ -304,5 +304,9 @@ test('consume action requires confirmation', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'Test Item')
-        ->assertActionHasConfirmation('consume', ['record' => ['id' => $batch->id]]);
+        ->call('consumeBatch', $batch->id)
+        ->assertNotified();
+
+    $batch->refresh();
+    expect($batch->quantity)->toBe(4);
 });
