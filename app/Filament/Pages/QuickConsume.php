@@ -28,16 +28,22 @@ class QuickConsume extends Page implements HasSchemas
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMinusCircle;
 
-    protected static ?string $navigationLabel = 'Quick Consume';
-
     protected static ?int $navigationSort = 1;
-
-    protected static string|null|\UnitEnum $navigationGroup = 'Inventory';
 
     #[Url]
     public string $search = '';
 
     public ?Item $selectedItem = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Quick Consume');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Inventory');
+    }
 
     /**
      * @var Collection<int, Batch>|null
