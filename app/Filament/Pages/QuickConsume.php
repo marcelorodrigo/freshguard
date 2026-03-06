@@ -34,12 +34,12 @@ class QuickConsume extends Page
 
     protected static ?int $navigationSort = 10;
 
-    public static function navigationLabel(): ?string
+    public static function getNavigationLabel(): string
     {
         return __('filament.navigation.quick_consume');
     }
 
-    public static function navigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('filament.navigation.inventory');
     }
