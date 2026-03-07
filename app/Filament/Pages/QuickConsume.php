@@ -252,5 +252,9 @@ class QuickConsume extends Page
             ->send();
 
         $this->performSearch();
+
+        // Clear cached schema to force infolist re-render with updated data
+        $this->cachedSchemas = [];
+        $this->isCachingSchemas = false;
     }
 }
