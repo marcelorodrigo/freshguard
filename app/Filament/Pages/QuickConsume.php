@@ -86,7 +86,7 @@ class QuickConsume extends Page
             ->with([
                 'batches' => function (Relation $query): Relation {
                     return $query
-                        ->with('location')
+                        ->with('location', 'item')
                         ->where('quantity', '>', 0)
                         ->orderBy('expires_at');
                 },
