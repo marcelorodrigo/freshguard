@@ -23,7 +23,9 @@ test('can render page and see table records', function (): void {
 });
 
 test('can search items by name', function (): void {
-    $items = Item::factory()->count(5)->create();
+    $items = collect(['Alpha Item', 'Beta Item', 'Gamma Item', 'Delta Item', 'Epsilon Item'])
+        ->map(fn (string $name) => Item::factory()->create(['name' => $name]));
+
     $searchItem = $items->first();
 
     livewire(ManageItems::class)
@@ -43,7 +45,9 @@ test('can sort items by name', function (): void {
 });
 
 test('can search items by barcode', function (): void {
-    $items = Item::factory()->count(2)->create();
+    $items = collect(['0000000000001', '0000000000002'])
+        ->map(fn (string $barcode) => Item::factory()->create(['barcode' => $barcode]));
+
     $searchItem = $items->first();
 
     livewire(ManageItems::class)
