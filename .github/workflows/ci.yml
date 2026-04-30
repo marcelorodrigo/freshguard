@@ -67,6 +67,6 @@ jobs:
           DB_USERNAME: db
           DB_PASSWORD: db
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v7
+        uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
