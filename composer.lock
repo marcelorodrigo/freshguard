@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fe76395436b7a726fe3b1d56187db433",
+    "content-hash": "7a3795722e3790fe82260d8a7ea2fa1b",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -3984,31 +3984,31 @@
         },
         {
             "name": "openfoodfacts/openfoodfacts-laravel",
-            "version": "v0.7.0",
+            "version": "v0.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/openfoodfacts/openfoodfacts-laravel.git",
-                "reference": "e5642fc2d7b9f9084bfcb7049604b18452b6d8aa"
+                "reference": "e38f977f5addc060b161d4b0c34cb60bf563dc18"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/openfoodfacts/openfoodfacts-laravel/zipball/e5642fc2d7b9f9084bfcb7049604b18452b6d8aa",
-                "reference": "e5642fc2d7b9f9084bfcb7049604b18452b6d8aa",
+                "url": "https://api.github.com/repos/openfoodfacts/openfoodfacts-laravel/zipball/e38f977f5addc060b161d4b0c34cb60bf563dc18",
+                "reference": "e38f977f5addc060b161d4b0c34cb60bf563dc18",
                 "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.4",
-                "illuminate/support": "^11.0|^12.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
                 "openfoodfacts/openfoodfacts-php": "^0.3.0",
                 "php": "^8.2"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3.9.5",
                 "larastan/larastan": "^2.9|^3.1",
-                "orchestra/testbench": "^7.0|^8.0|^9.0|^10.0",
+                "orchestra/testbench": "^9.0|^10.0|^11.0",
                 "phpstan/phpstan": "^1.10|^2.1",
                 "phpstan/phpstan-phpunit": "^1.3|^2.0",
-                "phpunit/phpunit": "^9.5.21|^10.5|^11.5.3"
+                "phpunit/phpunit": "^10.5|^11.5.3|^12.0"
             },
             "type": "library",
             "extra": {
@@ -4045,7 +4045,7 @@
             ],
             "support": {
                 "issues": "https://github.com/openfoodfacts/openfoodfacts-laravel/issues",
-                "source": "https://github.com/openfoodfacts/openfoodfacts-laravel/tree/v0.7.0"
+                "source": "https://github.com/openfoodfacts/openfoodfacts-laravel/tree/v0.8.0"
             },
             "funding": [
                 {
@@ -4053,7 +4053,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-08-04T18:30:55+00:00"
+            "time": "2026-06-06T21:30:47+00:00"
         },
         {
             "name": "openfoodfacts/openfoodfacts-php",
