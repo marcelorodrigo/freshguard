@@ -88,6 +88,7 @@ class ItemForm
         }
 
         try {
+            /** @var array<string, mixed> $productData */
             $productData = OpenFoodFacts::barcode($state);
 
             if (empty($productData)) {
