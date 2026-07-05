@@ -54,7 +54,7 @@ class QuickConsume extends Page
 
     public function mount(): void
     {
-        $this->searchResults = new Collection();
+        $this->searchResults = new Collection;
 
         if (strlen($this->search) >= 2) {
             $this->performSearch();
@@ -64,7 +64,7 @@ class QuickConsume extends Page
     public function updatedSearch(): void
     {
         if (strlen($this->search) < 2) {
-            $this->searchResults = new Collection();
+            $this->searchResults = new Collection;
 
             return;
         }
@@ -178,19 +178,12 @@ class QuickConsume extends Page
      */
     private function getExpirationStatus(?Carbon $expiresAt): array
     {
-        if ($expiresAt === null) {
-            return ['icon' => Heroicon::OutlinedQuestionMarkCircle, 'color' => 'gray'];
-        }
-
-        if ($expiresAt->isPast()) {
-            return ['icon' => Heroicon::OutlinedExclamationTriangle, 'color' => 'danger'];
-        }
-
-        if ($expiresAt->diffInDays(now()) <= 7) {
-            return ['icon' => Heroicon::OutlinedClock, 'color' => 'warning'];
-        }
-
-        return ['icon' => Heroicon::OutlinedCheckCircle, 'color' => 'success'];
+        return match (true) {
+            $expiresAt === null => ['icon' => Heroicon::OutlinedQuestionMarkCircle, 'color' => 'gray'],
+            $expiresAt->isPast() => ['icon' => Heroicon::OutlinedExclamationTriangle, 'color' => 'danger'],
+            $expiresAt->diffInDays(now()) <= 7 => ['icon' => Heroicon::OutlinedClock, 'color' => 'warning'],
+            default => ['icon' => Heroicon::OutlinedCheckCircle, 'color' => 'success'],
+        };
     }
 
     public function consumeBatch(string $batchId): void
@@ -199,7 +192,28 @@ class QuickConsume extends Page
             return;
         }
 
-        $itemName = DB::transaction(function () use ($batchId): ?string {
+        $itemName = $this->decrementBatchQuantity($batchId);
+
+        if ($itemName === null) {
+            return;
+        }
+
+        Notification::make()
+            ->title(__('quick-consume.notification.consumed.title'))
+            ->body(__('quick-consume.notification.consumed.body', ['item' => $itemName]))
+            ->success()
+            ->send();
+
+        $this->performSearch();
+
+        // Clear cached schema to force infolist re-render with updated data
+        $this->cachedSchemas = [];
+        $this->isCachingSchemas = false;
+    }
+
+    private function decrementBatchQuantity(string $batchId): ?string
+    {
+        return DB::transaction(function () use ($batchId): ?string {
             $batch = Batch::query()
                 ->where('id', $batchId)
                 ->lockForUpdate()
@@ -220,21 +234,5 @@ class QuickConsume extends Page
 
             return $itemName;
         });
-
-        if ($itemName === null) {
-            return;
-        }
-
-        Notification::make()
-            ->title(__('quick-consume.notification.consumed.title'))
-            ->body(__('quick-consume.notification.consumed.body', ['item' => $itemName]))
-            ->success()
-            ->send();
-
-        $this->performSearch();
-
-        // Clear cached schema to force infolist re-render with updated data
-        $this->cachedSchemas = [];
-        $this->isCachingSchemas = false;
     }
 }
