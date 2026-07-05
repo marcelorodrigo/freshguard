@@ -111,12 +111,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | This option lists the classes that may be unserialized from the cache.
-    | When set to false, no classes can be unserialized. When set to an empty
-    | array, all classes may be unserialized. Otherwise, only the listed
-    | classes may be unserialized.
+    | When set to false, no classes can be unserialized by default. To allow
+    | specific classes, list them here. An empty array allows all classes to
+    | be unserialized — use with caution.
     |
     */
 
-    'serializable_classes' => [],
+    'serializable_classes' => false,
 
 ];
