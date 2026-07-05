@@ -38,7 +38,7 @@ class ToggleRegistrationsAction
 
                 return $user instanceof User && $user->isAdmin();
             })
-            ->action(function (Action $action): void {
+            ->action(function (): void {
                 $currentStatus = config('freshguard.registrations_enabled');
                 $newStatus = ! $currentStatus;
 

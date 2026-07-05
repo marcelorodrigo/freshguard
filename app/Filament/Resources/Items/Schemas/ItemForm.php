@@ -39,72 +39,7 @@ class ItemForm
                                     ->label(__('Barcode'))
                                     ->live(onBlur: true)
                                     ->columnSpan(['sm' => 1, 'md' => 1])
-                                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state, ?string $old): void {
-                                        // Only fetch if barcode changed and has a value
-                                        if (empty($state) || $state === $old) {
-                                            return;
-                                        }
-
-                                        try {
-                                            $productData = OpenFoodFacts::barcode($state);
-
-                                            if (empty($productData)) {
-                                                Notification::make()
-                                                    ->title(__('Product not found'))
-                                                    ->body(__('No product information found for this barcode.'))
-                                                    ->warning()
-                                                    ->send();
-
-                                                return;
-                                            }
-
-                                            $fieldsPopulated = [];
-
-                                            // Only populate if name is empty
-                                            if (empty($get('name')) && ! empty($productData['product_name'])) {
-                                                $set('name', $productData['product_name']);
-                                                $fieldsPopulated[] = __('name');
-                                            }
-
-                                            // Only populate if description is empty
-                                            if (empty($get('description')) && ! empty($productData['generic_name'])) {
-                                                $set('description', $productData['generic_name']);
-                                                $fieldsPopulated[] = __('description');
-                                            }
-
-                                            // Only populate tags if they are null/empty
-                                            $currentTags = $get('tags');
-                                            if (empty($currentTags) && ! empty($productData['categories_hierarchy'])) {
-                                                $tags = self::extractTagsFromCategories($productData['categories_hierarchy']);
-
-                                                if (! empty($tags)) {
-                                                    $set('tags', $tags);
-                                                    $fieldsPopulated[] = __('tags');
-                                                }
-                                            }
-
-                                            // Show success notification with populated fields
-                                            if (! empty($fieldsPopulated)) {
-                                                Notification::make()
-                                                    ->title(__('Product data loaded'))
-                                                    ->body(__('Populated: :fields', ['fields' => implode(', ', $fieldsPopulated)]))
-                                                    ->success()
-                                                    ->send();
-                                            } else {
-                                                Notification::make()
-                                                    ->title(__('Product found'))
-                                                    ->body(__('No empty fields to populate.'))
-                                                    ->info()
-                                                    ->send();
-                                            }
-                                        } catch (\Exception $e) {
-                                            Log::warning('Error fetching product data for barcode', [
-                                                'barcode' => $state,
-                                                'error' => $e->getMessage(),
-                                                'exception' => get_class($e),
-                                            ]);
-                                        }
-                                    }),
+                                    ->afterStateUpdated(static fn (Get $get, Set $set, ?string $state, ?string $old) => self::handleBarcodeLookup($get, $set, $state, $old)),
                             ]),
                         Textarea::make('description')
                             ->maxLength(1000)
@@ -129,7 +64,6 @@ class ItemForm
                                 TagsInput::make('tags')
                                     ->label(__('Tags'))
                                     ->suggestions(function (): array {
-                                        // Get all existing tags from all items
                                         return Item::query()
                                             ->whereNotNull('tags')
                                             ->pluck('tags')
@@ -145,6 +79,96 @@ class ItemForm
                     ])
                     ->compact(),
             ]);
+    }
+
+    private static function handleBarcodeLookup(Get $get, Set $set, ?string $state, ?string $old): void
+    {
+        if (empty($state) || $state === $old) {
+            return;
+        }
+
+        try {
+            /** @var array{product_name?: string, generic_name?: string, categories_hierarchy?: array<int, string>|string|null} $productData */
+            $productData = OpenFoodFacts::barcode($state);
+
+            if (empty($productData)) {
+                self::notifyProductNotFound();
+
+                return;
+            }
+
+            $fieldsPopulated = self::populateFieldsFromProductData($get, $set, $productData);
+
+            self::notifyFieldsPopulated($fieldsPopulated);
+        } catch (\Exception $e) {
+            Log::warning('Error fetching product data for barcode', [
+                'barcode' => $state,
+                'error' => $e->getMessage(),
+                'exception' => get_class($e),
+            ]);
+        }
+    }
+
+    /**
+     * @param  array{product_name?: string, generic_name?: string, categories_hierarchy?: array<int, string>|string|null}  $productData
+     * @return array<int, string>
+     */
+    private static function populateFieldsFromProductData(Get $get, Set $set, array $productData): array
+    {
+        $fieldsPopulated = [];
+
+        if (empty($get('name')) && ! empty($productData['product_name'])) {
+            $set('name', $productData['product_name']);
+            $fieldsPopulated[] = __('name');
+        }
+
+        if (empty($get('description')) && ! empty($productData['generic_name'])) {
+            $set('description', $productData['generic_name']);
+            $fieldsPopulated[] = __('description');
+        }
+
+        $currentTags = $get('tags');
+        if (empty($currentTags) && ! empty($productData['categories_hierarchy'])) {
+            $tags = self::extractTagsFromCategories($productData['categories_hierarchy']);
+
+            if (! empty($tags)) {
+                $set('tags', $tags);
+                $fieldsPopulated[] = __('tags');
+            }
+        }
+
+        return $fieldsPopulated;
+    }
+
+    private static function notifyProductNotFound(): void
+    {
+        Notification::make()
+            ->title(__('Product not found'))
+            ->body(__('No product information found for this barcode.'))
+            ->warning()
+            ->send();
+    }
+
+    /**
+     * @param  array<int, string>  $fieldsPopulated
+     */
+    private static function notifyFieldsPopulated(array $fieldsPopulated): void
+    {
+        if (! empty($fieldsPopulated)) {
+            Notification::make()
+                ->title(__('Product data loaded'))
+                ->body(__('Populated: :fields', ['fields' => implode(', ', $fieldsPopulated)]))
+                ->success()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title(__('Product found'))
+            ->body(__('No empty fields to populate.'))
+            ->info()
+            ->send();
     }
 
     /**
