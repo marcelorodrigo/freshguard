@@ -342,3 +342,44 @@ test('consume batch does nothing when batch does not exist', function (): void {
         ->call('consumeBatch', $nonExistentId)
         ->assertNotNotified();
 });
+
+test('expiry date is formatted as day/month/year', function (): void {
+    $item = Item::factory()->create(['name' => 'Test Item']);
+    $location = Location::factory()->create();
+    $batch = Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $location->id,
+        'quantity' => 5,
+        'expires_at' => '2026-12-25',
+    ]);
+
+    livewire(QuickConsume::class)
+        ->set('search', 'Test Item')
+        ->assertSuccessful()
+        ->assertSet('searchResults', function ($results) use ($batch): bool {
+            return $results->contains(
+                fn (Item $item): bool => $item->batches->contains(
+                    fn ($b): bool => $b->id === $batch->id && $b->expires_at->format('d/m/Y') === '25/12/2026'
+                )
+            );
+        });
+});
+
+test('consume batch does nothing when batch has zero quantity', function (): void {
+    $item = Item::factory()->create(['name' => 'Test Item']);
+    $location = Location::factory()->create();
+    $batch = Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $location->id,
+        'quantity' => 0,
+        'expires_at' => now()->addDays(30),
+    ]);
+
+    livewire(QuickConsume::class)
+        ->set('search', 'Test Item')
+        ->call('consumeBatch', $batch->id)
+        ->assertNotNotified();
+
+    $batch->refresh();
+    expect($batch->quantity)->toBe(0);
+});
