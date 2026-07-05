@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 use function Pest\Livewire\livewire;
 
@@ -309,4 +310,35 @@ test('consume action with confirmation applies changes', function (): void {
 
     $batch->refresh();
     expect($batch->quantity)->toBe(4);
+});
+
+test('mount triggers search when url search param has at least 2 characters', function (): void {
+    $item = Item::factory()->create(['name' => 'Milk Product']);
+    $location = Location::factory()->create();
+    Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $location->id,
+        'quantity' => 5,
+        'expires_at' => now()->addDays(30),
+    ]);
+
+    livewire(QuickConsume::class, ['search' => 'Milk'])
+        ->assertSet('search', 'Milk')
+        ->assertSet('searchResults', function ($results) use ($item) {
+            return $results->contains('id', $item->id);
+        });
+});
+
+test('consume batch does nothing when batch id is empty', function (): void {
+    livewire(QuickConsume::class)
+        ->call('consumeBatch', '')
+        ->assertNotNotified();
+});
+
+test('consume batch does nothing when batch does not exist', function (): void {
+    $nonExistentId = (string) Str::uuid();
+
+    livewire(QuickConsume::class)
+        ->call('consumeBatch', $nonExistentId)
+        ->assertNotNotified();
 });

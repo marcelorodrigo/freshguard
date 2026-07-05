@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Requests\StoreBatchRequest;
 use App\Models\Item;
+use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Validator;
 
@@ -67,7 +68,7 @@ test('custom messages are defined', function () use (&$request) {
 
 test('valid data passes validation', function () use (&$request) {
     $item = Item::factory()->create();
-    $location = \App\Models\Location::factory()->create();
+    $location = Location::factory()->create();
 
     $data = [
         'item_id' => $item->id,

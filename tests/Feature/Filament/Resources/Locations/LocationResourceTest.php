@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Filament\Resources\Locations\Pages\ManageLocations;
 use App\Models\Location;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Str;
 
 use function Pest\Livewire\livewire;
@@ -38,7 +39,7 @@ test('can search locations by name', function (): void {
 });
 
 test('can create location', function () {
-    /** @var \Illuminate\Foundation\Testing\TestCase $this */
+    /** @var TestCase $this */
     $newLocation = Location::factory()->make();
 
     livewire(ManageLocations::class)
@@ -92,7 +93,7 @@ test('can edit location', function (): void {
         ])
         ->assertNotified();
 
-    /** @var \Illuminate\Foundation\Testing\TestCase $this */
+    /** @var TestCase $this */
     $this->assertDatabaseHas('locations', [
         'id' => $location->id,
         'name' => 'Updated Name',

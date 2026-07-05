@@ -219,7 +219,7 @@ test('second registered user is not automatically admin', function (): void {
         'email' => 'second@example.com',
         'password' => 'password',
     ]);
-    event(new \Illuminate\Auth\Events\Registered($secondUser));
+    event(new Illuminate\Auth\Events\Registered($secondUser));
 
     $secondUser->refresh();
     expect($secondUser->is_admin)->toBeFalse();
