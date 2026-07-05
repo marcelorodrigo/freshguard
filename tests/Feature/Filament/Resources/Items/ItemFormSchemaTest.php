@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 use App\Filament\Resources\Items\Pages\CreateItem;
 use App\Models\Item;
+use App\Models\User;
+use Filament\Forms\Components\TagsInput;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
 
 use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->actingAs(User::factory()->create());
+});
 
 test('barcode lookup populates empty fields from product data', function (): void {
     OpenFoodFacts::shouldReceive('barcode')
@@ -142,7 +148,11 @@ test('tags input shows suggestions from existing items', function (): void {
 
     livewire(CreateItem::class)
         ->assertOk()
-        ->assertFormFieldExists('tags');
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe(['Dairy', 'Healthy', 'Promotion', 'Snacks']);
+
+            return true;
+        });
 });
 
 test('tags input suggestions empty when no items have tags', function (): void {
@@ -150,7 +160,11 @@ test('tags input suggestions empty when no items have tags', function (): void {
 
     livewire(CreateItem::class)
         ->assertOk()
-        ->assertFormFieldExists('tags');
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe([]);
+
+            return true;
+        });
 });
 
 test('barcode lookup handles categories with non-array value', function (): void {

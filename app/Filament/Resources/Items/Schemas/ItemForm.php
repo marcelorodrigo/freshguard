@@ -88,7 +88,7 @@ class ItemForm
         }
 
         try {
-            /** @var array<string, mixed> $productData */
+            /** @var array{product_name?: string, generic_name?: string, categories_hierarchy?: array<int, string>|string|null} $productData */
             $productData = OpenFoodFacts::barcode($state);
 
             if (empty($productData)) {
@@ -110,7 +110,7 @@ class ItemForm
     }
 
     /**
-     * @param  array<string, mixed>  $productData
+     * @param  array{product_name?: string, generic_name?: string, categories_hierarchy?: array<int, string>|string|null}  $productData
      * @return array<int, string>
      */
     private static function populateFieldsFromProductData(Get $get, Set $set, array $productData): array
