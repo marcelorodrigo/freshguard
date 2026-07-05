@@ -1,6 +1,9 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\Filament\FreshguardPanelProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\Filament\FreshguardPanelProvider::class,
+    AppServiceProvider::class,
+    FreshguardPanelProvider::class,
 ];
