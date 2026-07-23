@@ -54,6 +54,8 @@ jobs:
         run: npm install
       - name: Generating assets
         run: npm run build
+      - name: Pint (code style check)
+        run: vendor/bin/pint --test --parallel
       - name: PHPStan
         run: composer phpstan
       - name: Execute tests
