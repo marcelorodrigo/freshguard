@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "marcelorodrigo/freshguard",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "FreshGuard — intelligent home stock inventory management.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {

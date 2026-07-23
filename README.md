@@ -28,7 +28,7 @@ FreshGuard is built with modern, battle-tested technologies designed for reliabi
 
 ### Core Technologies
 
-- **Framework**: Laravel 12 - A powerful PHP framework with expressive syntax and elegant solutions
+- **Framework**: Laravel 13 - A powerful PHP framework with expressive syntax and elegant solutions
 - **Frontend**: Tailwind CSS v4 - Utility-first CSS for responsive, beautiful interfaces
 - **Admin Panel**: Filament - A beautiful TALL stack admin panel built on Laravel
 - **Database**: MariaDB with support for other production databases
@@ -36,13 +36,13 @@ FreshGuard is built with modern, battle-tested technologies designed for reliabi
 
 ### Architecture Highlights
 
-- **Eloquent ORM** - Elegant database interactions with intuitive relationships
-- **Form Requests** - Powerful validation layer for data integrity
-- **Service Layer** - Clean separation of concerns with dependency injection
+- **Filament v5 Admin Panel** - The entire UI is a Filament resource-driven admin panel under `app/Filament/Resources/{Items,Locations,Users}` (no separate front-end app or REST API)
+- **Livewire v4 + Schema-Driven Forms/Tables** - Forms and tables are defined in PHP via `app/Filament/Resources/*/Schemas` and `app/Filament/Resources/*/Tables`, powered by Livewire and Alpine.js
+- **Eloquent ORM + UUID Models** - Domain and persistence live in `app/Models/{Batch,Item,Location,User}`, using UUID primary keys (`HasUuids`)
+- **Batch-Centric Inventory** - A `Batch` groups `Item` records by purchase or storage date for batch-level tracking
+- **Form Request Validation** - Validation is enforced through `app/Http/Requests/*` backing the Filament schemas
 - **PSR-12 Compliance** - Industry-standard PHP coding standards
 - **PHPStan Level 10** - Strict static analysis for maximum type safety
-- **RESTful Design** - API-first architecture for flexibility and extensibility
-- **Modular Structure** - Clear separation between Models, Controllers, and Requests
 
 ### Data Models
 
@@ -146,7 +146,7 @@ MAIL_MAILER=log
 MAIL_LOG_CHANNEL=stack
 ```
 
-Refer to the [Laravel Mail Documentation](https://laravel.com/docs/12.x/mail) for detailed configuration instructions for your chosen email provider.
+Refer to the [Laravel Mail Documentation](https://laravel.com/docs/13.x/mail) for detailed configuration instructions for your chosen email provider.
 
 ### User Registration Control
 
