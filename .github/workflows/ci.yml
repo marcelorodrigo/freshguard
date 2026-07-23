@@ -51,7 +51,7 @@ jobs:
           node-version: 24
           cache: 'npm'
       - name: Installing Node dependencies
-        run: npm install
+        run: npm ci
       - name: Generating assets
         run: npm run build
       - name: Pint (code style check)
