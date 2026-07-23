@@ -429,7 +429,7 @@ Include in your backup strategy.
 ## Additional Resources
 
 - **Coolify Docs**: https://coolify.io/docs
-- **Laravel Docs**: https://laravel.com/docs/12.x
+- **Laravel Docs**: https://laravel.com/docs/13.x
 - **serversideup/php Image**: https://docs.serversideup.io/open-source/docker-php/
 - **FreshGuard GitHub**: https://github.com/marcelorodrigo/freshguard
 
