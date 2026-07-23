@@ -58,7 +58,7 @@ FreshGuard is built with modern, battle-tested technologies designed for reliabi
 
 - PHP 8.5+
 - Composer
-- Node.js 24 LTS & npm 10+ (for frontend assets)
+- Node.js 26 (Current, becomes LTS Oct 2026) & npm 11+ (for frontend assets)
 - MariaDB
 
 ### Installation
