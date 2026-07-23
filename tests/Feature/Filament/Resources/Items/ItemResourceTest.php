@@ -35,13 +35,33 @@ test('can search items by name', function (): void {
 });
 
 test('can sort items by name', function (): void {
-    $items = Item::factory()->count(3)->create();
+    $items = Item::factory()
+        ->count(4)
+        ->sequence(
+            ['name' => 'alpha item'],
+            ['name' => 'Beta item'],
+            ['name' => 'Same item'],
+            ['name' => 'Same item'],
+        )
+        ->create();
+
+    $itemsAscending = Item::query()
+        ->whereKey($items->modelKeys())
+        ->orderBy('name')
+        ->orderBy('id')
+        ->get();
+
+    $itemsDescending = Item::query()
+        ->whereKey($items->modelKeys())
+        ->orderByDesc('name')
+        ->orderByDesc('id')
+        ->get();
 
     livewire(ManageItems::class)
         ->sortTable('name')
-        ->assertCanSeeTableRecords($items->sortBy('name'), inOrder: true)
+        ->assertCanSeeTableRecords($itemsAscending, inOrder: true)
         ->sortTable('name', 'desc')
-        ->assertCanSeeTableRecords($items->sortByDesc('name'), inOrder: true);
+        ->assertCanSeeTableRecords($itemsDescending, inOrder: true);
 });
 
 test('can search items by barcode', function (): void {

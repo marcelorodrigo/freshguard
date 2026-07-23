@@ -44,23 +44,64 @@ test('can search users by email', function (): void {
 });
 
 test('can sort users by name', function (): void {
-    $users = User::factory()->count(3)->create();
+    $users = User::factory()
+        ->count(4)
+        ->sequence(
+            ['name' => 'alpha user'],
+            ['name' => 'Beta user'],
+            ['name' => 'Same user'],
+            ['name' => 'Same user'],
+        )
+        ->create();
+
+    $usersAscending = User::query()
+        ->whereKey($users->modelKeys())
+        ->orderBy('name')
+        ->orderBy('id')
+        ->get();
+
+    $usersDescending = User::query()
+        ->whereKey($users->modelKeys())
+        ->orderByDesc('name')
+        ->orderBy('id')
+        ->get();
 
     livewire(ManageUsers::class)
         ->sortTable('name')
-        ->assertCanSeeTableRecords($users->sortBy('name'), inOrder: true)
+        ->assertCanSeeTableRecords($usersAscending, inOrder: true)
         ->sortTable('name', 'desc')
-        ->assertCanSeeTableRecords($users->sortByDesc('name'), inOrder: true);
+        ->assertCanSeeTableRecords($usersDescending, inOrder: true);
 });
 
 test('can sort users by email', function (): void {
-    $users = User::factory()->count(3)->create();
+    $users = User::factory()
+        ->count(3)
+        ->sequence(
+            ['email' => 'zulu@example.test'],
+            ['email' => 'alpha@example.test'],
+            ['email' => 'Beta@example.test'],
+        )
+        ->create();
+
+    $usersAscending = User::query()
+        ->whereKey($users->modelKeys())
+        ->orderBy('email')
+        ->orderBy('name')
+        ->orderBy('id')
+        ->get();
+
+    $usersDescending = User::query()
+        ->whereKey($users->modelKeys())
+        ->orderByDesc('email')
+        ->orderBy('name')
+        ->orderBy('id')
+        ->get();
 
     livewire(ManageUsers::class)
         ->sortTable('email')
-        ->assertCanSeeTableRecords($users->sortBy('email'), inOrder: true)
+        ->assertCanSeeTableRecords($usersAscending, inOrder: true)
         ->sortTable('email', 'desc')
-        ->assertCanSeeTableRecords($users->sortByDesc('email'), inOrder: true);
+        ->assertCanSeeTableRecords($usersDescending, inOrder: true);
 });
 
 test('can sort users by email verified status', function (): void {
