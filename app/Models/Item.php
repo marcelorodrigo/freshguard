@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Database\Factories\ItemFactory;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,10 +22,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Batch> $batches
- *
- * @method static Builder<static> withBatchesExpiringWithinDays(int $days)
- *
- * @mixin Builder<static>
  **/
 class Item extends Model
 {
