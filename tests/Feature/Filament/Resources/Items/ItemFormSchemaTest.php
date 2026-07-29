@@ -167,6 +167,79 @@ test('tags input suggestions empty when no items have tags', function (): void {
         });
 });
 
+test('tag suggestions cache is invalidated when a new item is created', function (): void {
+    Item::factory()->create(['tags' => ['Initial']]);
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe(['Initial']);
+
+            return true;
+        });
+
+    Item::factory()->create(['tags' => ['Added']]);
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe(['Added', 'Initial']);
+
+            return true;
+        });
+});
+
+test('tag suggestions cache is invalidated when item tags are updated', function (): void {
+    $item = Item::factory()->create(['tags' => ['Original']]);
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe(['Original']);
+
+            return true;
+        });
+
+    $item->update(['tags' => ['Updated']]);
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe(['Updated']);
+
+            return true;
+        });
+});
+
+test('tag suggestions cache is invalidated when an item is deleted', function (): void {
+    $item = Item::factory()->create(['tags' => ['ToDelete']]);
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe(['ToDelete']);
+
+            return true;
+        });
+
+    $item->delete();
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe([]);
+
+            return true;
+        });
+});
+
+test('tag suggestions are bounded to 50 unique values', function (): void {
+    foreach (range(1, 60) as $i) {
+        Item::factory()->create(['tags' => [sprintf('Tag-%03d', $i)]]);
+    }
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect(count($field->getSuggestions()))->toBeLessThanOrEqual(50);
+
+            return true;
+        });
+});
+
 test('barcode lookup handles categories with non-array value', function (): void {
     OpenFoodFacts::shouldReceive('barcode')
         ->with('3017620422003')
