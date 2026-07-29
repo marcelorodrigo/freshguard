@@ -5250,16 +5250,16 @@
         },
         {
             "name": "resend/resend-php",
-            "version": "v1.6.0",
+            "version": "v1.7.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/resend/resend-php.git",
-                "reference": "9f80a745899cca15faf2b08e47f1b0e9b4a4c813"
+                "reference": "9516207c4f6ff210c64b193e31074e925dd6193a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/resend/resend-php/zipball/9f80a745899cca15faf2b08e47f1b0e9b4a4c813",
-                "reference": "9f80a745899cca15faf2b08e47f1b0e9b4a4c813",
+                "url": "https://api.github.com/repos/resend/resend-php/zipball/9516207c4f6ff210c64b193e31074e925dd6193a",
+                "reference": "9516207c4f6ff210c64b193e31074e925dd6193a",
                 "shasum": ""
             },
             "require": {
@@ -5303,9 +5303,9 @@
             ],
             "support": {
                 "issues": "https://github.com/resend/resend-php/issues",
-                "source": "https://github.com/resend/resend-php/tree/v1.6.0"
+                "source": "https://github.com/resend/resend-php/tree/v1.7.0"
             },
-            "time": "2026-07-21T04:41:42+00:00"
+            "time": "2026-07-27T21:14:02+00:00"
         },
         {
             "name": "ryangjchandler/blade-capture-directive",
