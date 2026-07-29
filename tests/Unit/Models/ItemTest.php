@@ -120,5 +120,3 @@ test('can have many batches', function () {
         expect($item->batches->contains($batch))->toBeTrue();
     }
 });
-
-// ---- Tests below this line were removed as the application no longer has the 'withBatchesExpiringWithinDays' scope ----
