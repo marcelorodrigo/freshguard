@@ -68,6 +68,8 @@ class ItemForm
                                         return Cache::remember('item_tag_suggestions', 3600, function (): array {
                                             return Item::query()
                                                 ->whereNotNull('tags')
+                                                ->orderByDesc('updated_at')
+                                                ->orderByDesc('id')
                                                 ->limit(50)
                                                 ->pluck('tags')
                                                 ->flatten()

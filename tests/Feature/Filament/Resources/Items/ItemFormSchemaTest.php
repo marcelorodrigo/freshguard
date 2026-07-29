@@ -234,7 +234,20 @@ test('tag suggestions are bounded to 50 unique values', function (): void {
 
     livewire(CreateItem::class)
         ->assertFormFieldExists('tags', function (TagsInput $field): bool {
-            expect(count($field->getSuggestions()))->toBeLessThanOrEqual(50);
+            expect($field->getSuggestions())->toHaveCount(50);
+
+            return true;
+        });
+});
+
+test('tag suggestions handle duplicate and empty tag values gracefully', function (): void {
+    Item::factory()->create(['tags' => []]);
+    Item::factory()->create(['tags' => ['Promotion', 'Promotion', 'Promotion']]);
+    Item::factory()->create(['tags' => ['Healthy']]);
+
+    livewire(CreateItem::class)
+        ->assertFormFieldExists('tags', function (TagsInput $field): bool {
+            expect($field->getSuggestions())->toBe(['Healthy', 'Promotion']);
 
             return true;
         });
