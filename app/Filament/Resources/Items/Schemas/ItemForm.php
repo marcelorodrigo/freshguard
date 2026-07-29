@@ -14,6 +14,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Marcelorodrigo\FilamentBarcodeScannerField\Forms\Components\BarcodeInput;
 use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
@@ -64,14 +65,20 @@ class ItemForm
                                 TagsInput::make('tags')
                                     ->label(__('Tags'))
                                     ->suggestions(function (): array {
-                                        return Item::query()
-                                            ->whereNotNull('tags')
-                                            ->pluck('tags')
-                                            ->flatten()
-                                            ->unique()
-                                            ->sort()
-                                            ->values()
-                                            ->toArray();
+                                        return Cache::remember('item_tag_suggestions', 3600, function (): array {
+                                            return Item::query()
+                                                ->whereNotNull('tags')
+                                                ->orderByDesc('updated_at')
+                                                ->orderByDesc('id')
+                                                ->limit(50)
+                                                ->pluck('tags')
+                                                ->flatten()
+                                                ->unique()
+                                                ->sort()
+                                                ->take(50)
+                                                ->values()
+                                                ->toArray();
+                                        });
                                     })
                                     ->placeholder(__('Add tags...'))
                                     ->columnSpan(['sm' => 1, 'md' => 1]),
