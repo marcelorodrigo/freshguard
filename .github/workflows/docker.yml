@@ -23,13 +23,17 @@ concurrency:
 
 jobs:
   build:
-    name: Build and Push
+    name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
       packages: write
       pull-requests: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      image_tags: ${{ steps.image-tags.outputs.tags }}
+      is_release: ${{ steps.tag.outputs.is_release }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -50,12 +54,10 @@ jobs:
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
             printf 'tag=pr-%s\n' "$PR_NUMBER" >> $GITHUB_OUTPUT
           elif [[ "$EVENT_NAME" == "push" && "$REF" =~ ^refs/tags/v[0-9] ]]; then
-            # Extract version from tag (e.g., refs/tags/v1.2.3 -> v1.2.3)
             VERSION="${REF#refs/tags/}"
             printf 'tag=%s\n' "$VERSION" >> $GITHUB_OUTPUT
             printf 'is_release=true\n' >> $GITHUB_OUTPUT
           elif [[ "$EVENT_NAME" == "release" ]]; then
-            # Use release tag name (e.g., v1.2.3)
             VERSION="${RELEASE_NAME#v}"
             printf 'tag=v%s\n' "$VERSION" >> $GITHUB_OUTPUT
             printf 'is_release=true\n' >> $GITHUB_OUTPUT
@@ -73,16 +75,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const comment = `🚀 Docker build started for tag: \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
-            
+
             Building for platforms: linux/amd64, linux/arm64...`;
-            
+
             const { data: created } = await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: comment
             });
-            
+
             core.setOutput('comment_id', created.id);
 
       - name: Set up QEMU
@@ -104,14 +106,67 @@ jobs:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
           if [[ "$IS_RELEASE" == "true" ]]; then
-            # For releases, tag as both version and latest
             printf 'tags=marcelorodrigo/freshguard:%s,marcelorodrigo/freshguard:latest\n' "$TAG" >> $GITHUB_OUTPUT
           else
             printf 'tags=marcelorodrigo/freshguard:%s\n' "$TAG" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push
+      - name: Build and load (amd64)
         id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test - Start container and wait for health
+        run: |
+          TAG="marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}"
+          PORT="8088"
+
+          docker run -d --name freshguard-smoke \
+            -e APP_ENV=testing \
+            -e APP_KEY="base64:$(openssl rand -base64 32)" \
+            -e DB_CONNECTION=sqlite \
+            -e DB_DATABASE=/tmp/freshguard-test.sqlite \
+            -e APP_DEBUG=true \
+            -e LOG_LEVEL=error \
+            -p "${PORT}:8080" \
+            "$TAG"
+
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${PORT}/up" | grep -q 200; then
+              echo "Health check passed (attempt $i)"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "Health check failed after 30 attempts"
+              docker logs freshguard-smoke 2>&1 || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+      - name: Smoke test - Verify queue worker
+        run: |
+          docker exec freshguard-smoke php artisan queue:work --once --quiet
+          echo "Queue worker command passed"
+
+      - name: Smoke test - Verify scheduler
+        run: |
+          docker exec freshguard-smoke php artisan schedule:list
+          echo "Scheduler command passed"
+
+      - name: Cleanup test container
+        if: always()
+        run: docker rm -f freshguard-smoke 2>/dev/null || true
+
+      - name: Build and push multi-platform manifest
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -130,23 +185,23 @@ jobs:
           script: |
             const commentId = parseInt('${{ steps.create-comment.outputs.comment_id }}');
             const buildSuccess = '${{ job.status }}' === 'success';
-            
+
             let updateComment;
             if (buildSuccess) {
               updateComment = `✅ Docker image published!
-            
+
               **Image:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
               **Platforms:** linux/amd64, linux/arm64
-              **Status:** Ready to use`;
+              **Status:** Smoke tests passed, image published`;
             } else {
               updateComment = `❌ Docker build failed!
-            
+
               **Tag:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
-              **Status:** Build or push failed
-              
+              **Status:** Build, smoke test, or push failed
+
               Check the [workflow logs](${context.payload.pull_request.html_url}/checks) for details.`;
             }
-            
+
             if (commentId) {
               await github.rest.issues.updateComment({
                 comment_id: commentId,
@@ -155,8 +210,6 @@ jobs:
                 body: updateComment
               });
             } else {
-              // Fallback: create a new comment if comment ID is not available
-              // This handles edge cases where the create-comment step didn't run
               await github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
@@ -176,4 +229,5 @@ jobs:
           echo "- \`marcelorodrigo/freshguard:latest\` (linux/amd64, linux/arm64)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+          echo "**Smoke tests:** ✅ Verified (health, worker, scheduler)" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ✅ Ready for deployment" >> $GITHUB_STEP_SUMMARY
