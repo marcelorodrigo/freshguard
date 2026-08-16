@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Policies\UserPolicy;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->policy = new UserPolicy;

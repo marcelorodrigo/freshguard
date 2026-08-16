@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Tests\Unit\Models;
 
 use App\Models\Location;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('it can create a location with factory', function () {
     $location = Location::factory()->create();

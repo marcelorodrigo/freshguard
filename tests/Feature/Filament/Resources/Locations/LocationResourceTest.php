@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use App\Filament\Resources\Locations\Pages\ManageLocations;
 use App\Models\Location;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Str;
 
 use function Pest\Livewire\livewire;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('can render page and see table records', function (): void {
     $parent = Location::factory()->create(['name' => 'Parent Location']);

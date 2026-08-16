@@ -7,11 +7,11 @@ use App\Filament\Resources\Items\RelationManagers\BatchesRelationManager;
 use App\Models\Item;
 use App\Models\Location;
 use Filament\Actions\DeleteAction;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 use function Pest\Livewire\livewire;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('can load page with correct form data', function (): void {
     $location = Location::factory()->create();

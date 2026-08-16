@@ -7,12 +7,12 @@ use App\Models\Batch;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
 
 use function Pest\Livewire\livewire;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->create());

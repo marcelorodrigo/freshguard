@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use App\Filament\Resources\Items\Pages\ManageItems;
 use App\Models\Item;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
 
 use function Pest\Livewire\livewire;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('can render page and see table records', function (): void {
     $items = Item::factory()->count(5)->create();
