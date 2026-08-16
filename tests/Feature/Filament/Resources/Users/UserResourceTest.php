@@ -224,26 +224,7 @@ test('admin can access user management page', function (): void {
         ->assertSuccessful();
 });
 
-test('first registered user becomes admin automatically', function (): void {
-    Notification::fake();
-
-    // Clear any existing users
-    User::query()->delete();
-
-    $userData = [
-        'name' => 'First User',
-        'email' => 'first@example.com',
-        'password' => 'password',
-    ];
-
-    $user = User::create($userData);
-    event(new Registered($user));
-
-    $user->refresh();
-    expect($user->is_admin)->toBeTrue();
-});
-
-test('second registered user is not automatically admin', function (): void {
+test('first registered user becomes admin and subsequent users do not', function (): void {
     Notification::fake();
 
     User::query()->delete();
@@ -255,15 +236,20 @@ test('second registered user is not automatically admin', function (): void {
     ]);
     event(new Registered($firstUser));
 
+    $firstUser->refresh();
+    expect($firstUser->is_admin)->toBeTrue();
+
     $secondUser = User::create([
         'name' => 'Second User',
         'email' => 'second@example.com',
         'password' => 'password',
     ]);
-    event(new Illuminate\Auth\Events\Registered($secondUser));
+    event(new Registered($secondUser));
 
+    $firstUser->refresh();
     $secondUser->refresh();
-    expect($secondUser->is_admin)->toBeFalse();
+    expect($firstUser->is_admin)->toBeTrue()
+        ->and($secondUser->is_admin)->toBeFalse();
 });
 
 test('admin cannot delete themselves', function (): void {
