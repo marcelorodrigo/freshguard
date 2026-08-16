@@ -1,7 +1,19 @@
 includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
+    - vendor/pestphp/pest-plugin-phpstan/extension.neon
 parameters:
     paths:
         - app/
+        - bootstrap/
+        - config/
+        - database/
+        - routes/
+        - tests/
+    excludePaths:
+        analyse:
+            # Generated framework cache files; not maintainable first-party source.
+            - bootstrap/cache/*
+    stubFiles:
+        - phpstan/stubs/livewire-test-response.stub.php
     level: 10

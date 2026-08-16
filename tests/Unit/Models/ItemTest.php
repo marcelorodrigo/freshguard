@@ -1,11 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Models;
 
 use App\Models\Batch;
 use App\Models\Item;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
 
@@ -107,8 +107,7 @@ test('deletes item', function () {
 test('has batches relationship', function () {
     $item = new Item;
 
-    expect($item->batches())->toBeInstanceOf(HasMany::class)
-        ->and($item->batches)->toBeInstanceOf(Collection::class);
+    expect($item->batches()->getForeignKeyName())->toBe('item_id');
 });
 
 test('can have many batches', function () {

@@ -15,18 +15,18 @@ test('can render page and see table records', function (): void {
     $items = Item::factory()->count(5)->create();
 
     livewire(ManageItems::class)
-        ->assertSuccessful()
         ->assertCanSeeTableRecords($items)
         ->assertCountTableRecords(5)
         ->assertCanRenderTableColumn('name')
-        ->assertCanRenderTableColumn('quantity');
+        ->assertCanRenderTableColumn('quantity')
+        ->assertSuccessful();
 });
 
 test('can search items by name', function (): void {
     $items = collect(['Alpha Item', 'Beta Item', 'Gamma Item', 'Delta Item', 'Epsilon Item'])
         ->map(fn (string $name) => Item::factory()->create(['name' => $name]));
 
-    $searchItem = $items->first();
+    $searchItem = $items->firstOrFail();
 
     livewire(ManageItems::class)
         ->searchTable($searchItem->name)
@@ -68,7 +68,7 @@ test('can search items by barcode', function (): void {
     $items = collect(['0000000000001', '0000000000002'])
         ->map(fn (string $barcode) => Item::factory()->create(['barcode' => $barcode]));
 
-    $searchItem = $items->first();
+    $searchItem = $items->firstOrFail();
 
     livewire(ManageItems::class)
         ->searchTable($searchItem->barcode)
@@ -95,7 +95,7 @@ test('can create item with required fields', function (): void {
 
     ]);
 
-    $item = Item::where('name', $newItem->name)->first();
+    $item = Item::where('name', $newItem->name)->firstOrFail();
     expect($item->tags)->toBe(['Promotion', 'Healthy']);
 });
 

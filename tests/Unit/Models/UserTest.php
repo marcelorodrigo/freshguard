@@ -14,8 +14,7 @@ uses(LazilyRefreshDatabase::class);
 
 test('it can create a user with factory', function () {
     $user = User::factory()->create();
-    expect($user)->toBeInstanceOf(User::class)
-        ->and($user->id)->not->toBeNull()
+    expect($user->id)->not->toBeNull()
         ->and($user->email)->not->toBeNull();
 });
 

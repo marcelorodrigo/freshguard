@@ -26,9 +26,9 @@ test('can render relation manager with batches', function (): void {
         'ownerRecord' => $item,
         'pageClass' => EditItem::class,
     ])
-        ->assertSuccessful()
         ->assertCanSeeTableRecords($batches)
-        ->assertCountTableRecords(3);
+        ->assertCountTableRecords(3)
+        ->assertSuccessful();
 });
 
 test('can render table columns', function (): void {
