@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Actions\ConsumeBatch;
 use App\Models\Batch;
 use App\Models\Item;
 use BackedEnum;
@@ -25,7 +26,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 
 class QuickConsume extends Page
@@ -56,15 +57,16 @@ class QuickConsume extends Page
     {
         $this->searchResults = new Collection;
 
-        if (strlen($this->search) >= 2) {
+        if ($this->hasSearchTerm()) {
             $this->performSearch();
         }
     }
 
     public function updatedSearch(): void
     {
-        if (strlen($this->search) < 2) {
+        if (! $this->hasSearchTerm()) {
             $this->searchResults = new Collection;
+            $this->refreshInfolist();
 
             return;
         }
@@ -74,25 +76,34 @@ class QuickConsume extends Page
 
     private function performSearch(): void
     {
-        $search = $this->search;
+        $search = trim($this->search);
+        $searchPattern = sprintf('%%%s%%', addcslashes($search, '\\%_'));
+        $escapeChar = '\\';
 
         $this->searchResults = Item::query()
+            ->select(['id', 'name', 'barcode', 'description'])
             ->with([
                 'batches' => function (Relation $query): void {
                     $query
-                        ->with('location', 'item')
+                        ->select(['id', 'item_id', 'location_id', 'expires_at', 'quantity'])
+                        ->with('location')
                         ->where('quantity', '>', 0)
-                        ->orderBy('expires_at');
+                        ->orderBy('expires_at')
+                        ->orderBy('id');
                 },
             ])
-            ->where(function (Builder $query) use ($search): void {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+            ->where(function (Builder $query) use ($searchPattern, $escapeChar): void {
+                $query->whereRaw('`name` like ? escape ?', [$searchPattern, $escapeChar])
+                    ->orWhereRaw('`barcode` like ? escape ?', [$searchPattern, $escapeChar])
+                    ->orWhereRaw('`description` like ? escape ?', [$searchPattern, $escapeChar]);
             })
             ->whereHas('batches', fn (Builder $q): Builder => $q->where('quantity', '>', 0))
+            ->orderBy('name')
+            ->orderBy('id')
             ->limit(10)
             ->get();
+
+        $this->refreshInfolist();
     }
 
     public function form(Schema $schema): Schema
@@ -122,7 +133,7 @@ class QuickConsume extends Page
     private function getResultsComponent(): RepeatableEntry|EmptyState
     {
         if ($this->searchResults->isEmpty()) {
-            if (strlen($this->search) < 2) {
+            if (! $this->hasSearchTerm()) {
                 return EmptyState::make(__('quick-consume.empty.initial.title'))
                     ->description(__('quick-consume.empty.initial.description'))
                     ->icon(Heroicon::OutlinedMagnifyingGlass);
@@ -165,8 +176,8 @@ class QuickConsume extends Page
                                     ->requiresConfirmation()
                                     ->modalHeading(__('quick-consume.action.confirm.title'))
                                     ->modalDescription(__('quick-consume.action.confirm.description'))
-                                    ->action(function (Batch $batch): void {
-                                        $this->consumeBatch($batch->id);
+                                    ->action(function (Batch $batch, ConsumeBatch $consumeBatch): void {
+                                        $this->consumeBatch($batch->id, $consumeBatch);
                                     })
                             ),
                     ]),
@@ -178,23 +189,39 @@ class QuickConsume extends Page
      */
     private function getExpirationStatus(?Carbon $expiresAt): array
     {
+        $today = Carbon::today();
+
         return match (true) {
             $expiresAt === null => ['icon' => Heroicon::OutlinedQuestionMarkCircle, 'color' => 'gray'],
-            $expiresAt->isPast() => ['icon' => Heroicon::OutlinedExclamationTriangle, 'color' => 'danger'],
-            $expiresAt->diffInDays(now()) <= 7 => ['icon' => Heroicon::OutlinedClock, 'color' => 'warning'],
+            $expiresAt->copy()->startOfDay()->isBefore($today) => [
+                'icon' => Heroicon::OutlinedExclamationTriangle,
+                'color' => 'danger',
+            ],
+            $today->diffInDays($expiresAt->copy()->startOfDay()) <= 7 => [
+                'icon' => Heroicon::OutlinedClock,
+                'color' => 'warning',
+            ],
             default => ['icon' => Heroicon::OutlinedCheckCircle, 'color' => 'success'],
         };
     }
 
-    public function consumeBatch(string $batchId): void
+    public function consumeBatch(string $batchId, ConsumeBatch $consumeBatch): void
     {
-        if (empty($batchId)) {
+        if ($batchId === '') {
             return;
         }
 
-        $itemName = $this->decrementBatchQuantity($batchId);
+        $itemName = $consumeBatch($batchId);
 
         if ($itemName === null) {
+            Notification::make()
+                ->title(__('quick-consume.notification.unavailable.title'))
+                ->body(__('quick-consume.notification.unavailable.body'))
+                ->warning()
+                ->send();
+
+            $this->refreshSearchResults();
+
             return;
         }
 
@@ -204,35 +231,28 @@ class QuickConsume extends Page
             ->success()
             ->send();
 
-        $this->performSearch();
-
-        // Clear cached schema to force infolist re-render with updated data
-        $this->cachedSchemas = [];
-        $this->isCachingSchemas = false;
+        $this->refreshSearchResults();
     }
 
-    private function decrementBatchQuantity(string $batchId): ?string
+    private function hasSearchTerm(): bool
     {
-        return DB::transaction(function () use ($batchId): ?string {
-            $batch = Batch::query()
-                ->where('id', $batchId)
-                ->lockForUpdate()
-                ->first();
+        return Str::length(trim($this->search)) >= 2;
+    }
 
-            if ($batch === null || $batch->quantity <= 0) {
-                return null;
-            }
+    private function refreshSearchResults(): void
+    {
+        if ($this->hasSearchTerm()) {
+            $this->performSearch();
 
-            $itemName = $batch->item->name;
+            return;
+        }
 
-            if ($batch->quantity === 1) {
-                $batch->delete();
-            } else {
-                $batch->quantity--;
-                $batch->save();
-            }
+        $this->searchResults = new Collection;
+        $this->refreshInfolist();
+    }
 
-            return $itemName;
-        });
+    private function refreshInfolist(): void
+    {
+        $this->cacheSchema('infolist', null);
     }
 }
