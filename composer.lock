@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "abfc7fbfac7d1eeac752ae0e11d3a77f",
+    "content-hash": "030b6c434b417fb39a9ad712347071e7",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -2025,64 +2025,6 @@
                 }
             ],
             "time": "2026-07-17T13:53:03+00:00"
-        },
-        {
-            "name": "jackiedo/dotenv-editor",
-            "version": "1.1.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/JackieDo/Laravel-Dotenv-Editor.git",
-                "reference": "44062c804e6fa777c01d9fba3bd8fe9a57ec25f0"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/JackieDo/Laravel-Dotenv-Editor/zipball/44062c804e6fa777c01d9fba3bd8fe9a57ec25f0",
-                "reference": "44062c804e6fa777c01d9fba3bd8fe9a57ec25f0",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/config": ">=5.0",
-                "illuminate/container": ">=5.0",
-                "illuminate/support": ">=5.0",
-                "php": ">=5.4.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "DotenvEditor": "Jackiedo\\DotenvEditor\\Facades\\DotenvEditor"
-                    },
-                    "providers": [
-                        "Jackiedo\\DotenvEditor\\DotenvEditorServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Jackiedo\\DotenvEditor\\": "src/Jackiedo/DotenvEditor"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jackie Do",
-                    "email": "anhvudo@gmail.com"
-                }
-            ],
-            "description": "The .env file editor tool for Laravel 5+",
-            "keywords": [
-                "dotenv",
-                "dotenv-editor",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/JackieDo/Laravel-Dotenv-Editor/issues",
-                "source": "https://github.com/JackieDo/Laravel-Dotenv-Editor/tree/master"
-            },
-            "time": "2020-06-07T00:55:45+00:00"
         },
         {
             "name": "kirschbaum-development/eloquent-power-joins",

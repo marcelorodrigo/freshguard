@@ -150,34 +150,15 @@ Refer to the [Laravel Mail Documentation](https://laravel.com/docs/13.x/mail) fo
 
 ### User Registration Control
 
-FreshGuard provides a simple yet powerful system-wide flag to control whether new user registrations are allowed on your instance. You can manage this setting either via the Filament admin panel or by modifying your `.env` file.
-
-#### Configuration Methods
-
-FreshGuard supports two methods to control user registrations:
-
-##### Method 1: Filament Admin Panel (Recommended)
-
-The easiest way to toggle registrations is through the Filament admin panel:
-
-1. Log in to your FreshGuard admin panel at `https://freshguard.ddev.site/admin`
-2. Navigate to **Users** from the admin sidebar
-3. Click the **Enable Registrations** or **Disable Registrations** button in the header
-4. The setting is immediately updated and persisted to your `.env` file
-
-**Visual Indicators:**
-- 🟢 **Enable Registrations** (green lock-open icon) - Click to allow new user registrations
-- 🔴 **Disable Registrations** (red lock-closed icon) - Click to restrict registrations to existing users only
-
-The button label and icon change dynamically to show the current status and indicate the action that will be performed when clicked.
-
-##### Method 2: Environment Variable (.env)
-
-For server-side configuration, set the `FRESHGUARD_REGISTRATIONS_ENABLED` environment variable:
+FreshGuard provides a simple yet powerful system-wide flag to control whether new user registrations are allowed on your instance. Set the `FRESHGUARD_REGISTRATIONS_ENABLED` environment variable:
 
 ```env
 FRESHGUARD_REGISTRATIONS_ENABLED=true
 ```
+
+> [!NOTE]
+> To enable or disable new user registrations, change the `FRESHGUARD_REGISTRATIONS_ENABLED` environment variable in your deployment configuration, then clear or rebuild the application configuration (`php artisan config:clear` or `php artisan optimize`) as required by your deployment. Set it to `true` to allow registrations or `false` to restrict them to existing users only.
+
 ### Development
 
 #### Available Commands

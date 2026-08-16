@@ -8,10 +8,8 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Auth\Events\Registered;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
-use Jackiedo\DotenvEditor\Facades\DotenvEditor;
 
 use function Pest\Livewire\livewire;
 
@@ -223,36 +221,8 @@ test('non-admin cannot access user management page', function (): void {
 
 test('admin can access user management page', function (): void {
     livewire(ManageUsers::class)
-        ->assertSuccessful();
-});
-
-test('admin can toggle registrations', function (): void {
-    $originalStatus = config('freshguard.registrations_enabled');
-    config(['freshguard.registrations_enabled' => true]);
-
-    DotenvEditor::shouldReceive('load')
-        ->once()
-        ->andReturnSelf();
-    DotenvEditor::shouldReceive('setKey')
-        ->once()
-        ->with('FRESHGUARD_REGISTRATIONS_ENABLED', 'false')
-        ->andReturnSelf();
-    DotenvEditor::shouldReceive('save')
-        ->once()
-        ->andReturnSelf();
-    Artisan::shouldReceive('call')
-        ->once()
-        ->with('config:clear');
-
-    try {
-        livewire(ManageUsers::class)
-            ->callAction('toggleRegistrations')
-            ->assertNotified();
-
-        expect(config('freshguard.registrations_enabled'))->toBeFalse();
-    } finally {
-        config(['freshguard.registrations_enabled' => $originalStatus]);
-    }
+        ->assertSuccessful()
+        ->assertActionDoesNotExist('toggleRegistrations');
 });
 
 test('first registered user becomes admin automatically', function (): void {
