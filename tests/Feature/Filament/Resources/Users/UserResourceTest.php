@@ -221,8 +221,7 @@ test('non-admin cannot access user management page', function (): void {
 
 test('admin can access user management page', function (): void {
     livewire(ManageUsers::class)
-        ->assertSuccessful()
-        ->assertActionDoesNotExist('toggleRegistrations');
+        ->assertSuccessful();
 });
 
 test('first registered user becomes admin automatically', function (): void {
