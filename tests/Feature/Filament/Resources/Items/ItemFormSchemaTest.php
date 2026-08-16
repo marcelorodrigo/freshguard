@@ -6,12 +6,12 @@ use App\Filament\Resources\Items\Pages\CreateItem;
 use App\Models\Item;
 use App\Models\User;
 use Filament\Forms\Components\TagsInput;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
 
 use function Pest\Livewire\livewire;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->create());

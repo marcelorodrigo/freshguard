@@ -6,10 +6,10 @@ use App\Models\Batch;
 use App\Models\Item;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('uuid is generated on creation', function () {
     $item = Item::factory()->create();

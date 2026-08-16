@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Tests\Unit\Models;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('it can create a user with factory', function () {
     $user = User::factory()->create();

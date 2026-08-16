@@ -7,13 +7,13 @@ use App\Models\User;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Auth\Events\Registered;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 
 use function Pest\Livewire\livewire;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 beforeEach(function (): void {
     // Authenticate as admin for all tests

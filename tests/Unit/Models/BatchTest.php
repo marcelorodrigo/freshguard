@@ -5,10 +5,10 @@ namespace Tests\Unit\Models;
 use App\Models\Batch;
 use App\Models\Item;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
 
-uses(RefreshDatabase::class);
+uses(LazilyRefreshDatabase::class);
 
 test('it uses uuids as primary key', function () {
     $batch = Batch::factory()->create();
