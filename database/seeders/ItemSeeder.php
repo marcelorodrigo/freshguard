@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Models\Item;
@@ -19,6 +21,8 @@ class ItemSeeder extends Seeder
                 $commonTags = ['Organic', 'Frozen', 'Healthy', 'Promotion', 'Dessert', 'Important'];
                 // Each item will have 1-3 tags, always including at least one from $commonTags
                 $numTags = fake()->numberBetween(1, 3);
+
+                /** @var list<string> $tags */
                 $tags = fake()->randomElements($commonTags); // always at least one common tag
                 $otherTags = array_diff(['Promotion', 'Dessert', 'Important'], $tags);
                 if ($numTags > 1) {

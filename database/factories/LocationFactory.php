@@ -72,14 +72,12 @@ class LocationFactory extends Factory
 
     /**
      * Configure the factory to have a parent location.
-     *
-     * @return $this
      */
-    public function withParent(?Location $parent = null): self
+    public function withParent(?Location $parent = null): static
     {
         return $this->state(function () use ($parent) {
             return [
-                'parent_id' => $parent?->id ?? Location::factory()->create()->id,
+                'parent_id' => $parent->id ?? Location::factory()->create()->id,
             ];
         });
     }

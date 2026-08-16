@@ -25,17 +25,17 @@ test('can render page and see table records', function (): void {
     $users = User::factory()->count(5)->create();
 
     livewire(ManageUsers::class)
-        ->assertSuccessful()
         ->assertCanSeeTableRecords($users)
         ->assertCountTableRecords(5)
         ->assertCanRenderTableColumn('name')
         ->assertCanRenderTableColumn('email')
-        ->assertCanRenderTableColumn('email_verified_at');
+        ->assertCanRenderTableColumn('email_verified_at')
+        ->assertSuccessful();
 });
 
 test('can search users by email', function (): void {
     $users = User::factory()->count(5)->create();
-    $searchUser = $users->first();
+    $searchUser = $users->firstOrFail();
 
     livewire(ManageUsers::class)
         ->searchTable($searchUser->email)
@@ -300,7 +300,7 @@ test('user can edit their own information', function (): void {
     $this->actingAs($user);
 
     // User should be able to update their own record via policy
-    expect(auth()->user()->can('update', $user))->toBeTrue();
+    expect($user->can('update', $user))->toBeTrue();
 });
 
 test('non-admin cannot edit other users', function (): void {
@@ -309,7 +309,7 @@ test('non-admin cannot edit other users', function (): void {
 
     $this->actingAs($user);
 
-    expect(auth()->user()->can('update', $otherUser))->toBeFalse();
+    expect($user->can('update', $otherUser))->toBeFalse();
 });
 
 test('is_admin column is visible in table', function (): void {

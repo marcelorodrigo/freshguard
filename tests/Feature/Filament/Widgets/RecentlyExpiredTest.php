@@ -62,7 +62,7 @@ test('displays only expired batches sorted by earliest expiration', function ():
     $expectedOrder = collect([$expiredBatch3, $expiredBatch2, $expiredBatch1]);
 
     livewire(RecentlyExpired::class)
-        ->assertSuccessful()
         ->assertCountTableRecords(3)
-        ->assertCanSeeTableRecords($expectedOrder, inOrder: true);
+        ->assertCanSeeTableRecords($expectedOrder, inOrder: true)
+        ->assertSuccessful();
 });

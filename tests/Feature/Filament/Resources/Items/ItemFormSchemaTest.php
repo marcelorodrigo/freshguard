@@ -147,24 +147,24 @@ test('tags input shows suggestions from existing items', function (): void {
     Item::factory()->create(['tags' => ['Promotion', 'Snacks']]);
 
     livewire(CreateItem::class)
-        ->assertOk()
         ->assertFormFieldExists('tags', function (TagsInput $field): bool {
             expect($field->getSuggestions())->toBe(['Dairy', 'Healthy', 'Promotion', 'Snacks']);
 
             return true;
-        });
+        })
+        ->assertOk();
 });
 
 test('tags input suggestions empty when no items have tags', function (): void {
     Item::factory()->create(['tags' => null]);
 
     livewire(CreateItem::class)
-        ->assertOk()
         ->assertFormFieldExists('tags', function (TagsInput $field): bool {
             expect($field->getSuggestions())->toBe([]);
 
             return true;
-        });
+        })
+        ->assertOk();
 });
 
 test('tag suggestions cache is invalidated when a new item is created', function (): void {

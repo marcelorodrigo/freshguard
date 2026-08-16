@@ -12,21 +12,19 @@ uses(LazilyRefreshDatabase::class);
 
 test('it can create a location with factory', function () {
     $location = Location::factory()->create();
-    expect($location)->toBeInstanceOf(Location::class)
-        ->and($location->id)->not->toBeNull()
+    expect($location->id)->not->toBeNull()
         ->and($location->id)->toBeString();
 });
 
 test('it has uuid as primary key', function () {
     $location = Location::factory()->create();
-    expect($location->id)->toBeString()
-        ->and(Str::isUuid($location->id))->toBeTrue();
+    expect(Str::isUuid($location->id))->toBeTrue();
 });
 
 test('it can have a parent', function () {
     $parent = Location::factory()->create();
     $child = Location::factory()->create(['parent_id' => $parent->id]);
-    expect($child->parent->is($parent))->toBeTrue();
+    expect($child->parent?->is($parent))->toBeTrue();
 });
 
 test('it can have children', function () {

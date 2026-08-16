@@ -24,14 +24,14 @@ test('can load page with correct form data', function (): void {
     ]);
 
     livewire(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful()
         ->assertSchemaStateSet([
             'name' => 'Test Item',
             'barcode' => '1234567890123',
             'description' => 'Test Description',
 
             'tags' => ['Tag1', 'Tag2'],
-        ]);
+        ])
+        ->assertSuccessful();
 });
 
 test('can update item', function (): void {
@@ -77,6 +77,6 @@ test('has batches relation manager', function (): void {
     $item = Item::factory()->create();
 
     livewire(EditItem::class, ['record' => $item->id])
-        ->assertSuccessful()
-        ->assertSeeLivewire(BatchesRelationManager::class);
+        ->assertSeeLivewire(BatchesRelationManager::class)
+        ->assertSuccessful();
 });

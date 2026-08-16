@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Models;
 
 use App\Models\Batch;
 use App\Models\Item;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -12,15 +13,15 @@ uses(LazilyRefreshDatabase::class);
 
 test('it uses uuids as primary key', function () {
     $batch = Batch::factory()->create();
-    expect($batch->id)->toBeString()
-        ->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
+    expect($batch->id)->toMatch('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/');
 });
 
 test('it belongs to an item', function () {
-    $batch = Batch::factory()->create();
+    $item = Item::factory()->create();
+    $batch = Batch::factory()->for($item)->create();
 
-    expect($batch->item())->toBeInstanceOf(BelongsTo::class)
-        ->and($batch->item)->toBeInstanceOf(Item::class);
+    expect($batch->item()->getForeignKeyName())->toBe('item_id')
+        ->and($batch->item->id)->toBe($item->id);
 });
 
 test('it has correct fillable attributes', function () {
@@ -35,11 +36,14 @@ test('it has correct fillable attributes', function () {
 });
 
 test('it casts attributes correctly', function () {
-    $batch = Batch::factory()->create();
+    $expiresAt = Carbon::now()->addDays(30);
+    $batch = Batch::factory()->create([
+        'expires_at' => $expiresAt,
+        'quantity' => 42,
+    ]);
 
-    expect($batch->item_id)->toBeString()
-        ->and($batch->expires_at)->toBeInstanceOf(Carbon::class)
-        ->and($batch->quantity)->toBeInt();
+    expect($batch->expires_at->format('Y-m-d'))->toBe($expiresAt->format('Y-m-d'))
+        ->and($batch->quantity)->toBe(42);
 });
 
 test('it creates valid factory instances', function () {
@@ -156,15 +160,13 @@ test('batch expiration date is properly cast to carbon', function () {
     $expiryDate = Carbon::now()->addDays(30);
     $batch = Batch::factory()->create(['expires_at' => $expiryDate]);
 
-    expect($batch->expires_at)->toBeInstanceOf(Carbon::class)
-        ->and($batch->expires_at->format('Y-m-d'))->toBe($expiryDate->format('Y-m-d'));
+    expect($batch->expires_at->format('Y-m-d'))->toBe($expiryDate->format('Y-m-d'));
 });
 
 test('batch quantity is cast to integer', function () {
     $batch = Batch::factory()->create(['quantity' => 42]);
 
-    expect($batch->quantity)->toBeInt()
-        ->and($batch->quantity)->toBe(42);
+    expect($batch->quantity)->toBe(42);
 });
 
 test('deleting all batches sets item quantity to zero', function () {

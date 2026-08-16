@@ -10,11 +10,7 @@ use Illuminate\Support\Facades\Validator;
 
 uses(LazilyRefreshDatabase::class);
 
-$request = null;
-
-beforeEach(function () use (&$request) {
-    $request = new StoreBatchRequest;
-});
+$request = new StoreBatchRequest;
 
 test('authorization always returns true', function () use (&$request) {
     expect($request->authorize())->toBeTrue();
@@ -56,8 +52,7 @@ test('quantity validation rules', function () use (&$request) {
 test('custom messages are defined', function () use (&$request) {
     $messages = $request->messages();
 
-    expect($messages)->toBeArray()
-        ->and($messages)->toHaveKey('item_id.required')
+    expect($messages)->toHaveKey('item_id.required')
         ->and($messages)->toHaveKey('item_id.exists')
         ->and($messages)->toHaveKey('expires_at.required')
         ->and($messages)->toHaveKey('expires_at.after_or_equal')

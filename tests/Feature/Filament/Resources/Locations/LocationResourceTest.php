@@ -17,12 +17,12 @@ test('can render page and see table records', function (): void {
     $locations = Location::factory()->count(5)->create(['parent_id' => $parent->id]);
 
     livewire(ManageLocations::class)
-        ->assertSuccessful()
         ->assertCanSeeTableRecords($locations)
         ->assertCountTableRecords(6) // 5 + parent
         ->assertCanRenderTableColumn('name')
         ->assertCanRenderTableColumn('description')
-        ->assertCanRenderTableColumn('parent.name');
+        ->assertCanRenderTableColumn('parent.name')
+        ->assertSuccessful();
 });
 
 test('can search locations by name', function (): void {
@@ -30,7 +30,7 @@ test('can search locations by name', function (): void {
     $locations = collect(range(1, 5))->map(function ($i) {
         return Location::factory()->create(['name' => 'Test Location '.$i]);
     });
-    $searchLocation = $locations->first();
+    $searchLocation = $locations->firstOrFail();
 
     livewire(ManageLocations::class)
         ->searchTable($searchLocation->name)

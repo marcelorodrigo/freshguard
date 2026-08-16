@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Models\Location;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 use function Pest\Livewire\livewire;
@@ -20,9 +21,9 @@ beforeEach(function (): void {
 
 test('page renders with search form', function (): void {
     livewire(QuickConsume::class)
-        ->assertSuccessful()
         ->assertFormExists()
-        ->assertFormFieldExists('search');
+        ->assertFormFieldExists('search')
+        ->assertSuccessful();
 });
 
 test('search requires at least 2 characters', function (): void {
@@ -43,7 +44,7 @@ test('search returns items matching name', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'Milk')
-        ->assertSet('searchResults', function ($results) use ($item) {
+        ->assertSet('searchResults', function (Collection $results) use ($item): bool {
             return $results->contains('id', $item->id);
         });
 });
@@ -63,7 +64,7 @@ test('search returns items matching description', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'milk')
-        ->assertSet('searchResults', function ($results) use ($item) {
+        ->assertSet('searchResults', function (Collection $results) use ($item): bool {
             return $results->contains('id', $item->id);
         });
 });
@@ -83,7 +84,7 @@ test('search returns items matching barcode', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', '123456')
-        ->assertSet('searchResults', function ($results) use ($item) {
+        ->assertSet('searchResults', function (Collection $results) use ($item): bool {
             return $results->contains('id', $item->id);
         });
 });
@@ -102,7 +103,7 @@ test('search limited to 10 results', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'Test')
-        ->assertSet('searchResults', function ($results) {
+        ->assertSet('searchResults', function (Collection $results): bool {
             return $results->count() <= 10;
         });
 });
@@ -128,7 +129,7 @@ test('only shows items with batches having quantity > 0', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'Stock')
-        ->assertSet('searchResults', function ($results) use ($itemWithStock, $itemWithoutStock) {
+        ->assertSet('searchResults', function (Collection $results) use ($itemWithStock, $itemWithoutStock): bool {
             return $results->contains('id', $itemWithStock->id)
                 && ! $results->contains('id', $itemWithoutStock->id);
         });
@@ -162,12 +163,13 @@ test('batches ordered by expiration with expired first', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'Test Item')
-        ->assertSet('searchResults', function ($results) use ($expiredBatch, $soonBatch, $futureBatch) {
-            $batches = $results->first()->batches;
+        ->assertSet('searchResults', function (Collection $results) use ($expiredBatch, $soonBatch, $futureBatch): bool {
+            /** @var Collection<int, Item> $results */
+            $batches = $results->firstOrFail()->batches;
 
-            return $batches[0]->id === $expiredBatch->id
-                && $batches[1]->id === $soonBatch->id
-                && $batches[2]->id === $futureBatch->id;
+            return $batches[0]?->id === $expiredBatch->id
+                && $batches[1]?->id === $soonBatch->id
+                && $batches[2]?->id === $futureBatch->id;
         });
 });
 
@@ -191,11 +193,12 @@ test('batches with distant expiration shown after soon-to-expire', function (): 
 
     livewire(QuickConsume::class)
         ->set('search', 'Test Item')
-        ->assertSet('searchResults', function ($results) use ($soonBatch, $distantBatch) {
-            $batches = $results->first()->batches;
+        ->assertSet('searchResults', function (Collection $results) use ($soonBatch, $distantBatch): bool {
+            /** @var Collection<int, Item> $results */
+            $batches = $results->firstOrFail()->batches;
 
-            return $batches[0]->id === $soonBatch->id
-                && $batches[1]->id === $distantBatch->id;
+            return $batches[0]?->id === $soonBatch->id
+                && $batches[1]?->id === $distantBatch->id;
         });
 });
 
@@ -266,9 +269,9 @@ test('search persists after consume', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'Test Item')
-        ->call('consumeBatch', $item->batches->first()->id)
+        ->call('consumeBatch', $item->batches->firstOrFail()->id)
         ->assertSet('search', 'Test Item')
-        ->assertSet('searchResults', function ($results) use ($item) {
+        ->assertSet('searchResults', function (Collection $results) use ($item): bool {
             return $results->contains('id', $item->id);
         });
 });
@@ -277,7 +280,7 @@ test('empty state shown when no search results', function (): void {
     Item::factory()->create(['name' => 'Existing Item']);
     $location = Location::factory()->create();
     Batch::factory()->create([
-        'item_id' => Item::first()->id,
+        'item_id' => Item::firstOrFail()->id,
         'location_id' => $location->id,
         'quantity' => 5,
         'expires_at' => now()->addDays(30),
@@ -324,7 +327,7 @@ test('mount triggers search when url search param has at least 2 characters', fu
 
     livewire(QuickConsume::class, ['search' => 'Milk'])
         ->assertSet('search', 'Milk')
-        ->assertSet('searchResults', function ($results) use ($item) {
+        ->assertSet('searchResults', function (Collection $results) use ($item): bool {
             return $results->contains('id', $item->id);
         });
 });
@@ -355,14 +358,14 @@ test('expiry date is formatted as day/month/year', function (): void {
 
     livewire(QuickConsume::class)
         ->set('search', 'Test Item')
-        ->assertSuccessful()
-        ->assertSet('searchResults', function ($results) use ($batch): bool {
+        ->assertSet('searchResults', function (Collection $results) use ($batch): bool {
             return $results->contains(
                 fn (Item $item): bool => $item->batches->contains(
-                    fn ($b): bool => $b->id === $batch->id && $b->expires_at->format('d/m/Y') === '25/12/2026'
+                    fn (Batch $b): bool => $b->id === $batch->id && $b->expires_at->format('d/m/Y') === '25/12/2026'
                 )
             );
-        });
+        })
+        ->assertSuccessful();
 });
 
 test('consume batch does nothing when batch has zero quantity', function (): void {
