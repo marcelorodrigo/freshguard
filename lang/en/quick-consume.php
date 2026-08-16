@@ -33,5 +33,9 @@ return [
             'title' => 'Item consumed',
             'body' => '1 unit has been removed from :item',
         ],
+        'unavailable' => [
+            'title' => 'Item no longer available',
+            'body' => 'This batch has already been consumed or is no longer available.',
+        ],
     ],
 ];

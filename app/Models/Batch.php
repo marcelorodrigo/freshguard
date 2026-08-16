@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -89,10 +90,22 @@ class Batch extends Model
      */
     protected function updateItemQuantity(): void
     {
-        $this->item->update([
-            'quantity' => $this->item
-                ->batches()
-                ->sum('quantity'),
-        ]);
+        DB::transaction(function (): void {
+            $item = Item::query()
+                ->whereKey($this->item_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($item === null) {
+                return;
+            }
+
+            $item->update([
+                'quantity' => (int) $item
+                    ->batches()
+                    ->lockForUpdate()
+                    ->sum('quantity'),
+            ]);
+        }, attempts: 3);
     }
 }

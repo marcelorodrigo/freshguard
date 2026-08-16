@@ -7,9 +7,12 @@ use App\Models\Batch;
 use App\Models\Item;
 use App\Models\Location;
 use App\Models\User;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use ReflectionMethod;
 
 use function Pest\Livewire\livewire;
 
@@ -43,7 +46,7 @@ test('search returns items matching name', function (): void {
     ]);
 
     livewire(QuickConsume::class)
-        ->set('search', 'Milk')
+        ->set('search', '  Milk  ')
         ->assertSet('searchResults', function (Collection $results) use ($item): bool {
             return $results->contains('id', $item->id);
         });
@@ -105,6 +108,48 @@ test('search limited to 10 results', function (): void {
         ->set('search', 'Test')
         ->assertSet('searchResults', function (Collection $results): bool {
             return $results->count() <= 10;
+        });
+});
+
+test('search results are ordered by item name', function (): void {
+    $location = Location::factory()->create();
+    $itemB = Item::factory()->create(['name' => 'Test Product B']);
+    $itemA = Item::factory()->create(['name' => 'Test Product A']);
+
+    foreach ([$itemB, $itemA] as $item) {
+        Batch::factory()->create([
+            'item_id' => $item->id,
+            'location_id' => $location->id,
+            'quantity' => 5,
+            'expires_at' => now()->addDays(30),
+        ]);
+    }
+
+    livewire(QuickConsume::class)
+        ->set('search', 'Test Product')
+        ->assertSet('searchResults', function (Collection $results) use ($itemA, $itemB): bool {
+            return $results->pluck('id')->all() === [$itemA->id, $itemB->id];
+        });
+});
+
+test('search treats wildcard characters as literal text', function (): void {
+    $location = Location::factory()->create();
+    $literalItem = Item::factory()->create(['name' => '100% Juice']);
+    $wildcardItem = Item::factory()->create(['name' => '1000 Juice']);
+
+    foreach ([$literalItem, $wildcardItem] as $item) {
+        Batch::factory()->create([
+            'item_id' => $item->id,
+            'location_id' => $location->id,
+            'quantity' => 5,
+            'expires_at' => now()->addDays(30),
+        ]);
+    }
+
+    livewire(QuickConsume::class)
+        ->set('search', '100%')
+        ->assertSet('searchResults', function (Collection $results) use ($literalItem): bool {
+            return $results->pluck('id')->all() === [$literalItem->id];
         });
 });
 
@@ -202,6 +247,18 @@ test('batches with distant expiration shown after soon-to-expire', function (): 
         });
 });
 
+test('today expiration is not marked as expired', function (): void {
+    $component = livewire(QuickConsume::class)->instance();
+    $method = new ReflectionMethod($component, 'getExpirationStatus');
+    $method->setAccessible(true);
+
+    /** @var array{icon: Heroicon, color: string} $status */
+    $status = $method->invoke($component, Carbon::today());
+
+    expect($status['icon'])->toBe(Heroicon::OutlinedClock)
+        ->and($status['color'])->toBe('warning');
+});
+
 test('consume action decrements batch quantity', function (): void {
     $item = Item::factory()->create(['name' => 'Test Item']);
     $location = Location::factory()->create();
@@ -296,7 +353,7 @@ test('initial empty state shown when search is empty', function (): void {
         ->assertSee(__('quick-consume.empty.initial.title'));
 });
 
-test('consume action with confirmation applies changes', function (): void {
+test('consume batch method applies changes', function (): void {
     $item = Item::factory()->create(['name' => 'Test Item']);
     $location = Location::factory()->create();
     $batch = Batch::factory()->create([
@@ -310,6 +367,49 @@ test('consume action with confirmation applies changes', function (): void {
         ->set('search', 'Test Item')
         ->call('consumeBatch', $batch->id)
         ->assertNotified();
+
+    $batch->refresh();
+    expect($batch->quantity)->toBe(4);
+});
+
+test('consume infolist action requires confirmation', function (): void {
+    $item = Item::factory()->create(['name' => 'Test Item']);
+    $location = Location::factory()->create();
+    $batch = Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $location->id,
+        'quantity' => 5,
+        'expires_at' => now()->addDays(30),
+    ]);
+
+    livewire(QuickConsume::class)
+        ->set('search', 'Test Item')
+        ->mountInfolistAction('results.0.batches.0.id', 'consume')
+        ->assertInfolistActionMounted('results.0.batches.0.id', 'consume')
+        ->unmountInfolistAction();
+
+    $batch->refresh();
+    expect($batch->quantity)->toBe(5);
+});
+
+test('consume infolist action applies changes after confirmation', function (): void {
+    $item = Item::factory()->create(['name' => 'Test Item']);
+    $location = Location::factory()->create();
+    $batch = Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $location->id,
+        'quantity' => 5,
+        'expires_at' => now()->addDays(30),
+    ]);
+
+    livewire(QuickConsume::class)
+        ->set('search', 'Test Item')
+        ->callInfolistAction('results.0.batches.0.id', 'consume')
+        ->assertNotified()
+        ->assertSet('searchResults', function (Collection $results): bool {
+            /** @var Collection<int, Item> $results */
+            return $results->firstOrFail()->batches->firstOrFail()->quantity === 4;
+        });
 
     $batch->refresh();
     expect($batch->quantity)->toBe(4);
@@ -338,12 +438,33 @@ test('consume batch does nothing when batch id is empty', function (): void {
         ->assertNotNotified();
 });
 
-test('consume batch does nothing when batch does not exist', function (): void {
+test('consume batch reports when batch does not exist', function (): void {
     $nonExistentId = (string) Str::uuid();
 
     livewire(QuickConsume::class)
         ->call('consumeBatch', $nonExistentId)
-        ->assertNotNotified();
+        ->assertNotified();
+});
+
+test('consume batch refreshes results when batch becomes unavailable', function (): void {
+    $item = Item::factory()->create(['name' => 'Test Item']);
+    $location = Location::factory()->create();
+    $batch = Batch::factory()->create([
+        'item_id' => $item->id,
+        'location_id' => $location->id,
+        'quantity' => 5,
+        'expires_at' => now()->addDays(30),
+    ]);
+
+    $component = livewire(QuickConsume::class)
+        ->set('search', 'Test Item');
+
+    $batch->delete();
+
+    $component
+        ->call('consumeBatch', $batch->id)
+        ->assertNotified()
+        ->assertSet('searchResults', fn (Collection $results): bool => $results->isEmpty());
 });
 
 test('expiry date is formatted as day/month/year', function (): void {
@@ -368,7 +489,7 @@ test('expiry date is formatted as day/month/year', function (): void {
         ->assertSuccessful();
 });
 
-test('consume batch does nothing when batch has zero quantity', function (): void {
+test('consume batch reports when batch has zero quantity', function (): void {
     $item = Item::factory()->create(['name' => 'Test Item']);
     $location = Location::factory()->create();
     $batch = Batch::factory()->create([
@@ -381,7 +502,7 @@ test('consume batch does nothing when batch has zero quantity', function (): voi
     livewire(QuickConsume::class)
         ->set('search', 'Test Item')
         ->call('consumeBatch', $batch->id)
-        ->assertNotNotified();
+        ->assertNotified();
 
     $batch->refresh();
     expect($batch->quantity)->toBe(0);
