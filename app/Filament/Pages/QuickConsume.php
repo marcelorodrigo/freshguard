@@ -78,6 +78,7 @@ class QuickConsume extends Page
     {
         $search = trim($this->search);
         $searchPattern = sprintf('%%%s%%', addcslashes($search, '\\%_'));
+        $escapeChar = '\\';
 
         $this->searchResults = Item::query()
             ->select(['id', 'name', 'barcode', 'description'])
@@ -91,10 +92,10 @@ class QuickConsume extends Page
                         ->orderBy('id');
                 },
             ])
-            ->where(function (Builder $query) use ($searchPattern): void {
-                $query->where('name', 'like', $searchPattern)
-                    ->orWhere('barcode', 'like', $searchPattern)
-                    ->orWhere('description', 'like', $searchPattern);
+            ->where(function (Builder $query) use ($searchPattern, $escapeChar): void {
+                $query->whereRaw('`name` like ? escape ?', [$searchPattern, $escapeChar])
+                    ->orWhereRaw('`barcode` like ? escape ?', [$searchPattern, $escapeChar])
+                    ->orWhereRaw('`description` like ? escape ?', [$searchPattern, $escapeChar]);
             })
             ->whereHas('batches', fn (Builder $q): Builder => $q->where('quantity', '>', 0))
             ->orderBy('name')

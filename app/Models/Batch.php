@@ -100,11 +100,17 @@ class Batch extends Model
                 return;
             }
 
+            $batches = $item->batches()
+                ->lockForUpdate()
+                ->get();
+
+            $quantity = 0;
+            foreach ($batches as $batch) {
+                $quantity += $batch->quantity;
+            }
+
             $item->update([
-                'quantity' => (int) $item
-                    ->batches()
-                    ->lockForUpdate()
-                    ->sum('quantity'),
+                'quantity' => $quantity,
             ]);
         }, attempts: 3);
     }
