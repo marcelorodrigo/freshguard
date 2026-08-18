@@ -40,7 +40,7 @@ FreshGuard is built with modern, battle-tested technologies designed for reliabi
 - **Livewire v4 + Schema-Driven Forms/Tables** - Forms and tables are defined in PHP via `app/Filament/Resources/*/Schemas` and `app/Filament/Resources/*/Tables`, powered by Livewire and Alpine.js
 - **Eloquent ORM + UUID Models** - Domain and persistence live in `app/Models/{Batch,Item,Location,User}`, using UUID primary keys (`HasUuids`)
 - **Batch-Centric Inventory** - A `Batch` groups `Item` records by purchase or storage date for batch-level tracking
-- **Form Request Validation** - Validation is enforced through `app/Http/Requests/*` backing the Filament schemas
+- **Schema-Driven Validation** - Validation is defined in the active Filament schemas and exercised through Livewire feature tests
 - **PSR-12 Compliance** - Industry-standard PHP coding standards
 - **PHPStan Level 10** - Strict static analysis for maximum type safety
 
@@ -239,4 +239,3 @@ ddev mailpit
 ```
 
 Refer to the [DDEV Documentation](https://ddev.readthedocs.io/) for more information.
-

@@ -114,7 +114,7 @@ test('validates item creation data', function (array $data, array $errors): void
 })->with([
     'name is required' => [['name' => null], ['name' => 'required']],
     'name max 255 characters' => [['name' => Str::random(256)], ['name' => 'max']],
-
+    'description max 1000 characters' => [['description' => Str::random(1001)], ['description' => 'max']],
 ]);
 
 test('can edit item', function (): void {

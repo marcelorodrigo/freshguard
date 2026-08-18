@@ -66,6 +66,30 @@ test('can create batch', function (): void {
     ]);
 });
 
+test('validates batch creation data', function (array $data, array $errors): void {
+    $item = Item::factory()->create();
+    $location = Location::factory()->create();
+    $expiresAt = Carbon::now()->addDays(30);
+
+    livewire(BatchesRelationManager::class, [
+        'ownerRecord' => $item,
+        'pageClass' => EditItem::class,
+    ])
+        ->callAction(TestAction::make(CreateAction::class)->table(), [
+            'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
+            'quantity' => 50,
+            'location_id' => $location->id,
+            ...$data,
+        ])
+        ->assertHasTableActionErrors($errors);
+})->with([
+    'location is required' => [['location_id' => null], ['location_id' => 'required']],
+    'expiration date is required' => [['expires_at' => null], ['expires_at' => 'required']],
+    'quantity is required' => [['quantity' => null], ['quantity' => 'required']],
+    'quantity must be an integer' => [['quantity' => 'invalid'], ['quantity' => 'integer']],
+    'quantity must be at least one' => [['quantity' => 0], ['quantity' => 'min']],
+]);
+
 test('can edit batch', function (): void {
     $item = Item::factory()->create();
     $batch = Batch::factory()->for($item)->create([
