@@ -23,16 +23,21 @@ concurrency:
 
 jobs:
   build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    name: Build (${{ matrix.arch }})
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     permissions:
       contents: read
-      pull-requests: write
-    outputs:
-      tag: ${{ steps.tag.outputs.tag }}
-      image_tags: ${{ steps.image-tags.outputs.tags }}
-      is_release: ${{ steps.tag.outputs.is_release }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -40,54 +45,6 @@ jobs:
           fetch-depth: 1
           fetch-tags: false
           show-progress: false
-
-      - name: Determine Docker tag
-        id: tag
-        env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.ref }}
-          RELEASE_NAME: ${{ github.event.release.name }}
-        run: |
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            printf 'tag=pr-%s\n' "$PR_NUMBER" >> $GITHUB_OUTPUT
-          elif [[ "$EVENT_NAME" == "push" && "$REF" =~ ^refs/tags/v[0-9] ]]; then
-            VERSION="${REF#refs/tags/}"
-            printf 'tag=%s\n' "$VERSION" >> $GITHUB_OUTPUT
-            printf 'is_release=true\n' >> $GITHUB_OUTPUT
-          elif [[ "$EVENT_NAME" == "release" ]]; then
-            VERSION="${RELEASE_NAME#v}"
-            printf 'tag=v%s\n' "$VERSION" >> $GITHUB_OUTPUT
-            printf 'is_release=true\n' >> $GITHUB_OUTPUT
-          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            printf 'tag=%s\n' "$INPUT_TAG" >> $GITHUB_OUTPUT
-          else
-            echo "tag=latest" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create PR comment (build started)
-        if: github.event_name == 'pull_request'
-        id: create-comment
-        uses: actions/github-script@v9
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const comment = `🚀 Docker build started for tag: \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
-
-            Building for platforms: linux/amd64, linux/arm64...`;
-
-            const { data: created } = await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-
-            core.setOutput('comment_id', created.id);
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -99,37 +56,26 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Generate image tags
-        id: image-tags
-        env:
-          IS_RELEASE: ${{ steps.tag.outputs.is_release }}
-          TAG: ${{ steps.tag.outputs.tag }}
-        run: |
-          if [[ "$IS_RELEASE" == "true" ]]; then
-            printf 'tags=marcelorodrigo/freshguard:%s,marcelorodrigo/freshguard:latest\n' "$TAG" >> $GITHUB_OUTPUT
-          else
-            printf 'tags=marcelorodrigo/freshguard:%s\n' "$TAG" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build and load (amd64)
-        id: build
+      - name: Build and load (${{ matrix.arch }})
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
           push: false
           load: true
-          platforms: linux/amd64
-          tags: marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: ${{ matrix.platform }}
+          tags: freshguard-smoke:${{ matrix.arch }}
+          cache-from: type=gha,scope=freshguard-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=freshguard-${{ matrix.arch }}
 
       - name: Smoke test - Start container and wait for health
         run: |
-          TAG="marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}"
+          set -euo pipefail
+          IMAGE="freshguard-smoke:${{ matrix.arch }}"
+          CONTAINER="freshguard-smoke-${{ matrix.arch }}"
           PORT="8088"
 
-          docker run -d --name freshguard-smoke \
+          docker run -d --name "$CONTAINER" \
             -e APP_ENV=testing \
             -e APP_KEY="base64:$(openssl rand -base64 32)" \
             -e DB_CONNECTION=sqlite \
@@ -137,7 +83,7 @@ jobs:
             -e APP_DEBUG=true \
             -e LOG_LEVEL=error \
             -p "${PORT}:8080" \
-            "$TAG"
+            "$IMAGE"
 
           for i in $(seq 1 30); do
             if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${PORT}/up" | grep -q 200; then
@@ -146,7 +92,7 @@ jobs:
             fi
             if [ "$i" -eq 30 ]; then
               echo "Health check failed after 30 attempts"
-              docker logs freshguard-smoke 2>&1 || true
+              docker logs "$CONTAINER" 2>&1 || true
               exit 1
             fi
             sleep 2
@@ -154,69 +100,133 @@ jobs:
 
       - name: Smoke test - Verify queue worker
         run: |
-          docker exec freshguard-smoke php artisan queue:work --once --quiet
+          docker exec "freshguard-smoke-${{ matrix.arch }}" php artisan queue:work --once --quiet
           echo "Queue worker command passed"
 
       - name: Smoke test - Verify scheduler
         run: |
-          docker exec freshguard-smoke php artisan schedule:list
+          docker exec "freshguard-smoke-${{ matrix.arch }}" php artisan schedule:list
           echo "Scheduler command passed"
 
       - name: Cleanup test container
         if: always()
-        run: docker rm -f freshguard-smoke 2>/dev/null || true
+        run: docker rm -f "freshguard-smoke-${{ matrix.arch }}" 2>/dev/null || true
 
-      - name: Build and push multi-platform manifest
+      - name: Build and push platform image
         if: github.event_name != 'pull_request'
+        id: push
         uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.image-tags.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=marcelorodrigo/freshguard,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=freshguard-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=freshguard-${{ matrix.arch }}
 
-      - name: Update PR comment (build completed)
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v9
+      - name: Export image digest
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/digests
+          if [[ ! "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Build did not return a valid image digest."
+            exit 1
+          fi
+          touch "/tmp/digests/${DIGEST#sha256:}"
+
+      - name: Upload image digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const commentId = parseInt('${{ steps.create-comment.outputs.comment_id }}');
-            const buildSuccess = '${{ job.status }}' === 'success';
+          name: freshguard-digests-${{ matrix.arch }}-${{ github.run_id }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
 
-            let updateComment;
-            if (buildSuccess) {
-              updateComment = `✅ Docker build succeeded!
+  publish:
+    name: Publish manifest
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Determine Docker tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REF: ${{ github.ref }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            printf 'tag=pr-%s\n' "$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == "push" && "$REF" =~ ^refs/tags/v[0-9] ]]; then
+            VERSION="${REF#refs/tags/}"
+            printf 'tag=%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
+            printf 'is_release=true\n' >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == "release" ]]; then
+            VERSION="${RELEASE_NAME#v}"
+            printf 'tag=v%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
+            printf 'is_release=true\n' >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            printf 'tag=%s\n' "$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            printf 'tag=latest\n' >> "$GITHUB_OUTPUT"
+          fi
 
-              **Tag:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
-              **Status:** Smoke tests passed, image built but not published (verification only)`;
-            } else {
-              updateComment = `❌ Docker build failed!
+      - name: Download image digests
+        uses: actions/download-artifact@v8
+        with:
+          pattern: freshguard-digests-*
+          path: /tmp/digests
+          merge-multiple: true
 
-              **Tag:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
-              **Status:** Build, smoke test, or push failed
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
-              Check the [workflow logs](${context.payload.pull_request.html_url}/checks) for details.`;
-            }
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-            if (commentId) {
-              await github.rest.issues.updateComment({
-                comment_id: commentId,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: updateComment
-              });
-            } else {
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: updateComment
-              });
-            }
+      - name: Publish multi-platform manifests
+        env:
+          IMAGE: marcelorodrigo/freshguard
+          TAG: ${{ steps.tag.outputs.tag }}
+          IS_RELEASE: ${{ steps.tag.outputs.is_release }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          sources=()
+          for digest_file in /tmp/digests/*; do
+            sources+=("${IMAGE}@sha256:$(basename "$digest_file")")
+          done
+
+          if [ "${#sources[@]}" -ne 2 ]; then
+            echo "::error::Expected two platform image digests, found ${#sources[@]}."
+            exit 1
+          fi
+
+          docker buildx imagetools create \
+            --tag "${IMAGE}:${TAG}" \
+            "${sources[@]}"
+
+          if [[ "$IS_RELEASE" == "true" ]]; then
+            docker buildx imagetools create \
+              --tag "${IMAGE}:latest" \
+              "${sources[@]}"
+          fi
+
+          docker buildx imagetools inspect "${IMAGE}:${TAG}"
 
       - name: Publish release summary
         if: steps.tag.outputs.is_release == 'true' && success()
