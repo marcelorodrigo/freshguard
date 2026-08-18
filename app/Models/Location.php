@@ -46,6 +46,13 @@ class Location extends Model
         'parent_id',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Location $location): bool {
+            return ! $location->hasBatches();
+        });
+    }
+
     /**
      * Get the parent location.
      *
@@ -77,5 +84,13 @@ class Location extends Model
     {
         /** @var HasMany<Batch, Location> */
         return $this->hasMany(Batch::class, 'location_id');
+    }
+
+    /**
+     * Determine whether this location contains batches.
+     */
+    public function hasBatches(): bool
+    {
+        return $this->batches()->exists();
     }
 }

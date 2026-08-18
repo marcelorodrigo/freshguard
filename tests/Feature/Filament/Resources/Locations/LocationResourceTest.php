@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Filament\Resources\Locations\Pages\ManageLocations;
+use App\Models\Batch;
 use App\Models\Location;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase;
@@ -142,4 +143,50 @@ test('can bulk delete locations', function (): void {
     foreach ($locations as $location) {
         expect(Location::find($location->id))->toBeNull();
     }
+});
+
+test('disables deletion for a location with batches', function (): void {
+    $location = Location::factory()->create();
+    Batch::factory()->for($location)->create();
+
+    livewire(ManageLocations::class)
+        ->assertTableActionDisabled('delete', $location);
+
+    expect(Location::find($location->id))->not->toBeNull();
+});
+
+test('does not delete populated locations in bulk', function (): void {
+    $location = Location::factory()->create();
+    Batch::factory()->for($location)->create();
+
+    livewire(ManageLocations::class)
+        ->callTableBulkAction('delete', collect([$location]))
+        ->assertNotified();
+
+    expect(Location::find($location->id))->not->toBeNull();
+});
+
+test('rejects mixed bulk deletion atomically', function (): void {
+    $emptyLocation = Location::factory()->create();
+    $populatedLocation = Location::factory()->create();
+    Batch::factory()->for($populatedLocation)->create();
+
+    livewire(ManageLocations::class)
+        ->callTableBulkAction('delete', collect([$emptyLocation, $populatedLocation]))
+        ->assertNotified();
+
+    expect(Location::find($emptyLocation->id))->not->toBeNull()
+        ->and(Location::find($populatedLocation->id))->not->toBeNull();
+});
+
+test('keeps children as root locations when deleting a parent', function (): void {
+    $parent = Location::factory()->create();
+    $child = Location::factory()->create(['parent_id' => $parent->id]);
+
+    livewire(ManageLocations::class)
+        ->callTableAction('delete', $parent)
+        ->assertNotified();
+
+    expect(Location::find($parent->id))->toBeNull()
+        ->and($child->fresh()?->parent_id)->toBeNull();
 });

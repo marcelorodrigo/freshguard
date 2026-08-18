@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Models;
 
+use App\Models\Batch;
 use App\Models\Location;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
@@ -44,6 +45,23 @@ test('it can have no parent', function () {
 test('it can have no children', function () {
     $location = Location::factory()->create();
     expect($location->children)->toHaveCount(0);
+});
+
+test('it knows whether it has batches', function (): void {
+    $emptyLocation = Location::factory()->create();
+    $populatedLocation = Location::factory()->create();
+    Batch::factory()->for($populatedLocation)->create();
+
+    expect($emptyLocation->hasBatches())->toBeFalse()
+        ->and($populatedLocation->hasBatches())->toBeTrue();
+});
+
+test('it prevents direct deletion when it has batches', function (): void {
+    $location = Location::factory()->create();
+    Batch::factory()->for($location)->create();
+
+    expect($location->delete())->toBeFalse()
+        ->and(Location::find($location->id))->not->toBeNull();
 });
 
 test('fillable attributes', function () {
