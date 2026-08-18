@@ -28,7 +28,6 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
-      packages: write
       pull-requests: write
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
@@ -94,6 +93,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
@@ -167,6 +167,7 @@ jobs:
         run: docker rm -f freshguard-smoke 2>/dev/null || true
 
       - name: Build and push multi-platform manifest
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -188,11 +189,10 @@ jobs:
 
             let updateComment;
             if (buildSuccess) {
-              updateComment = `✅ Docker image published!
+              updateComment = `✅ Docker build succeeded!
 
-              **Image:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
-              **Platforms:** linux/amd64, linux/arm64
-              **Status:** Smoke tests passed, image published`;
+              **Tag:** \`marcelorodrigo/freshguard:${{ steps.tag.outputs.tag }}\`
+              **Status:** Smoke tests passed, image built but not published (verification only)`;
             } else {
               updateComment = `❌ Docker build failed!
 

@@ -20,5 +20,6 @@ jobs:
           organization: marcelorodrigo
           repositories: freshguard
           pr-retention-days: 30
-          dry-run: true
+          sha-retention-days: 36500
+          dry-run: false
           verbose: true
