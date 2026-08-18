@@ -59,6 +59,26 @@ test('can create location', function () {
     ]);
 });
 
+test('can create location with a parent', function (): void {
+    /** @var TestCase $this */
+    $parent = Location::factory()->create();
+    $newLocation = Location::factory()->make();
+
+    livewire(ManageLocations::class)
+        ->callAction('create', data: [
+            'name' => $newLocation->name,
+            'description' => $newLocation->description,
+            'expiration_notify_days' => $newLocation->expiration_notify_days,
+            'parent_id' => $parent->id,
+        ])
+        ->assertNotified();
+
+    $this->assertDatabaseHas(Location::class, [
+        'name' => $newLocation->name,
+        'parent_id' => $parent->id,
+    ]);
+});
+
 test('validates location creation data', function (array $data, array $errors): void {
     $newLocation = Location::factory()->make();
 
