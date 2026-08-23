@@ -126,8 +126,7 @@ final class OpenFoodFactsBarcodeLookup implements BarcodeLookup
     private function reportUpstreamFailure(string $barcode, Throwable $e): void
     {
         Log::warning('OpenFoodFacts barcode lookup failed', [
-            'barcode' => $barcode,
-            'error' => $e->getMessage(),
+            'barcode_length' => strlen($barcode),
             'exception' => get_class($e),
         ]);
     }

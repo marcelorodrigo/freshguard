@@ -54,8 +54,13 @@ test('lookup returns not found when product is missing', function (): void {
     expect($result->isNotFound())->toBeTrue();
 });
 
-test('lookup returns upstream failure on api exception', function (): void {
-    Log::shouldReceive('warning')->once();
+test('lookup returns upstream failure on api exception without sensitive log payload', function (): void {
+    Log::shouldReceive('warning')->once()->withArgs(function (string $message, array $context): bool {
+        return ! array_key_exists('barcode', $context)
+            && ! array_key_exists('error', $context)
+            && array_key_exists('barcode_length', $context)
+            && array_key_exists('exception', $context);
+    });
 
     $handler = new MockHandler([
         new Response(503),
