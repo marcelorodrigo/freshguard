@@ -33,37 +33,15 @@ final class DeleteLocations
         DB::beginTransaction();
 
         try {
-            $lockedLocations = Location::query()
-                ->whereKey($locationIds)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
+            $result = $this->attemptDeletion($locationIds);
 
-            if ($lockedLocations->count() !== count($locationIds)) {
+            if ($result) {
+                DB::commit();
+            } else {
                 $this->rollBack();
-
-                return false;
             }
 
-            if (Batch::query()->whereIn('location_id', $locationIds)->exists()) {
-                $this->rollBack();
-
-                return false;
-            }
-
-            foreach ($lockedLocations as $location) {
-                if ($location->delete()) {
-                    continue;
-                }
-
-                $this->rollBack();
-
-                return false;
-            }
-
-            DB::commit();
-
-            return true;
+            return $result;
         } catch (QueryException $exception) {
             $this->rollBack();
 
@@ -77,6 +55,36 @@ final class DeleteLocations
 
             throw $exception;
         }
+    }
+
+    private function attemptDeletion(array $locationIds): bool
+    {
+        $lockedLocations = Location::query()
+            ->whereKey($locationIds)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        if ($lockedLocations->count() !== count($locationIds)) {
+            return false;
+        }
+
+        if (Batch::query()->whereIn('location_id', $locationIds)->exists()) {
+            return false;
+        }
+
+        return $this->deleteEach($lockedLocations);
+    }
+
+    private function deleteEach(Collection $locations): bool
+    {
+        foreach ($locations as $location) {
+            if (! $location->delete()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function isLocationForeignKeyViolation(QueryException $exception): bool
