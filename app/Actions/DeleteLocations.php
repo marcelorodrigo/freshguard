@@ -57,6 +57,9 @@ final class DeleteLocations
         }
     }
 
+    /**
+     * @param  array<int, string>  $locationIds
+     */
     private function attemptDeletion(array $locationIds): bool
     {
         $lockedLocations = Location::query()
@@ -76,6 +79,9 @@ final class DeleteLocations
         return $this->deleteEach($lockedLocations);
     }
 
+    /**
+     * @param  Collection<int, Location>  $locations
+     */
     private function deleteEach(Collection $locations): bool
     {
         foreach ($locations as $location) {

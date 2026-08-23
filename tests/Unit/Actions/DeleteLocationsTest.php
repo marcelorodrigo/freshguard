@@ -58,6 +58,7 @@ test('it returns false when a foreign key violation occurs during delete', funct
     $location = Location::factory()->create();
 
     $originalDispatcher = Location::getEventDispatcher();
+    assert($originalDispatcher !== null);
 
     try {
         Location::flushEventListeners();
@@ -85,6 +86,7 @@ test('it rethrows a non foreign key query exception during delete', function ():
     $location = Location::factory()->create();
 
     $originalDispatcher = Location::getEventDispatcher();
+    assert($originalDispatcher !== null);
 
     try {
         Location::flushEventListeners();
@@ -111,6 +113,7 @@ test('it rethrows a generic throwable during delete', function (): void {
     $location = Location::factory()->create();
 
     $originalDispatcher = Location::getEventDispatcher();
+    assert($originalDispatcher !== null);
 
     try {
         Location::flushEventListeners();
