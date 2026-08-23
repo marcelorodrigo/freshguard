@@ -65,7 +65,7 @@ class RecentlyExpired extends TableWidget
     {
         return Batch::query()
             ->with(['item', 'location'])
-            ->whereDate('expires_at', '<', today())
+            ->where('expires_at', '<', today())
             ->orderBy('expires_at', 'asc')
             ->limit(5);
     }
