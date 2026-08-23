@@ -57,51 +57,69 @@ test('it keeps children as root locations when deleting an empty parent', functi
 test('it returns false when a foreign key violation occurs during delete', function (): void {
     $location = Location::factory()->create();
 
-    Location::flushEventListeners();
-    Location::deleting(function (Location $model): void {
-        $previous = new PDOException('FK violation');
-        $previous->errorInfo = ['23000', 1451, 'Cannot delete or update a parent row'];
+    $originalDispatcher = Location::getEventDispatcher();
 
-        $exception = new QueryException('mysql', 'DELETE FROM locations WHERE id = ?', [], $previous);
+    try {
+        Location::flushEventListeners();
+        Location::deleting(function (Location $model): void {
+            $previous = new PDOException('FK violation');
+            $previous->errorInfo = ['23000', 1451, 'Cannot delete or update a parent row'];
 
-        $ref = new ReflectionClass($exception);
-        $prop = $ref->getProperty('code');
-        $prop->setValue($exception, '23000');
+            $exception = new QueryException('mysql', 'DELETE FROM locations WHERE id = ?', [], $previous);
 
-        throw $exception;
-    });
+            $ref = new ReflectionClass($exception);
+            $prop = $ref->getProperty('code');
+            $prop->setValue($exception, '23000');
 
-    expect((new DeleteLocations)(new Collection([$location])))->toBeFalse();
-    expect(Location::find($location->id))->not->toBeNull();
+            throw $exception;
+        });
+
+        expect((new DeleteLocations)(new Collection([$location])))->toBeFalse();
+        expect(Location::find($location->id))->not->toBeNull();
+    } finally {
+        Location::setEventDispatcher($originalDispatcher);
+    }
 });
 
 test('it rethrows a non foreign key query exception during delete', function (): void {
     $location = Location::factory()->create();
 
-    Location::flushEventListeners();
-    Location::deleting(function (Location $model): void {
-        $previous = new PDOException('Deadlock');
-        $previous->errorInfo = ['40001', 1213, 'Deadlock found'];
+    $originalDispatcher = Location::getEventDispatcher();
 
-        $exception = new QueryException('mysql', 'DELETE FROM locations WHERE id = ?', [], $previous);
+    try {
+        Location::flushEventListeners();
+        Location::deleting(function (Location $model): void {
+            $previous = new PDOException('Deadlock');
+            $previous->errorInfo = ['40001', 1213, 'Deadlock found'];
 
-        $ref = new ReflectionClass($exception);
-        $prop = $ref->getProperty('code');
-        $prop->setValue($exception, '40001');
+            $exception = new QueryException('mysql', 'DELETE FROM locations WHERE id = ?', [], $previous);
 
-        throw $exception;
-    });
+            $ref = new ReflectionClass($exception);
+            $prop = $ref->getProperty('code');
+            $prop->setValue($exception, '40001');
 
-    (new DeleteLocations)(new Collection([$location]));
+            throw $exception;
+        });
+
+        (new DeleteLocations)(new Collection([$location]));
+    } finally {
+        Location::setEventDispatcher($originalDispatcher);
+    }
 })->throws(QueryException::class);
 
 test('it rethrows a generic throwable during delete', function (): void {
     $location = Location::factory()->create();
 
-    Location::flushEventListeners();
-    Location::deleting(function (Location $model): void {
-        throw new RuntimeException('Something went wrong');
-    });
+    $originalDispatcher = Location::getEventDispatcher();
 
-    (new DeleteLocations)(new Collection([$location]));
+    try {
+        Location::flushEventListeners();
+        Location::deleting(function (Location $model): void {
+            throw new RuntimeException('Something went wrong');
+        });
+
+        (new DeleteLocations)(new Collection([$location]));
+    } finally {
+        Location::setEventDispatcher($originalDispatcher);
+    }
 })->throws(RuntimeException::class);
