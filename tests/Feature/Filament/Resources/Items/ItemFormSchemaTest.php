@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Contracts\BarcodeLookup;
 use App\Filament\Resources\Items\Pages\CreateItem;
 use App\Models\Item;
 use App\Models\User;
+use App\Support\BarcodeLookupResult;
 use Filament\Forms\Components\TagsInput;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
+use Tests\Fakes\FakeBarcodeLookup;
 
 use function Pest\Livewire\livewire;
 
@@ -15,17 +17,17 @@ uses(LazilyRefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->actingAs(User::factory()->create());
+
+    $this->barcodeLookup = new FakeBarcodeLookup;
+    app()->bind(BarcodeLookup::class, fn () => $this->barcodeLookup);
 });
 
 test('barcode lookup populates empty fields from product data', function (): void {
-    OpenFoodFacts::shouldReceive('barcode')
-        ->with('3017620422003')
-        ->once()
-        ->andReturn([
-            'product_name' => 'Nutella',
-            'generic_name' => 'Hazelnut spread',
-            'categories_hierarchy' => ['en:spreads', 'en:hazelnut-spreads'],
-        ]);
+    $this->barcodeLookup->setResult(BarcodeLookupResult::success([
+        'product_name' => 'Nutella',
+        'generic_name' => 'Hazelnut spread',
+        'categories_hierarchy' => ['en:spreads', 'en:hazelnut-spreads'],
+    ]));
 
     livewire(CreateItem::class)
         ->fillForm([
@@ -43,14 +45,11 @@ test('barcode lookup populates empty fields from product data', function (): voi
 });
 
 test('barcode lookup does not override existing field values', function (): void {
-    OpenFoodFacts::shouldReceive('barcode')
-        ->with('3017620422003')
-        ->once()
-        ->andReturn([
-            'product_name' => 'Nutella',
-            'generic_name' => 'Hazelnut spread',
-            'categories_hierarchy' => ['en:spreads', 'en:hazelnut-spreads'],
-        ]);
+    $this->barcodeLookup->setResult(BarcodeLookupResult::success([
+        'product_name' => 'Nutella',
+        'generic_name' => 'Hazelnut spread',
+        'categories_hierarchy' => ['en:spreads', 'en:hazelnut-spreads'],
+    ]));
 
     livewire(CreateItem::class)
         ->fillForm([
@@ -68,10 +67,7 @@ test('barcode lookup does not override existing field values', function (): void
 });
 
 test('barcode lookup shows warning when product not found', function (): void {
-    OpenFoodFacts::shouldReceive('barcode')
-        ->with('0000000000000')
-        ->once()
-        ->andReturn([]);
+    $this->barcodeLookup->setResult(BarcodeLookupResult::notFound());
 
     livewire(CreateItem::class)
         ->fillForm([
@@ -83,14 +79,11 @@ test('barcode lookup shows warning when product not found', function (): void {
 });
 
 test('barcode lookup shows info when all fields already populated', function (): void {
-    OpenFoodFacts::shouldReceive('barcode')
-        ->with('3017620422003')
-        ->once()
-        ->andReturn([
-            'product_name' => 'Nutella',
-            'generic_name' => 'Hazelnut spread',
-            'categories_hierarchy' => ['en:spreads', 'en:hazelnut-spreads'],
-        ]);
+    $this->barcodeLookup->setResult(BarcodeLookupResult::success([
+        'product_name' => 'Nutella',
+        'generic_name' => 'Hazelnut spread',
+        'categories_hierarchy' => ['en:spreads', 'en:hazelnut-spreads'],
+    ]));
 
     livewire(CreateItem::class)
         ->fillForm([
@@ -112,11 +105,8 @@ test('barcode lookup ignores empty state that equals old value', function (): vo
         ->assertNotNotified();
 });
 
-test('barcode lookup handles exception gracefully', function (): void {
-    OpenFoodFacts::shouldReceive('barcode')
-        ->with('3017620422003')
-        ->once()
-        ->andThrow(new RuntimeException('API unavailable'));
+test('barcode lookup shows danger notification on upstream failure', function (): void {
+    $this->barcodeLookup->setResult(BarcodeLookupResult::upstreamFailure());
 
     livewire(CreateItem::class)
         ->fillForm([
@@ -124,22 +114,56 @@ test('barcode lookup handles exception gracefully', function (): void {
             'description' => null,
         ])
         ->set('data.barcode', '3017620422003')
-        ->assertNotNotified();
+        ->assertNotified();
 });
 
-test('barcode lookup handles exception with custom exception type', function (): void {
-    OpenFoodFacts::shouldReceive('barcode')
-        ->with('3017620422003')
-        ->once()
-        ->andThrow(new Exception('Connection timeout'));
+test('barcode lookup shows warning for invalid barcode format', function (): void {
+    $this->barcodeLookup->setResult(BarcodeLookupResult::invalid());
 
     livewire(CreateItem::class)
         ->fillForm([
             'name' => null,
             'description' => null,
         ])
+        ->set('data.barcode', 'ABC-123')
+        ->assertNotified();
+});
+
+test('barcode lookup handles categories with non-array value', function (): void {
+    $this->barcodeLookup->setResult(BarcodeLookupResult::success([
+        'product_name' => 'Nutella',
+        'generic_name' => 'Hazelnut spread',
+        'categories_hierarchy' => 'not-an-array',
+    ]));
+
+    livewire(CreateItem::class)
+        ->fillForm([
+            'name' => null,
+            'description' => null,
+            'tags' => [],
+        ])
         ->set('data.barcode', '3017620422003')
-        ->assertNotNotified();
+        ->assertSchemaStateSet([
+            'name' => 'Nutella',
+            'description' => 'Hazelnut spread',
+            'tags' => [],
+        ])
+        ->assertNotified();
+});
+
+test('manual form input remains usable after lookup failure', function (): void {
+    $this->barcodeLookup->setResult(BarcodeLookupResult::upstreamFailure());
+
+    livewire(CreateItem::class)
+        ->fillForm([
+            'name' => 'Manual Name',
+            'description' => null,
+        ])
+        ->set('data.barcode', '3017620422003')
+        ->assertSchemaStateSet([
+            'name' => 'Manual Name',
+        ])
+        ->assertNotified();
 });
 
 test('tags input shows suggestions from existing items', function (): void {
@@ -251,29 +275,4 @@ test('tag suggestions handle duplicate and empty tag values gracefully', functio
 
             return true;
         });
-});
-
-test('barcode lookup handles categories with non-array value', function (): void {
-    OpenFoodFacts::shouldReceive('barcode')
-        ->with('3017620422003')
-        ->once()
-        ->andReturn([
-            'product_name' => 'Nutella',
-            'generic_name' => 'Hazelnut spread',
-            'categories_hierarchy' => 'not-an-array',
-        ]);
-
-    livewire(CreateItem::class)
-        ->fillForm([
-            'name' => null,
-            'description' => null,
-            'tags' => [],
-        ])
-        ->set('data.barcode', '3017620422003')
-        ->assertSchemaStateSet([
-            'name' => 'Nutella',
-            'description' => 'Hazelnut spread',
-            'tags' => [],
-        ])
-        ->assertNotified();
 });

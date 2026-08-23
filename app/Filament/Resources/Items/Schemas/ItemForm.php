@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Items\Schemas;
 
+use App\Contracts\BarcodeLookup;
 use App\Models\Item;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -15,9 +16,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Marcelorodrigo\FilamentBarcodeScannerField\Forms\Components\BarcodeInput;
-use OpenFoodFacts\Laravel\Facades\OpenFoodFacts;
 
 class ItemForm
 {
@@ -94,26 +93,35 @@ class ItemForm
             return;
         }
 
-        try {
-            /** @var array{product_name?: string, generic_name?: string, categories_hierarchy?: array<int, string>|string|null} $productData */
-            $productData = OpenFoodFacts::barcode($state);
+        /** @var BarcodeLookup $lookup */
+        $lookup = app(BarcodeLookup::class);
 
-            if (empty($productData)) {
-                self::notifyProductNotFound();
+        $result = $lookup->lookup($state);
 
-                return;
-            }
+        if ($result->isInvalid()) {
+            self::notifyInvalidBarcode();
 
-            $fieldsPopulated = self::populateFieldsFromProductData($get, $set, $productData);
-
-            self::notifyFieldsPopulated($fieldsPopulated);
-        } catch (\Exception $e) {
-            Log::warning('Error fetching product data for barcode', [
-                'barcode' => $state,
-                'error' => $e->getMessage(),
-                'exception' => get_class($e),
-            ]);
+            return;
         }
+
+        if ($result->isUpstreamFailure()) {
+            self::notifyUpstreamFailure();
+
+            return;
+        }
+
+        if ($result->isNotFound()) {
+            self::notifyProductNotFound();
+
+            return;
+        }
+
+        /** @var array{product_name?: string, generic_name?: string, categories_hierarchy?: array<int, string>|string|null} $productData */
+        $productData = $result->getProductData();
+
+        $fieldsPopulated = self::populateFieldsFromProductData($get, $set, $productData);
+
+        self::notifyFieldsPopulated($fieldsPopulated);
     }
 
     /**
@@ -153,6 +161,24 @@ class ItemForm
             ->title(__('Product not found'))
             ->body(__('No product information found for this barcode.'))
             ->warning()
+            ->send();
+    }
+
+    private static function notifyInvalidBarcode(): void
+    {
+        Notification::make()
+            ->title(__('Invalid barcode'))
+            ->body(__('The barcode format is not recognized. Please check the digits and try again.'))
+            ->warning()
+            ->send();
+    }
+
+    private static function notifyUpstreamFailure(): void
+    {
+        Notification::make()
+            ->title(__('Product lookup unavailable'))
+            ->body(__('We could not reach the product database. You can still enter the details manually.'))
+            ->danger()
             ->send();
     }
 
