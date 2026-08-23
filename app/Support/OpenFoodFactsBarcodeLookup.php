@@ -48,13 +48,21 @@ final class OpenFoodFactsBarcodeLookup implements BarcodeLookup
 
         $cacheKey = $this->cacheKey($barcode);
 
-        if (Cache::has($cacheKey)) {
-            /** @var BarcodeLookupResult $cached */
-            $cached = Cache::get($cacheKey);
+        return $this->retrieveFromCacheOrFetch($barcode, $cacheKey);
+    }
 
-            return $cached;
+    private function retrieveFromCacheOrFetch(string $barcode, string $cacheKey): BarcodeLookupResult
+    {
+        if (Cache::has($cacheKey)) {
+            /** @var BarcodeLookupResult */
+            return Cache::get($cacheKey);
         }
 
+        return $this->fetchAndCacheResult($barcode, $cacheKey);
+    }
+
+    private function fetchAndCacheResult(string $barcode, string $cacheKey): BarcodeLookupResult
+    {
         try {
             $document = retry(
                 $this->maxAttempts,

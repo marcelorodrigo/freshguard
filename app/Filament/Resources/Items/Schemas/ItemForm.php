@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Items\Schemas;
 
 use App\Contracts\BarcodeLookup;
 use App\Models\Item;
+use App\Support\BarcodeLookupResult;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -98,21 +99,7 @@ class ItemForm
 
         $result = $lookup->lookup($state);
 
-        if ($result->isInvalid()) {
-            self::notifyInvalidBarcode();
-
-            return;
-        }
-
-        if ($result->isUpstreamFailure()) {
-            self::notifyUpstreamFailure();
-
-            return;
-        }
-
-        if ($result->isNotFound()) {
-            self::notifyProductNotFound();
-
+        if (self::shouldExitAfterResultCheck($result)) {
             return;
         }
 
@@ -122,6 +109,29 @@ class ItemForm
         $fieldsPopulated = self::populateFieldsFromProductData($get, $set, $productData);
 
         self::notifyFieldsPopulated($fieldsPopulated);
+    }
+
+    private static function shouldExitAfterResultCheck(BarcodeLookupResult $result): bool
+    {
+        if ($result->isInvalid()) {
+            self::notifyInvalidBarcode();
+
+            return true;
+        }
+
+        if ($result->isUpstreamFailure()) {
+            self::notifyUpstreamFailure();
+
+            return true;
+        }
+
+        if ($result->isNotFound()) {
+            self::notifyProductNotFound();
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
