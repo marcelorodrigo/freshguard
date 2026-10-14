@@ -15,5 +15,5 @@ parameters:
             # Generated framework cache files; not maintainable first-party source.
             - bootstrap/cache/*
     stubFiles:
-        - phpstan/stubs/livewire-test-response.stub.php
+        - phpstan/stubs/livewire-testable.stub.php
     level: 10
