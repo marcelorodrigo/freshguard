@@ -16,43 +16,50 @@ final class ConsumeBatch
             return null;
         }
 
-        return DB::transaction(function () use ($batchId): ?string {
-            $batchReference = Batch::query()
-                ->select(['id', 'item_id'])
-                ->whereKey($batchId)
-                ->first();
+        return DB::transaction(fn (): ?string => $this->consumeLockedBatch($batchId), attempts: 3);
+    }
 
-            if ($batchReference === null) {
-                return null;
-            }
+    /**
+     * Consume a single unit from the batch while holding row locks.
+     *
+     * Locks are acquired item-first to match Batch::updateItemQuantity() and avoid deadlocks.
+     */
+    private function consumeLockedBatch(string $batchId): ?string
+    {
+        $itemId = Batch::query()
+            ->select(['id', 'item_id'])
+            ->whereKey($batchId)
+            ->first()
+            ?->item_id;
 
-            $item = Item::query()
-                ->whereKey($batchReference->item_id)
+        $item = $itemId === null
+            ? null
+            : Item::query()
+                ->whereKey($itemId)
                 ->lockForUpdate()
                 ->first();
 
-            if ($item === null) {
-                return null;
-            }
+        if ($item === null) {
+            return null;
+        }
 
-            $batch = Batch::query()
-                ->whereKey($batchId)
-                ->where('item_id', $item->getKey())
-                ->lockForUpdate()
-                ->first();
+        $batch = Batch::query()
+            ->whereKey($batchId)
+            ->where('item_id', $item->getKey())
+            ->lockForUpdate()
+            ->first();
 
-            if ($batch === null || $batch->quantity <= 0) {
-                return null;
-            }
+        if ($batch === null || $batch->quantity <= 0) {
+            return null;
+        }
 
-            if ($batch->quantity === 1) {
-                $batch->delete();
-            } else {
-                $batch->quantity--;
-                $batch->save();
-            }
+        if ($batch->quantity === 1) {
+            $batch->delete();
+        } else {
+            $batch->quantity--;
+            $batch->save();
+        }
 
-            return $item->name;
-        }, attempts: 3);
+        return $item->name;
     }
 }
