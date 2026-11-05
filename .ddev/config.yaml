@@ -8,9 +8,10 @@ additional_hostnames: []
 additional_fqdns: []
 database:
     type: mariadb
-    version: "11.8"
+    version: "12.3"
 use_dns_when_possible: true
 composer_version: "2"
+ddev_version_constraint: ">= 1.25.3"
 web_environment: []
 corepack_enable: false
 

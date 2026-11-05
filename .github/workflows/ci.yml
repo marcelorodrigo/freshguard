@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 10
     services:
       mariadb:
-        image: mariadb:11.8
+        image: mariadb:12.3
         env:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: db
