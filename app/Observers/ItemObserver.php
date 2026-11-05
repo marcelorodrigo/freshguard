@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 
 class ItemObserver
 {
-    public function created(Item $item): void
+    public function created(): void
     {
         Cache::forget('item_tag_suggestions');
     }
@@ -21,7 +21,7 @@ class ItemObserver
         }
     }
 
-    public function deleted(Item $item): void
+    public function deleted(): void
     {
         Cache::forget('item_tag_suggestions');
     }

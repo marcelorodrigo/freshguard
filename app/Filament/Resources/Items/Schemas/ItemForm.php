@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Items\Schemas;
 use App\Contracts\BarcodeLookup;
 use App\Models\Item;
 use App\Support\BarcodeLookupResult;
+use Closure;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -113,25 +114,21 @@ class ItemForm
 
     private static function shouldExitAfterResultCheck(BarcodeLookupResult $result): bool
     {
-        if ($result->isInvalid()) {
-            self::notifyInvalidBarcode();
+        /** @var (Closure(): void)|null $notification */
+        $notification = match (true) {
+            $result->isInvalid() => self::notifyInvalidBarcode(...),
+            $result->isUpstreamFailure() => self::notifyUpstreamFailure(...),
+            $result->isNotFound() => self::notifyProductNotFound(...),
+            default => null,
+        };
 
-            return true;
+        if ($notification === null) {
+            return false;
         }
 
-        if ($result->isUpstreamFailure()) {
-            self::notifyUpstreamFailure();
+        $notification();
 
-            return true;
-        }
-
-        if ($result->isNotFound()) {
-            self::notifyProductNotFound();
-
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**
