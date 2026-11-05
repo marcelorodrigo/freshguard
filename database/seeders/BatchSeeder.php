@@ -21,7 +21,7 @@ class BatchSeeder extends Seeder
         $locations = Location::all();
 
         if ($items->isEmpty() || $locations->isEmpty()) {
-            $this->command->info('No items or locations found. Skipping batch seeding.');
+            $this->command?->info('No items or locations found. Skipping batch seeding.');
 
             return;
         }
