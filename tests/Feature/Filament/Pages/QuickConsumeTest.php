@@ -153,6 +153,63 @@ test('search treats wildcard characters as literal text', function (): void {
         });
 });
 
+test('search ranks exact barcode matches first', function (): void {
+    $location = Location::factory()->create();
+
+    $nameMatch = Item::factory()->create([
+        'name' => '123456',
+        'barcode' => '9999999999999',
+    ]);
+    $barcodePrefixMatch = Item::factory()->create([
+        'name' => 'Alpha Product',
+        'barcode' => '1234567890123',
+    ]);
+    $exactBarcodeMatch = Item::factory()->create([
+        'name' => 'Zeta Product',
+        'barcode' => '123456',
+    ]);
+
+    foreach ([$nameMatch, $barcodePrefixMatch, $exactBarcodeMatch] as $item) {
+        Batch::factory()->create([
+            'item_id' => $item->id,
+            'location_id' => $location->id,
+            'quantity' => 5,
+            'expires_at' => now()->addDays(30),
+        ]);
+    }
+
+    livewire(QuickConsume::class)
+        ->set('search', '123456')
+        ->assertSet('searchResults', function (Collection $results) use ($exactBarcodeMatch, $barcodePrefixMatch, $nameMatch): bool {
+            return $results->pluck('id')->all() === [
+                $exactBarcodeMatch->id,
+                $barcodePrefixMatch->id,
+                $nameMatch->id,
+            ];
+        });
+});
+
+test('search treats underscore as literal text', function (): void {
+    $location = Location::factory()->create();
+    $literalItem = Item::factory()->create(['name' => 'Item_One']);
+    $wildcardItem = Item::factory()->create(['name' => 'ItemXOne']);
+
+    foreach ([$literalItem, $wildcardItem] as $item) {
+        Batch::factory()->create([
+            'item_id' => $item->id,
+            'location_id' => $location->id,
+            'quantity' => 5,
+            'expires_at' => now()->addDays(30),
+        ]);
+    }
+
+    livewire(QuickConsume::class)
+        ->set('search', 'Item_')
+        ->assertSet('searchResults', function (Collection $results) use ($literalItem): bool {
+            return $results->pluck('id')->all() === [$literalItem->id];
+        });
+});
+
 test('only shows items with batches having quantity > 0', function (): void {
     $itemWithStock = Item::factory()->create(['name' => 'In Stock']);
     $itemWithoutStock = Item::factory()->create(['name' => 'Out of Stock']);
