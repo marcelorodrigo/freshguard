@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Actions\ConsumeBatch;
+use App\Actions\SearchItems;
 use App\Models\Batch;
 use App\Models\Item;
 use BackedEnum;
@@ -23,8 +24,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
@@ -53,6 +52,13 @@ class QuickConsume extends Page
     /** @var Collection<int, Item> */
     public Collection $searchResults;
 
+    private SearchItems $searchItems;
+
+    public function boot(SearchItems $searchItems): void
+    {
+        $this->searchItems = $searchItems;
+    }
+
     public function mount(): void
     {
         $this->searchResults = new Collection;
@@ -76,32 +82,7 @@ class QuickConsume extends Page
 
     private function performSearch(): void
     {
-        $search = trim($this->search);
-        $searchPattern = sprintf('%%%s%%', addcslashes($search, '\\%_'));
-        $escapeChar = '\\';
-
-        $this->searchResults = Item::query()
-            ->select(['id', 'name', 'barcode', 'description'])
-            ->with([
-                'batches' => function (Relation $query): void {
-                    $query
-                        ->select(['id', 'item_id', 'location_id', 'expires_at', 'quantity'])
-                        ->with('location')
-                        ->where('quantity', '>', 0)
-                        ->orderBy('expires_at')
-                        ->orderBy('id');
-                },
-            ])
-            ->where(function (Builder $query) use ($searchPattern, $escapeChar): void {
-                $query->whereRaw('`name` like ? escape ?', [$searchPattern, $escapeChar])
-                    ->orWhereRaw('`barcode` like ? escape ?', [$searchPattern, $escapeChar])
-                    ->orWhereRaw('`description` like ? escape ?', [$searchPattern, $escapeChar]);
-            })
-            ->whereHas('batches', fn (Builder $q): Builder => $q->where('quantity', '>', 0))
-            ->orderBy('name')
-            ->orderBy('id')
-            ->limit(10)
-            ->get();
+        $this->searchResults = ($this->searchItems)($this->search);
 
         $this->refreshInfolist();
     }
