@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
@@ -48,7 +49,7 @@ type Options struct {
 // New builds the root handler: the API, the JSON envelope, and the SPA.
 func New(opts Options) http.Handler {
 	srv := newServer(opts)
-	return logRequests(opts.Logger, srv.routes())
+	return logRequests(opts.Logger, srv.rateLimitAPI(srv.routes()))
 }
 
 func newServer(opts Options) *server {
@@ -75,7 +76,8 @@ func newServer(opts Options) *server {
 		auth:         opts.Auth,
 		inventory:    opts.Inventory,
 		now:          opts.Now,
-		loginLimiter: newLoginLimiter(),
+		loginLimiter: newRateLimiter(loginAttempts, loginWindow),
+		apiLimiter:   newRateLimiter(apiRequests, apiWindow),
 	}
 }
 
@@ -86,7 +88,8 @@ type server struct {
 	auth         *auth.Service
 	inventory    *inventory.Service
 	now          func() time.Time
-	loginLimiter *loginLimiter
+	loginLimiter *rateLimiter
+	apiLimiter   *rateLimiter
 }
 
 // routes registers every endpoint. Keeping it a method lets a test add a probe
@@ -171,6 +174,21 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	_, _ = w.Write(body)
 }
 
+// rateLimitAPI applies the general per-address bucket. Health stays exempt so
+// a probe cannot exhaust the budget or be refused during a deploy.
+func (s *server) rateLimitAPI(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") && r.URL.Path != "/api/v1/health" {
+			if !s.apiLimiter.allow(clientIP(r), s.now()) {
+				writeError(w, http.StatusTooManyRequests, CodeRateLimited, "too many requests")
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func logRequests(logger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -178,9 +196,14 @@ func logRequests(logger *slog.Logger, next http.Handler) http.Handler {
 
 		next.ServeHTTP(recorder, r)
 
+		route := r.Pattern
+		if route == "" {
+			route = "unmatched"
+		}
+
 		logger.LogAttrs(r.Context(), slog.LevelInfo, "request",
 			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
+			slog.String("route", route),
 			slog.Int("status", recorder.status),
 			slog.Duration("duration", time.Since(start)),
 		)
