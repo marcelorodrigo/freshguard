@@ -32,7 +32,7 @@ JSON over HTTP under `/api/v1`. The SPA is the only client in v1; the API is pub
 
 Cookie-authenticated **non-GET** requests must carry an `Origin` header (or `Sec-Fetch-Site: same-origin`) whose host equals the request host. A request without it is `403 forbidden` / `bad_origin`.
 
-`must_reset = 1` blocks everything except `GET /api/v1/me` and `PATCH /api/v1/me` with `403 must_reset`.
+`must_reset = 1` blocks everything except `GET /api/v1/me`, `PATCH /api/v1/me` and `DELETE /api/v1/session` with `403 must_reset`. Signing out stays reachable: a flagged account must not be trapped in the session it cannot use.
 
 Rate limits: login 10 per 15 min per IP+email; barcode 60 per minute per user; everything else 600 per minute per IP. Exceeding one is `429 rate_limited`.
 
@@ -118,17 +118,17 @@ Anything else under `/api/*` is `404 not_found` as JSON; anything else is the SP
 {"status":"ok","version":"1.0.0","setup_required":true,"time":"2026-01-24T08:27:26Z"}
 ```
 
-Never authenticated and never rate-limited. Reads only the user count and a `SELECT 1`. The walking skeleton answers `status`, `version` and `time`; `setup_required` arrives with the setup flow (step 2), when there is a user count to read.
+Never authenticated and never rate-limited. Reads only the user count. `setup_required` is true while there are no accounts.
 
 ### `POST /api/v1/setup`
 
-Only while `users` is empty; otherwise `409 conflict` / `setup_complete`.
+Only while `users` is empty; otherwise `409 conflict`.
 
 ```json
 {"name":"Marcelo","email":"m@example.com","password":"correct horse battery staple"}
 ```
 
-`201` with the user, plus a `fg_session` cookie (the admin is logged in). Password rules: 8–255 characters.
+`201` `{"user": {…}}` plus a `fg_session` cookie (the admin is logged in). Validation tokens: `name: required|max`, `email: required|email|max|unique`, `password: min|max`; the password is 8–255 characters.
 
 ### `POST /api/v1/session`
 
@@ -150,7 +150,7 @@ Only while `users` is empty; otherwise `409 conflict` / `setup_complete`.
 {"name":"Marcelo","email":"m@example.com","current_password":"…","password":"…"}
 ```
 
-Email collisions are `422 invalid_input` with `{"email":"unique"}`.
+A missing `current_password` is `422 invalid_input` with `{"current_password":"required"}`; a wrong one is `{"current_password":"mismatch"}`. Email collisions are `422 invalid_input` with `{"email":"unique"}`.
 
 ### `GET|POST /api/v1/password-resets/{token}`
 

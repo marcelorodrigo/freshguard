@@ -8,20 +8,58 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+
+	"github.com/marcelorodrigo/freshguard/internal/auth"
+	"github.com/marcelorodrigo/freshguard/internal/store"
 )
 
 const indexHTML = "<!doctype html><div id=app></div>"
 
+var testNow = time.Date(2026, 1, 24, 8, 27, 26, 0, time.UTC)
+
+// testClock is a mutable clock shared by the service and the handlers.
+type testClock struct {
+	now time.Time
+}
+
+func (c *testClock) Now() time.Time { return c.now }
+
+func (c *testClock) Advance(d time.Duration) { c.now = c.now.Add(d) }
+
+func testAuth(t *testing.T, clock *testClock) *auth.Service {
+	t.Helper()
+
+	st, err := store.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("store.Open: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := st.Close(); err != nil {
+			t.Errorf("store.Close: %v", err)
+		}
+	})
+
+	return auth.New(auth.Options{Store: st, Now: clock.Now})
+}
+
+func testWeb() fstest.MapFS {
+	return fstest.MapFS{
+		"index.html": {Data: []byte(indexHTML)},
+	}
+}
+
+// testHandler builds the production root handler from New.
 func testHandler(t *testing.T) http.Handler {
 	t.Helper()
+
+	clock := &testClock{now: testNow}
 
 	return New(Options{
 		Version: "1.0.0",
 		Logger:  slog.New(slog.DiscardHandler),
-		Web: fstest.MapFS{
-			"index.html": {Data: []byte(indexHTML)},
-		},
-		Now: func() time.Time { return time.Date(2026, 1, 24, 8, 27, 26, 0, time.UTC) },
+		Web:     testWeb(),
+		Auth:    testAuth(t, clock),
+		Now:     clock.Now,
 	})
 }
 
@@ -39,9 +77,10 @@ func TestHealth(t *testing.T) {
 	}
 
 	var body struct {
-		Status  string `json:"status"`
-		Version string `json:"version"`
-		Time    string `json:"time"`
+		Status        string `json:"status"`
+		Version       string `json:"version"`
+		SetupRequired bool   `json:"setup_required"`
+		Time          string `json:"time"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode: %v", err)
@@ -52,6 +91,9 @@ func TestHealth(t *testing.T) {
 	}
 	if body.Version != "1.0.0" {
 		t.Errorf("version = %q, want 1.0.0 (injected at build time)", body.Version)
+	}
+	if !body.SetupRequired {
+		t.Error("setup_required = false on an empty database, want true")
 	}
 	if _, err := time.Parse(time.RFC3339, body.Time); err != nil {
 		t.Errorf("time = %q, want RFC3339: %v", body.Time, err)

@@ -68,7 +68,7 @@ Every write path is one transaction. There is no cross-request state, no cache t
 - **Passwords**: argon2id, `time=2`, `memory=64 MiB`, `threads=4`, `keyLen=32`, 16-byte salt, PHC string in `users.password_hash`.
 - **Sessions**: `fg_session` cookie, 32 random bytes base64url, `HttpOnly`, `SameSite=Lax`, `Secure` when the request is HTTPS. Only `sha256(secret)` is stored. TTL 30 days, sliding, refreshed at most once per hour to avoid a write per request.
 - **Origin check**: non-GET requests authenticated by cookie must carry `Origin` (or `Sec-Fetch-Site: same-origin`) whose host equals the request host. Bearer requests are exempt; v1 has no bearer clients.
-- **Must reset**: an admin-set password or a CLI reset link sets `must_reset = 1`. Until the user changes it, every endpoint except `GET /me` and `PATCH /me` answers `403 must_reset`.
+- **Must reset**: an admin-set temporary password sets `must_reset = 1`. Until the user chooses a new one, every endpoint except `GET /me`, `PATCH /me` and `DELETE /session` answers `403 must_reset`; signing out stays reachable so a flagged account is never trapped. A CLI reset link lets the user choose the password and clears the flag.
 - **Rate limits**: in-memory token buckets — 10 login attempts per 15 minutes per IP+email, 60 barcode lookups per minute per user, 600 API requests per minute per IP.
 - **Setup**: `POST /api/v1/setup` succeeds only while `users` is empty; `GET /api/v1/health` reports `setup_required`.
 
@@ -104,7 +104,7 @@ Nothing is required: `./freshguard` in an empty directory starts a working serve
 | `freshguard` / `freshguard serve` | Run the server. |
 | `freshguard healthcheck` | Exit 0 when `GET /health` answers; the container probe. |
 | `freshguard version` | Print the build version from `-ldflags`. |
-| `freshguard user create --name --email [--admin]` | Create an account when the setup page is not an option. |
+| `freshguard user create --name --email [--admin]` | Create an account when the setup page is not an option; the first account is always an administrator. |
 | `freshguard user password <email>` | Print a single-use reset link (uses `FRESHGUARD_BASE_URL`). |
 | `freshguard import --dir --dry-run [--force]` | One-shot migration from the Laravel export; removed in step 10. |
 
