@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { ApiError, bulkDeleteItems, getHealth, login, logout } from './api';
+import {
+  ApiError,
+  bulkDeleteItems,
+  getHealth,
+  listItems,
+  listTags,
+  login,
+  logout,
+} from './api';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -150,5 +158,56 @@ describe('bulkDeleteItems', () => {
       '/api/v1/items/bulk-delete',
       expect.objectContaining({ method: 'POST', body: '{"ids":["a","b"]}' }),
     );
+  });
+});
+
+
+describe('listItems', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('serializes filters into the collection query', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        data: [],
+        meta: { page: 2, per_page: 10, total: 0, pages: 0 },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await listItems({
+      q: 'whole milk',
+      sort: 'quantity',
+      dir: 'desc',
+      page: 2,
+      per_page: 10,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/items?q=whole+milk&sort=quantity&dir=desc&page=2&per_page=10',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+  });
+});
+
+describe('listTags', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('unwraps the data envelope', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          data: [{ id: 'tag-1', name: 'Dairy', item_count: 2 }],
+        }),
+      ),
+    );
+
+    await expect(listTags()).resolves.toEqual([
+      { id: 'tag-1', name: 'Dairy', item_count: 2 },
+    ]);
   });
 });

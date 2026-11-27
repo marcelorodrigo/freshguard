@@ -83,6 +83,7 @@ export const en = {
     emptyTitle: 'No items yet',
     emptyBody: 'Create the first item to start tracking your household stock.',
     searchPlaceholder: 'Search items...',
+    selectAll: 'Select all items',
     noMatches: 'No items match this search.',
     createTitle: 'Create Item',
     editTitle: 'Edit Item',

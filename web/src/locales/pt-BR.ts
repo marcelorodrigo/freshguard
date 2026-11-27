@@ -77,6 +77,7 @@ export const ptBR: MessageSchema = {
     emptyTitle: 'Nenhum item ainda',
     emptyBody: 'Crie o primeiro item para começar a controlar o estoque da casa.',
     searchPlaceholder: 'Pesquisar itens...',
+    selectAll: 'Selecionar todos os itens',
     noMatches: 'Nenhum item corresponde a esta pesquisa.',
     createTitle: 'Criar Item',
     editTitle: 'Editar Item',

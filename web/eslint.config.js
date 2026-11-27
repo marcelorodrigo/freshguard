@@ -21,6 +21,7 @@ export default [
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         HTMLDialogElement: 'readonly',
+        KeyboardEvent: 'readonly',
       },
     },
   },

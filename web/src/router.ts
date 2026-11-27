@@ -10,6 +10,8 @@ import AppShell from './components/AppShell.vue';
 import { resolveNavigation } from './navigation';
 import { ensureSession, session } from './session';
 import ChangePasswordView from './views/ChangePasswordView.vue';
+import ItemFormView from './views/ItemFormView.vue';
+import ItemsListView from './views/ItemsListView.vue';
 import LoginView from './views/LoginView.vue';
 import PlaceholderView from './views/PlaceholderView.vue';
 import SetupView from './views/SetupView.vue';
@@ -46,17 +48,17 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'items',
         name: 'items',
-        component: PlaceholderView,
+        component: ItemsListView,
       },
       {
         path: 'items/new',
         name: 'item-new',
-        component: PlaceholderView,
+        component: ItemFormView,
       },
       {
         path: 'items/:id',
         name: 'item-edit',
-        component: PlaceholderView,
+        component: ItemFormView,
       },
       {
         path: 'quick-consume',
