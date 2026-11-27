@@ -327,14 +327,14 @@ func locationsWithBatches(ctx context.Context, tx *sql.Tx, locationIDs []string)
 		return nil, nil
 	}
 
-	args := make([]any, len(locationIDs))
-	for i, locationID := range locationIDs {
-		args[i] = locationID
+	selected, err := jsonIDs(locationIDs)
+	if err != nil {
+		return nil, err
 	}
 
-	rows, err := tx.QueryContext(ctx,
-		"SELECT DISTINCT location_id FROM batches WHERE location_id IN ("+
-			placeholders(len(locationIDs))+")", args...)
+	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT b.location_id
+		FROM batches b
+		WHERE b.location_id IN (SELECT value FROM json_each(?))`, selected)
 	if err != nil {
 		return nil, fmt.Errorf("read locations with batches: %w", err)
 	}

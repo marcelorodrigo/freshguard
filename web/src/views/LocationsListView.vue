@@ -135,13 +135,13 @@ async function loadAllLocations(): Promise<void> {
 
   try {
     const first = await listLocations({ per_page: 100 });
-    const pages = [first];
+    const rest = await Promise.all(
+      Array.from({ length: Math.max(0, first.meta.pages - 1) }, (_, index) =>
+        listLocations({ per_page: 100, page: index + 2 }),
+      ),
+    );
 
-    for (let next = 2; next <= first.meta.pages; next += 1) {
-      pages.push(await listLocations({ per_page: 100, page: next }));
-    }
-
-    allLocations.value = pages.flatMap((result) => result.data);
+    allLocations.value = [first, ...rest].flatMap((result) => result.data);
   } catch (error) {
     allLocations.value = [];
     optionsError.value = t(errorMessageKey(error));
@@ -404,6 +404,37 @@ function askBulkDelete(): void {
   pendingDelete.value = { kind: 'bulk' };
 }
 
+async function deletePending(pending: PendingDelete): Promise<void> {
+  if (pending.kind === 'single') {
+    await deleteLocation(pending.location.id);
+    if (locations.value.length === 1 && page.value > 1) {
+      page.value -= 1;
+    }
+    pushToast({ level: 'success', title: t('locations.deleted') });
+    return;
+  }
+
+  const ids = [...selected.value];
+  await bulkDeleteLocations(ids);
+  if (ids.length === locations.value.length && page.value > 1) {
+    page.value -= 1;
+  }
+  pushToast({ level: 'success', title: t('locations.bulkDeleted') });
+}
+
+function reportDeleteFailure(error: unknown, single: boolean): void {
+  if (error instanceof ApiError && error.code === 'location_has_batches') {
+    pushToast({
+      level: 'error',
+      title: t(single ? 'locations.deleteBlockedTitle' : 'locations.bulkBlockedTitle'),
+      body: t(single ? 'locations.deleteBlockedBody' : 'locations.bulkBlockedBody'),
+    });
+    return;
+  }
+
+  pushToast({ level: 'error', title: t(errorMessageKey(error)) });
+}
+
 async function confirmDelete(): Promise<void> {
   const pending = pendingDelete.value;
   if (pending === null) {
@@ -411,35 +442,10 @@ async function confirmDelete(): Promise<void> {
   }
   pendingDelete.value = null;
 
-  const singles = pending.kind === 'single';
   try {
-    if (pending.kind === 'single') {
-      await deleteLocation(pending.location.id);
-      if (locations.value.length === 1 && page.value > 1) {
-        page.value -= 1;
-      }
-      pushToast({ level: 'success', title: t('locations.deleted') });
-    } else {
-      const ids = [...selected.value];
-      await bulkDeleteLocations(ids);
-      if (ids.length === locations.value.length && page.value > 1) {
-        page.value -= 1;
-      }
-      pushToast({ level: 'success', title: t('locations.bulkDeleted') });
-    }
+    await deletePending(pending);
   } catch (error) {
-    if (error instanceof ApiError && error.code === 'location_has_batches') {
-      pushToast({
-        level: 'error',
-        title: t(singles ? 'locations.deleteBlockedTitle' : 'locations.bulkBlockedTitle'),
-        body: t(singles ? 'locations.deleteBlockedBody' : 'locations.bulkBlockedBody'),
-      });
-      await Promise.all([load(), loadAllLocations()]);
-      return;
-    }
-
-    pushToast({ level: 'error', title: t(errorMessageKey(error)) });
-    return;
+    reportDeleteFailure(error, pending.kind === 'single');
   }
 
   await Promise.all([load(), loadAllLocations()]);
@@ -887,7 +893,14 @@ async function confirmDelete(): Promise<void> {
                 >
                   {{ t('locations.parent') }}
                 </label>
+                <label
+                  for="location-parent-search"
+                  class="sr-only"
+                >
+                  {{ t('locations.searchParent') }}
+                </label>
                 <input
+                  id="location-parent-search"
                   v-model="parentSearch"
                   type="search"
                   :placeholder="t('locations.searchParent')"
