@@ -38,7 +38,7 @@ func TestItemsRequireSession(t *testing.T) {
 	}
 }
 
-func TestItemEndpoints(t *testing.T) {
+func TestCreateAndListItems(t *testing.T) {
 	t.Parallel()
 
 	env := newTestEnv(t)
@@ -98,6 +98,17 @@ func TestItemEndpoints(t *testing.T) {
 	if tagsBody.Data[0].ItemCount != 1 {
 		t.Errorf("Dairy item_count = %d, want 1", tagsBody.Data[0].ItemCount)
 	}
+}
+
+func TestUpdateAndDeleteItem(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	cookie, _ := env.setup(t)
+	created := createItemHTTP(t, env, cookie, map[string]any{
+		"name": "Whole milk",
+		"tags": []string{"Fridge"},
+	})
 
 	renamed := "Whole milk 3%"
 	patch := env.send(t, request{

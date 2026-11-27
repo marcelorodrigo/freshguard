@@ -10,7 +10,10 @@ import (
 	"github.com/marcelorodrigo/freshguard/internal/ids"
 )
 
-const itemSelect = `SELECT
+const (
+	itemTieBreak = ", i.name ASC, i.id ASC"
+
+	itemSelect = `SELECT
 	i.id, i.name, COALESCE(i.barcode, ''), COALESCE(i.description, ''),
 	COALESCE(SUM(b.quantity), 0) AS quantity,
 	MIN(b.expires_at)           AS earliest_expiration,
@@ -18,6 +21,7 @@ const itemSelect = `SELECT
 	i.created_at, i.updated_at
 FROM items i
 LEFT JOIN batches b ON b.item_id = i.id`
+)
 
 // ListItems returns one page with computed quantity and earliest expiration.
 func (s *Service) ListItems(ctx context.Context, params ListParams) (Page, error) {
@@ -432,13 +436,13 @@ func itemFilter(term string) (string, []any) {
 func itemOrder(sort, dir string) string {
 	switch sort {
 	case "quantity":
-		return "quantity " + dir + ", i.name ASC, i.id ASC"
+		return "quantity " + dir + itemTieBreak
 	case "earliest_expiration":
-		return "earliest_expiration IS NULL ASC, earliest_expiration " + dir + ", i.name ASC, i.id ASC"
+		return "earliest_expiration IS NULL ASC, earliest_expiration " + dir + itemTieBreak
 	case "created_at":
-		return "i.created_at " + dir + ", i.name ASC, i.id ASC"
+		return "i.created_at " + dir + itemTieBreak
 	case "updated_at":
-		return "i.updated_at " + dir + ", i.name ASC, i.id ASC"
+		return "i.updated_at " + dir + itemTieBreak
 	default:
 		return "i.name " + dir + ", i.id " + dir
 	}
