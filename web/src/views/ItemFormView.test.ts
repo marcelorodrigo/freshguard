@@ -199,6 +199,180 @@ describe('ItemFormView batches', () => {
     expect(wrapper.findAll('[data-test="batch-row"]')).toHaveLength(1);
   });
 
+  it('loads every page of locations for the picker', async () => {
+    const freezer: Location = { ...location, id: 'loc-freezer', name: 'Freezer' };
+    vi.mocked(listLocations)
+      .mockResolvedValueOnce({
+        data: [location],
+        meta: { page: 1, per_page: 100, total: 2, pages: 2 },
+      })
+      .mockResolvedValueOnce({
+        data: [freezer],
+        meta: { page: 2, per_page: 100, total: 2, pages: 2 },
+      });
+
+    await mountView();
+
+    expect(listLocations).toHaveBeenNthCalledWith(1, { per_page: 100 });
+    expect(listLocations).toHaveBeenNthCalledWith(2, { per_page: 100, page: 2 });
+
+    await wrapper.find('[data-test="new-batch"]').trigger('click');
+    const options = wrapper.findAll('[data-test="batch-location"] option').map((option) => option.text());
+    expect(options).toContain('Freezer');
+  });
+
+  it('separates a failed location load from an empty one and retries', async () => {
+    vi.mocked(listLocations).mockRejectedValueOnce(new Error('down'));
+    await mountView();
+
+    await wrapper.find('[data-test="new-batch"]').trigger('click');
+    expect(wrapper.find('[data-test="batches-locations-error"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="batches-no-locations"]').exists()).toBe(false);
+    expect(
+      (wrapper.find('[data-test="batch-save"]').element as HTMLButtonElement).disabled,
+    ).toBe(true);
+
+    vi.mocked(listLocations).mockResolvedValueOnce({
+      data: [],
+      meta: { page: 1, per_page: 100, total: 0, pages: 0 },
+    });
+    await wrapper.find('[data-test="batches-locations-retry"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="batches-locations-error"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="batches-no-locations"]').exists()).toBe(true);
+  });
+
+  it('does not repeat a successful create when the refresh fails', async () => {
+    await mountView();
+
+    const created = makeBatch('batch-3', '2026-02-20', 1);
+    vi.mocked(createBatch).mockResolvedValue(created);
+    vi.mocked(getItem)
+      .mockRejectedValueOnce(new Error('down'))
+      .mockResolvedValueOnce(detail([...current.batches, created]));
+
+    await wrapper.find('[data-test="new-batch"]').trigger('click');
+    await wrapper.find('[data-test="batch-quantity"]').setValue(1);
+    await wrapper.find('[data-test="batch-save"]').trigger('click');
+    await flushPromises();
+
+    expect(createBatch).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('[data-test="batch-save"]').exists()).toBe(false);
+    expect(wrapper.find('[data-test="batches-refresh-error"]').exists()).toBe(true);
+
+    await wrapper.find('[data-test="batches-refresh-retry"]').trigger('click');
+    await flushPromises();
+
+    expect(createBatch).toHaveBeenCalledTimes(1);
+    expect(getItem).toHaveBeenCalledTimes(3);
+    expect(wrapper.find('[data-test="batches-refresh-error"]').exists()).toBe(false);
+    expect(wrapper.findAll('[data-test="batch-row"]')).toHaveLength(3);
+  });
+
+  it('does not repeat a successful delete when the refresh fails', async () => {
+    await mountView();
+
+    const remaining = detail([makeBatch('batch-2', '2026-02-10', 3)]);
+    vi.mocked(deleteBatch).mockResolvedValue(undefined);
+    vi.mocked(getItem)
+      .mockRejectedValueOnce(new Error('down'))
+      .mockResolvedValueOnce(remaining);
+
+    await wrapper.findAll('[data-test="batch-delete"]')[0]?.trigger('click');
+    const dialog = wrapper.find('dialog');
+    const buttons = dialog.findAll('button');
+    await buttons[buttons.length - 1]?.trigger('click');
+    await flushPromises();
+
+    expect(deleteBatch).toHaveBeenCalledTimes(1);
+    expect(wrapper.findAll('[data-test="batch-row"]')).toHaveLength(1);
+    expect(
+      (wrapper.find('[data-test="item-quantity"]').element as HTMLInputElement).value,
+    ).toBe('3');
+    expect(wrapper.find('[data-test="batches-refresh-error"]').exists()).toBe(true);
+
+    await wrapper.find('[data-test="batches-refresh-retry"]').trigger('click');
+    await flushPromises();
+
+    expect(deleteBatch).toHaveBeenCalledTimes(1);
+    expect(getItem).toHaveBeenCalledTimes(3);
+    expect(wrapper.findAll('[data-test="batch-row"]')).toHaveLength(1);
+  });
+
+  it('disables form switching while a save is in flight', async () => {
+    await mountView();
+
+    let resolveCreate: (batch: Batch) => void = () => {};
+    vi.mocked(createBatch).mockImplementation(
+      () =>
+        new Promise<Batch>((resolve) => {
+          resolveCreate = resolve;
+        }),
+    );
+
+    await wrapper.find('[data-test="new-batch"]').trigger('click');
+    await wrapper.find('[data-test="batch-save"]').trigger('click');
+    await flushPromises();
+
+    expect(
+      (wrapper.find('[data-test="new-batch"]').element as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(
+      (wrapper.find('[data-test="batch-cancel"]').element as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(
+      (wrapper.find('[data-test="batch-save"]').element as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(
+      (wrapper.find('[data-test="batch-edit"]').element as HTMLButtonElement).disabled,
+    ).toBe(true);
+
+    resolveCreate(makeBatch('batch-3', '2026-02-20', 1));
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="batch-save"]').exists()).toBe(false);
+  });
+
+  it('ignores a refresh response for a route that is no longer active', async () => {
+    await mountView();
+
+    const other: ItemDetail = {
+      ...detail([]),
+      id: 'item-2',
+      name: 'Bread',
+    };
+    let resolveOld: (value: ItemDetail) => void = () => {};
+
+    vi.mocked(createBatch).mockResolvedValue(makeBatch('batch-3', '2026-02-20', 1));
+    vi.mocked(getItem).mockImplementation((id) => {
+      if (id === 'item-2') {
+        return Promise.resolve(other);
+      }
+      return new Promise<ItemDetail>((resolve) => {
+        resolveOld = resolve;
+      });
+    });
+
+    await wrapper.find('[data-test="new-batch"]').trigger('click');
+    await wrapper.find('[data-test="batch-save"]').trigger('click');
+    await flushPromises();
+
+    await router.push('/items/item-2');
+    await flushPromises();
+
+    expect(
+      (wrapper.find('[data-test="item-name"]').element as HTMLInputElement).value,
+    ).toBe('Bread');
+
+    resolveOld(detail([...current.batches, makeBatch('batch-3', '2026-02-20', 1)]));
+    await flushPromises();
+
+    expect(
+      (wrapper.find('[data-test="item-name"]').element as HTMLInputElement).value,
+    ).toBe('Bread');
+  });
+
   it('edits a batch and pre-fills the form', async () => {
     await mountView();
 

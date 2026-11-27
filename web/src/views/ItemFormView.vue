@@ -54,11 +54,14 @@ const errors = reactive({
 const quantity = computed(() => item.value?.quantity ?? 0);
 
 const locations = ref<Location[]>([]);
+const locationsLoading = ref(false);
+const locationsError = ref('');
 const showCreatedAt = ref(false);
 const batchFormOpen = ref(false);
 const editingBatchID = ref<string | null>(null);
 const batchSaving = ref(false);
 const pendingBatchDelete = ref<Batch | null>(null);
+const refreshError = ref('');
 
 const batchForm = reactive({
   location_id: '',
@@ -97,11 +100,23 @@ function defaultExpiresAt(): string {
 }
 
 async function loadLocations(): Promise<void> {
+  locationsLoading.value = true;
+  locationsError.value = '';
+
   try {
-    const page = await listLocations({ per_page: 100 });
-    locations.value = page.data;
-  } catch {
-    // The select stays empty and the Batches section explains why.
+    const first = await listLocations({ per_page: 100 });
+    const pages = [first];
+
+    for (let page = 2; page <= first.meta.pages; page += 1) {
+      pages.push(await listLocations({ per_page: 100, page }));
+    }
+
+    locations.value = pages.flatMap((result) => result.data);
+  } catch (error) {
+    locations.value = [];
+    locationsError.value = t(errorMessageKey(error));
+  } finally {
+    locationsLoading.value = false;
   }
 }
 
@@ -220,6 +235,9 @@ function resetBatchErrors(): void {
 }
 
 function openCreateBatch(): void {
+  if (batchSaving.value) {
+    return;
+  }
   resetBatchErrors();
   editingBatchID.value = null;
   batchForm.location_id = locations.value[0]?.id ?? '';
@@ -229,6 +247,9 @@ function openCreateBatch(): void {
 }
 
 function openEditBatch(batch: Batch): void {
+  if (batchSaving.value) {
+    return;
+  }
   resetBatchErrors();
   editingBatchID.value = batch.id;
   batchForm.location_id = batch.location.id;
@@ -243,12 +264,63 @@ function closeBatchForm(): void {
   resetBatchErrors();
 }
 
+function cancelBatchForm(): void {
+  if (batchSaving.value) {
+    return;
+  }
+  closeBatchForm();
+}
+
+function askDeleteBatch(batch: Batch): void {
+  if (batchSaving.value) {
+    return;
+  }
+  pendingBatchDelete.value = batch;
+}
+
 async function refreshItem(): Promise<void> {
   const id = String(route.params.id ?? '');
   if (id === '') {
     return;
   }
-  item.value = await getItem(id);
+
+  const detail = await getItem(id);
+  if (String(route.params.id ?? '') !== id) {
+    return;
+  }
+
+  item.value = detail;
+  refreshError.value = '';
+}
+
+/** A failed refresh leaves a read-only retry path; it never repeats a write. */
+async function refreshAfterMutation(): Promise<void> {
+  try {
+    await refreshItem();
+  } catch (error) {
+    refreshError.value = t(errorMessageKey(error));
+  }
+}
+
+/** Drops the deleted row immediately so a failed refresh cannot repeat DELETE. */
+function removeBatchLocally(batchID: string): void {
+  const detail = item.value;
+  if (detail === null) {
+    return;
+  }
+
+  const remaining = detail.batches.filter((batch) => batch.id !== batchID);
+  item.value = {
+    ...detail,
+    batches: remaining,
+    quantity: remaining.reduce((total, batch) => total + batch.quantity, 0),
+    batch_count: remaining.length,
+    earliest_expiration: remaining.reduce(
+      (earliest, batch) =>
+        earliest === '' || batch.expires_at < earliest ? batch.expires_at : earliest,
+      '',
+    ),
+  };
 }
 
 function validateBatch(): boolean {
@@ -278,17 +350,18 @@ async function saveBatch(): Promise<void> {
     quantity: Number(batchForm.quantity),
   };
 
+  const itemID = String(route.params.id ?? '');
+  const editingID = editingBatchID.value;
+
   batchSaving.value = true;
   try {
-    if (editingBatchID.value === null) {
-      await createBatch(String(route.params.id ?? ''), input);
+    if (editingID === null) {
+      await createBatch(itemID, input);
       pushToast({ level: 'success', title: t('items.batchCreated') });
     } else {
-      await updateBatch(editingBatchID.value, input);
+      await updateBatch(editingID, input);
       pushToast({ level: 'success', title: t('items.batchUpdated') });
     }
-    await refreshItem();
-    closeBatchForm();
   } catch (error) {
     if (error instanceof ApiError) {
       for (const [field, rule] of Object.entries(error.fields)) {
@@ -298,8 +371,14 @@ async function saveBatch(): Promise<void> {
       }
     }
     batchErrors.form = t(errorMessageKey(error));
+    return;
   } finally {
     batchSaving.value = false;
+  }
+
+  if (String(route.params.id ?? '') === itemID) {
+    closeBatchForm();
+    await refreshAfterMutation();
   }
 }
 
@@ -312,11 +391,14 @@ async function confirmDeleteBatch(): Promise<void> {
 
   try {
     await deleteBatch(batch.id);
-    await refreshItem();
-    pushToast({ level: 'success', title: t('items.batchDeleted') });
   } catch (error) {
     pushToast({ level: 'error', title: t(errorMessageKey(error)) });
+    return;
   }
+
+  removeBatchLocally(batch.id);
+  pushToast({ level: 'success', title: t('items.batchDeleted') });
+  await refreshAfterMutation();
 }
 </script>
 
@@ -535,7 +617,8 @@ async function confirmDeleteBatch(): Promise<void> {
 
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+            :disabled="batchSaving"
             data-test="new-batch"
             @click="openCreateBatch"
           >
@@ -652,7 +735,31 @@ async function confirmDeleteBatch(): Promise<void> {
         </div>
 
         <p
-          v-if="locations.length === 0"
+          v-if="locationsLoading"
+          class="text-sm text-slate-600 sm:col-span-3"
+          data-test="batches-locations-loading"
+        >
+          {{ t('common.loading') }}
+        </p>
+
+        <div
+          v-else-if="locationsError"
+          class="flex flex-wrap items-center gap-3 text-sm text-red-700 sm:col-span-3"
+          data-test="batches-locations-error"
+        >
+          <span>{{ locationsError }}</span>
+          <button
+            type="button"
+            class="font-semibold underline"
+            data-test="batches-locations-retry"
+            @click="loadLocations"
+          >
+            {{ t('common.retry') }}
+          </button>
+        </div>
+
+        <p
+          v-else-if="locations.length === 0"
           class="text-sm text-slate-600 sm:col-span-3"
           data-test="batches-no-locations"
         >
@@ -671,15 +778,17 @@ async function confirmDeleteBatch(): Promise<void> {
         <div class="flex items-center justify-end gap-3 sm:col-span-3">
           <button
             type="button"
-            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            @click="closeBatchForm"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            :disabled="batchSaving"
+            data-test="batch-cancel"
+            @click="cancelBatchForm"
           >
             {{ t('common.cancel') }}
           </button>
           <button
             type="button"
             class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
-            :disabled="batchSaving || locations.length === 0"
+            :disabled="batchSaving || locationsLoading || locationsError !== '' || locations.length === 0"
             data-test="batch-save"
             @click="saveBatch"
           >
@@ -760,7 +869,8 @@ async function confirmDeleteBatch(): Promise<void> {
                 <div class="flex justify-end gap-2">
                   <button
                     type="button"
-                    class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    :disabled="batchSaving"
                     data-test="batch-edit"
                     @click="openEditBatch(batch)"
                   >
@@ -768,9 +878,10 @@ async function confirmDeleteBatch(): Promise<void> {
                   </button>
                   <button
                     type="button"
-                    class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                    class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+                    :disabled="batchSaving"
                     data-test="batch-delete"
-                    @click="pendingBatchDelete = batch"
+                    @click="askDeleteBatch(batch)"
                   >
                     {{ t('common.delete') }}
                   </button>
@@ -780,6 +891,23 @@ async function confirmDeleteBatch(): Promise<void> {
           </tbody>
         </table>
       </div>
+
+      <p
+        v-if="refreshError"
+        class="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800"
+        role="alert"
+        data-test="batches-refresh-error"
+      >
+        {{ refreshError }}
+        <button
+          type="button"
+          class="font-semibold underline"
+          data-test="batches-refresh-retry"
+          @click="refreshAfterMutation"
+        >
+          {{ t('common.retry') }}
+        </button>
+      </p>
     </section>
 
     <ConfirmDialog

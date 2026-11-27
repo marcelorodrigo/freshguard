@@ -106,7 +106,7 @@ API `GET|POST /api/v1/items/{id}/batches`, `PATCH|DELETE /api/v1/batches/{id}`.
 - [x] Default sort: expiration ascending.
 - [ ] Searchable by location; sortable by location, expiration, quantity.
 - [ ] Row actions **Edit** and **Delete**, each with its icon.
-- [x] Batch form: **Location** (searchable select, required), **Expiration Date** (date, required, defaults to today + 7 days), **Quantity** (integer, required, min 1).
+- [ ] Batch form: **Location** (searchable select, required), **Expiration Date** (date, required, defaults to today + 7 days), **Quantity** (integer, required, min 1).
 - [x] Saving a batch updates the item's read-only quantity immediately.
 - [x] Consuming the last unit elsewhere leaves no zero-quantity row here.
 

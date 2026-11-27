@@ -51,6 +51,7 @@ export const ptBR: MessageSchema = {
     next: 'Próxima',
     close: 'Fechar',
     confirm: 'Confirmar',
+    retry: 'Tentar novamente',
     noResults: 'Nenhum resultado.',
     required: 'Obrigatório',
   },

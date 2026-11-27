@@ -57,6 +57,7 @@ export const en = {
     next: 'Next',
     close: 'Close',
     confirm: 'Confirm',
+    retry: 'Retry',
     noResults: 'No results.',
     required: 'Required',
   },
