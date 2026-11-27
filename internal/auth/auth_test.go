@@ -610,10 +610,20 @@ func TestUpdateProfileOfUnknownUser(t *testing.T) {
 
 	f := newFixture(t)
 	name := "Ana"
+	password := "a much better password"
+	current := testPassword
+	unknown := "0190a1b2-0000-7000-8000-000000000000"
 
-	_, err := f.svc.UpdateProfile(context.Background(), "0190a1b2-0000-7000-8000-000000000000", ProfilePatch{Name: &name})
+	_, err := f.svc.UpdateProfile(context.Background(), unknown, ProfilePatch{Name: &name})
 	if !errors.Is(err, ErrUserNotFound) {
 		t.Errorf("UpdateProfile(unknown) = %v, want ErrUserNotFound", err)
+	}
+
+	_, err = f.svc.UpdateProfile(context.Background(), unknown, ProfilePatch{
+		Password: &password, CurrentPassword: &current,
+	})
+	if !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("UpdateProfile(unknown, password) = %v, want ErrUserNotFound", err)
 	}
 }
 
@@ -625,6 +635,106 @@ func TestRevokeSessionWithEmptySecret(t *testing.T) {
 	if err := f.svc.RevokeSession(context.Background(), ""); err != nil {
 		t.Errorf("RevokeSession(empty) = %v, want nil", err)
 	}
+}
+
+func TestUpdateProfilePasswordWithProfileFields(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	created := f.firstAdmin(t)
+	ctx := context.Background()
+
+	name := "  Ana  "
+	email := "ana@example.com"
+	newPassword := "a much better password"
+	current := testPassword
+
+	updated, err := f.svc.UpdateProfile(ctx, created.User.ID, ProfilePatch{
+		Name: &name, Email: &email, Password: &newPassword, CurrentPassword: &current,
+	})
+	if err != nil {
+		t.Fatalf("UpdateProfile(password with profile fields): %v", err)
+	}
+	if updated.Name != "Ana" || updated.Email != email {
+		t.Errorf("user = %+v, want the trimmed name and new email", updated)
+	}
+
+	if _, err := f.svc.Login(ctx, email, newPassword, ""); err != nil {
+		t.Errorf("login after the change = %v, want success", err)
+	}
+}
+
+func TestUpdateProfilePasswordValidatesProfileFields(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	created := f.firstAdmin(t)
+	ctx := context.Background()
+
+	newPassword := "a much better password"
+	current := testPassword
+	longName := strings.Repeat("a", 256)
+	badEmail := "not-an-email"
+
+	_, err := f.svc.UpdateProfile(ctx, created.User.ID, ProfilePatch{
+		Name: &longName, Password: &newPassword, CurrentPassword: &current,
+	})
+	assertFieldError(t, err, "name", "max")
+
+	_, err = f.svc.UpdateProfile(ctx, created.User.ID, ProfilePatch{
+		Email: &badEmail, Password: &newPassword, CurrentPassword: &current,
+	})
+	assertFieldError(t, err, "email", "email")
+}
+
+func TestUpdateProfilePasswordRejectsTakenEmail(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	created := f.firstAdmin(t)
+	ctx := context.Background()
+
+	if _, err := f.svc.CreateUser(ctx, CreateUserInput{
+		Name: "Ana", Email: "ana@example.com", Password: testPassword,
+	}); err != nil {
+		t.Fatalf("CreateUser: %v", err)
+	}
+
+	taken := "ANA@example.com"
+	newPassword := "a much better password"
+	current := testPassword
+
+	_, err := f.svc.UpdateProfile(ctx, created.User.ID, ProfilePatch{
+		Email: &taken, Password: &newPassword, CurrentPassword: &current,
+	})
+	assertFieldError(t, err, "email", "unique")
+}
+
+func TestWriteProfilePasswordRejectsAStaleHash(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	created := f.firstAdmin(t)
+	ctx := context.Background()
+
+	user, hash, err := f.svc.userWithHashByID(ctx, created.User.ID)
+	if err != nil {
+		t.Fatalf("userWithHashByID: %v", err)
+	}
+
+	// A reset that lands after the read changes password_hash.
+	if _, err := f.svc.db.Writer().ExecContext(ctx,
+		"UPDATE users SET password_hash = ? WHERE id = ?", "a-newer-hash", user.ID); err != nil {
+		t.Fatalf("change password hash: %v", err)
+	}
+
+	newHash, err := HashPassword("a much better password")
+	if err != nil {
+		t.Fatalf("HashPassword: %v", err)
+	}
+
+	err = f.svc.writeProfilePassword(ctx, &user, hash, newHash)
+	assertFieldError(t, err, "current_password", "mismatch")
 }
 
 func TestSetTemporaryPasswordForUnknownUser(t *testing.T) {
