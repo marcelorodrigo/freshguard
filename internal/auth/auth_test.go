@@ -276,6 +276,21 @@ func TestUpdateProfile(t *testing.T) {
 	}
 }
 
+func TestUpdateProfileWithoutChanges(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	created := f.firstAdmin(t)
+
+	user, err := f.svc.UpdateProfile(context.Background(), created.User.ID, ProfilePatch{})
+	if err != nil {
+		t.Fatalf("UpdateProfile(empty patch): %v", err)
+	}
+	if user.ID != created.User.ID {
+		t.Errorf("user id = %s, want %s", user.ID, created.User.ID)
+	}
+}
+
 func TestUpdateProfileRejectsTakenEmail(t *testing.T) {
 	t.Parallel()
 
@@ -474,6 +489,26 @@ func TestCreateResetTokenInvalidatesThePreviousOne(t *testing.T) {
 	}
 }
 
+func TestResetTokensFailOnACancelledContext(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	f.firstAdmin(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if _, err := f.svc.CreateResetToken(ctx, testEmail); err == nil {
+		t.Error("CreateResetToken on a cancelled context = nil error, want failure")
+	}
+	if _, err := f.svc.ResetTokenEmail(ctx, "token"); err == nil {
+		t.Error("ResetTokenEmail on a cancelled context = nil error, want failure")
+	}
+	if err := f.svc.ResetPassword(ctx, "token", testPassword); err == nil {
+		t.Error("ResetPassword on a cancelled context = nil error, want failure")
+	}
+}
+
 func TestCreateResetTokenForUnknownEmail(t *testing.T) {
 	t.Parallel()
 
@@ -508,6 +543,75 @@ func TestCreateUserFirstIsAdmin(t *testing.T) {
 	}
 	if second.IsAdmin {
 		t.Error("the second account is an admin, want the explicit flag to decide")
+	}
+}
+
+func TestUpdateProfileOfUnknownUser(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	name := "Ana"
+
+	_, err := f.svc.UpdateProfile(context.Background(), "0190a1b2-0000-7000-8000-000000000000", ProfilePatch{Name: &name})
+	if !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("UpdateProfile(unknown) = %v, want ErrUserNotFound", err)
+	}
+}
+
+func TestRevokeSessionWithEmptySecret(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+
+	if err := f.svc.RevokeSession(context.Background(), ""); err != nil {
+		t.Errorf("RevokeSession(empty) = %v, want nil", err)
+	}
+}
+
+func TestSetTemporaryPasswordForUnknownUser(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+
+	err := f.svc.SetTemporaryPassword(context.Background(), "0190a1b2-0000-7000-8000-000000000000", testPassword)
+	if !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("SetTemporaryPassword(unknown) = %v, want ErrUserNotFound", err)
+	}
+}
+
+func TestResetPasswordValidatesItsInput(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	f.firstAdmin(t)
+	ctx := context.Background()
+
+	if err := f.svc.ResetPassword(ctx, "", testPassword); !errors.Is(err, ErrResetTokenInvalid) {
+		t.Errorf("ResetPassword(empty token) = %v, want ErrResetTokenInvalid", err)
+	}
+	if err := f.svc.ResetPassword(ctx, "made-up", testPassword); !errors.Is(err, ErrResetTokenInvalid) {
+		t.Errorf("ResetPassword(unknown token) = %v, want ErrResetTokenInvalid", err)
+	}
+	assertFieldError(t, f.svc.ResetPassword(ctx, "made-up", "short"), "password", "min")
+}
+
+func TestAccountWritesFailOnACancelledContext(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	in := CreateUserInput{Name: "Marcelo", Email: testEmail, Password: testPassword}
+
+	if _, err := f.svc.FirstAdmin(ctx, in); err == nil {
+		t.Error("FirstAdmin on a cancelled context = nil error, want failure")
+	}
+	if _, err := f.svc.CreateUser(ctx, in); err == nil {
+		t.Error("CreateUser on a cancelled context = nil error, want failure")
+	}
+	if err := f.svc.SetTemporaryPassword(ctx, "0190a1b2-0000-7000-8000-000000000000", testPassword); err == nil {
+		t.Error("SetTemporaryPassword on a cancelled context = nil error, want failure")
 	}
 }
 

@@ -288,12 +288,15 @@ func (s *server) setSessionCookie(w http.ResponseWriter, r *http.Request, secret
 		maxAge = 1
 	}
 
+	// Secure follows the request, not a proxy header: TLS may terminate in
+	// front of the server, and the Android shell loads a plain-HTTP LAN
+	// address where a Secure cookie would be dropped.
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,
 		Value:    secret,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   r.TLS != nil, // NOSONAR
 		SameSite: http.SameSiteLaxMode,
 		Expires:  expires,
 		MaxAge:   maxAge,
@@ -306,7 +309,7 @@ func (s *server) clearSessionCookie(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   r.TLS != nil,
+		Secure:   r.TLS != nil, // NOSONAR
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Unix(1, 0).UTC(),
 		MaxAge:   -1,

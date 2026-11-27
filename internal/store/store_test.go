@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 )
@@ -54,6 +56,19 @@ func TestOpenCreatesTheSchema(t *testing.T) {
 	}
 	if !slices.Equal(tables, want) {
 		t.Errorf("tables = %v, want %v", tables, want)
+	}
+}
+
+func TestOpenRejectsADatabaseThatIsADirectory(t *testing.T) {
+	t.Parallel()
+
+	dataDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dataDir, FileName), 0o750); err != nil {
+		t.Fatalf("create database directory: %v", err)
+	}
+
+	if _, err := Open(dataDir); err == nil {
+		t.Fatal("Open with a directory in place of the database file = nil error, want failure")
 	}
 }
 
@@ -138,6 +153,35 @@ func TestReaderCannotWrite(t *testing.T) {
 	}
 }
 
+func TestOpenRejectsAFileAsDataDir(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "not-a-directory")
+	if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	if _, err := Open(path); err == nil {
+		t.Fatal("Open(a file) = nil error, want the directory failure")
+	}
+}
+
+func TestOptimizeAfterCloseFails(t *testing.T) {
+	t.Parallel()
+
+	st, err := Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	if err := st.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	if err := st.Optimize(context.Background()); err == nil {
+		t.Fatal("Optimize on a closed store = nil error, want failure")
+	}
+}
+
 func TestLoadMigrations(t *testing.T) {
 	t.Parallel()
 
@@ -208,5 +252,18 @@ func TestIsUniqueViolation(t *testing.T) {
 
 	if IsUniqueViolation(sql.ErrNoRows) {
 		t.Error("IsUniqueViolation(sql.ErrNoRows) = true, want false")
+	}
+
+	// A CHECK failure is a constraint error too, but not a duplicate: the
+	// auth layer must answer 500, not a field rule.
+	_, err = st.Writer().Exec(`INSERT INTO users
+		(id, name, email, password_hash, is_admin, must_reset, created_at, updated_at)
+		VALUES ('0190a1b2-0000-7000-8000-000000000005', 'Marcelo', 'm@example.com', 'x', 2, 0,
+		        '2026-01-24T08:27:26Z', '2026-01-24T08:27:26Z')`)
+	if err == nil {
+		t.Fatal("insert with is_admin = 2 succeeded, want a check violation")
+	}
+	if IsUniqueViolation(err) {
+		t.Errorf("IsUniqueViolation(check violation) = true, want false")
 	}
 }

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -485,6 +486,31 @@ func TestSessionSurvivesReloadAndSlides(t *testing.T) {
 	}
 	if want := int(auth.DefaultSessionTTL.Seconds()); refreshed.MaxAge != want {
 		t.Errorf("refreshed MaxAge = %d, want %d", refreshed.MaxAge, want)
+	}
+}
+
+func TestUnexpectedDatabaseErrorIs500(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	cookie, _ := env.setup(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/me", nil).WithContext(ctx)
+	request.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	env.handler.ServeHTTP(rec, request)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500: %s", rec.Code, rec.Body.String())
+	}
+	if code := decodeError(t, rec).Code; code != CodeInternal {
+		t.Errorf("code = %q, want %q", code, CodeInternal)
+	}
+	if strings.Contains(rec.Body.String(), "context canceled") {
+		t.Errorf("body = %s, want the internal error kept out of the response", rec.Body.String())
 	}
 }
 

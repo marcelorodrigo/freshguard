@@ -274,7 +274,10 @@ type rowScanner interface {
 }
 
 // userColumns is the account shape without the hash; order matches scanUser.
-const userColumns = "id, name, email, is_admin, must_reset, created_at, updated_at"
+const (
+	userColumns = "id, name, email, is_admin, must_reset, created_at, updated_at"
+	selectUsers = "SELECT " + userColumns
+)
 
 func scanUser(row rowScanner, extra ...any) (User, error) {
 	var (
@@ -306,7 +309,7 @@ func scanUser(row rowScanner, extra ...any) (User, error) {
 
 func (s *Service) userByID(ctx context.Context, userID string) (User, error) {
 	user, err := scanUser(s.db.Reader().QueryRowContext(ctx,
-		"SELECT "+userColumns+" FROM users WHERE id = ?", userID))
+		selectUsers+" FROM users WHERE id = ?", userID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrUserNotFound
 	}
@@ -318,7 +321,7 @@ func (s *Service) userByID(ctx context.Context, userID string) (User, error) {
 
 func (s *Service) userByEmail(ctx context.Context, email string) (User, error) {
 	user, err := scanUser(s.db.Reader().QueryRowContext(ctx,
-		"SELECT "+userColumns+" FROM users WHERE email = ?", email))
+		selectUsers+" FROM users WHERE email = ?", email))
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrUserNotFound
 	}
@@ -331,7 +334,7 @@ func (s *Service) userByEmail(ctx context.Context, email string) (User, error) {
 func (s *Service) userWithHashByID(ctx context.Context, userID string) (User, string, error) {
 	var hash string
 	user, err := scanUser(s.db.Writer().QueryRowContext(ctx,
-		"SELECT "+userColumns+", password_hash FROM users WHERE id = ?", userID), &hash)
+		selectUsers+", password_hash FROM users WHERE id = ?", userID), &hash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, "", ErrUserNotFound
 	}
@@ -344,7 +347,7 @@ func (s *Service) userWithHashByID(ctx context.Context, userID string) (User, st
 func (s *Service) userWithHashByEmail(ctx context.Context, email string) (User, string, error) {
 	var hash string
 	user, err := scanUser(s.db.Writer().QueryRowContext(ctx,
-		"SELECT "+userColumns+", password_hash FROM users WHERE email = ?", email), &hash)
+		selectUsers+", password_hash FROM users WHERE email = ?", email), &hash)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return User{}, "", err

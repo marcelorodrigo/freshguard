@@ -33,7 +33,14 @@ import (
 // version is replaced at build time: -X main.version=<git describe>.
 var version = "dev"
 
-const shutdownTimeout = 10 * time.Second
+const (
+	shutdownTimeout = 10 * time.Second
+
+	// schemeHTTP and schemeHTTPS name the scheme a self-hosted listener speaks.
+	// TLS, when present, terminates at the reverse proxy in front of it.
+	schemeHTTP  = "http://"
+	schemeHTTPS = "https://"
+)
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -110,6 +117,19 @@ func serve(ctx context.Context, cfg config.Config) error {
 
 	time.Local = cfg.TZ
 
+	listener, err := net.Listen("tcp", cfg.Addr)
+	if err != nil {
+		return err
+	}
+
+	return runServer(ctx, cfg, logger, listener)
+}
+
+// runServer serves on an already-open listener, so a caller (or a test) decides
+// where the address comes from.
+func runServer(ctx context.Context, cfg config.Config, logger *slog.Logger, listener net.Listener) error {
+	defer func() { _ = listener.Close() }()
+
 	db, err := store.Open(cfg.DataDir)
 	if err != nil {
 		return err
@@ -127,19 +147,12 @@ func serve(ctx context.Context, cfg config.Config) error {
 		return err
 	}
 
-	var handler http.Handler = httpapi.New(httpapi.Options{
-		Version: version,
-		Logger:  logger,
-		Auth:    accounts,
-	})
-
-	listener, err := net.Listen("tcp", cfg.Addr)
-	if err != nil {
-		return err
-	}
-
 	server := &http.Server{
-		Handler:           handler,
+		Handler: httpapi.New(httpapi.Options{
+			Version: version,
+			Logger:  logger,
+			Auth:    accounts,
+		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -298,11 +311,11 @@ func publicURL(cfg config.Config) string {
 		return cfg.BaseURL
 	}
 
-	scheme := "http://"
+	scheme := schemeHTTP
 	addr := cfg.Addr
-	if rest, ok := strings.CutPrefix(addr, "https://"); ok {
-		scheme, addr = "https://", rest
-	} else if rest, ok := strings.CutPrefix(addr, "http://"); ok {
+	if rest, ok := strings.CutPrefix(addr, schemeHTTPS); ok {
+		scheme, addr = schemeHTTPS, rest
+	} else if rest, ok := strings.CutPrefix(addr, schemeHTTP); ok {
 		addr = rest
 	}
 
@@ -347,11 +360,11 @@ func healthcheck(ctx context.Context, addr string) error {
 func healthURL(addr string) string {
 	// The container probe dials the local listener; TLS, if any, terminates at
 	// the reverse proxy in front of it, and an https:// address is honoured below.
-	scheme := "http://" // NOSONAR
+	scheme := schemeHTTP
 	addr = strings.TrimRight(addr, "/")
-	if rest, ok := strings.CutPrefix(addr, "https://"); ok {
-		scheme, addr = "https://", rest
-	} else if rest, ok := strings.CutPrefix(addr, "http://"); ok {
+	if rest, ok := strings.CutPrefix(addr, schemeHTTPS); ok {
+		scheme, addr = schemeHTTPS, rest
+	} else if rest, ok := strings.CutPrefix(addr, schemeHTTP); ok {
 		addr = rest
 	}
 
