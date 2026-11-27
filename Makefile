@@ -19,7 +19,7 @@ SIZE_BUDGET_BYTES := 30000000
 RSS_BUDGET_KB      := 51200
 COLD_BUDGET_MS     := 200
 
-.PHONY: dev web server test check gotest web-test web-check fmt fmt-check vet staticcheck size rss cold clean
+.PHONY: dev web server test check gotest web-test web-check fmt fmt-check vet staticcheck size rss cold clean clean-data
 
 dev: web/node_modules
 	@trap 'kill 0' EXIT INT TERM; \
@@ -81,39 +81,48 @@ size: server
 	}
 
 rss: server
-	@port=18080; \
-	tmp=$$(mktemp -d); \
-	FRESHGUARD_ADDR=127.0.0.1:$$port FRESHGUARD_DATA_DIR="$$tmp" ./$(BIN) serve >/dev/null 2>&1 & \
+	@tmp=$$(mktemp -d); \
+	log="$$tmp/server.log"; \
+	FRESHGUARD_ADDR=127.0.0.1:0 FRESHGUARD_DATA_DIR="$$tmp/data" ./$(BIN) serve >"$$log" 2>&1 & \
 	pid=$$!; \
 	trap 'kill $$pid 2>/dev/null; rm -rf "$$tmp"' EXIT INT TERM; \
-	i=0; \
-	until curl -fsS "http://127.0.0.1:$$port/api/v1/health" >/dev/null 2>&1; do \
-		i=$$((i + 1)); \
-		if [ $$i -gt 200 ]; then echo "rss: server did not start"; exit 1; fi; \
+	addr=""; \
+	until [ -n "$$addr" ] && curl -fsS --max-time 1 "http://$$addr/api/v1/health" >/dev/null 2>&1; do \
+		kill -0 $$pid 2>/dev/null || { echo "rss: server exited before answering"; cat "$$log"; exit 1; }; \
+		addr=$$(sed -n 's/.*msg=listening addr=\([^ ]*\) .*/\1/p' "$$log" | head -1); \
 		sleep 0.05; \
 	done; \
 	kb=$$(ps -o rss= -p $$pid | tr -d ' '); \
+	case "$$kb" in ''|*[!0-9]*) echo "rss: unreadable RSS value '$$kb'"; exit 1;; esac; \
+	[ "$$kb" -gt 0 ] || { echo "rss: RSS is zero"; exit 1; }; \
 	echo "rss: $$kb KiB, budget $(RSS_BUDGET_KB) KiB"; \
-	if [ "$$kb" -gt "$(RSS_BUDGET_KB)" ]; then echo "rss: over budget"; exit 1; fi
+	[ "$$kb" -le "$(RSS_BUDGET_KB)" ] || { echo "rss: over budget"; exit 1; }
 
 cold: server
-	@port=18081; \
-	tmp=$$(mktemp -d); \
+	@tmp=$$(mktemp -d); \
+	log="$$tmp/server.log"; \
 	ms() { perl -MTime::HiRes=time -e 'printf "%.0f", time() * 1000'; }; \
 	start=$$(ms); \
-	FRESHGUARD_ADDR=127.0.0.1:$$port FRESHGUARD_DATA_DIR="$$tmp" ./$(BIN) serve >/dev/null 2>&1 & \
+	FRESHGUARD_ADDR=127.0.0.1:0 FRESHGUARD_DATA_DIR="$$tmp/data" ./$(BIN) serve >"$$log" 2>&1 & \
 	pid=$$!; \
 	trap 'kill $$pid 2>/dev/null; rm -rf "$$tmp"' EXIT INT TERM; \
-	until curl -fsS -o /dev/null "http://127.0.0.1:$$port/api/v1/health" 2>/dev/null; do \
+	addr=""; \
+	until [ -n "$$addr" ] && curl -fsS --max-time 1 -o /dev/null "http://$$addr/api/v1/health" 2>/dev/null; do \
+		kill -0 $$pid 2>/dev/null || { echo "cold: server exited before answering"; cat "$$log"; exit 1; }; \
+		took=$$(( $$(ms) - start )); \
+		if [ $$took -gt "$(COLD_BUDGET_MS)" ]; then echo "cold: over budget after $${took} ms"; exit 1; fi; \
+		addr=$$(sed -n 's/.*msg=listening addr=\([^ ]*\) .*/\1/p' "$$log" | head -1); \
 		sleep 0.005; \
 	done; \
-	end=$$(ms); \
-	took=$$((end - start)); \
+	took=$$(( $$(ms) - start )); \
 	echo "cold: $${took} ms to the first health response, budget $(COLD_BUDGET_MS) ms"; \
 	if [ $$took -gt "$(COLD_BUDGET_MS)" ]; then echo "cold: over budget"; exit 1; fi
 
 clean:
-	rm -rf bin data data-dev
-	rm -rf internal/web/dist
+	rm -rf bin internal/web/dist
 	@mkdir -p internal/web/dist
 	@touch internal/web/dist/.gitkeep
+
+clean-data:
+	@echo "removing local databases: data/ and data-dev/"
+	rm -rf data data-dev

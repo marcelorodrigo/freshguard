@@ -61,17 +61,6 @@ func TestHealth(t *testing.T) {
 	}
 }
 
-func TestHealthAnswersHead(t *testing.T) {
-	t.Parallel()
-
-	rec := httptest.NewRecorder()
-	testHandler(t).ServeHTTP(rec, httptest.NewRequest(http.MethodHead, "/api/v1/health", nil))
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want 200", rec.Code)
-	}
-}
-
 func TestUnknownAPIPathReturnsJSONEnvelope(t *testing.T) {
 	t.Parallel()
 

@@ -40,14 +40,25 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, getenv func(string) string, stdout io.Writer) error {
-	cfg, err := config.Load(getenv)
-	if err != nil {
-		return err
-	}
-
 	command := "serve"
 	if len(args) > 0 {
 		command = args[0]
+	}
+
+	// version and help answer without configuration: they are how an operator
+	// checks a build and reads the flags before anything can be misconfigured.
+	switch command {
+	case "version":
+		_, err := fmt.Fprintln(stdout, version)
+		return err
+	case "help", "-h", "--help":
+		usage(stdout)
+		return nil
+	}
+
+	cfg, err := config.Load(getenv)
+	if err != nil {
+		return err
 	}
 
 	switch command {
@@ -55,12 +66,6 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		return serve(ctx, cfg)
 	case "healthcheck":
 		return healthcheck(ctx, cfg.Addr)
-	case "version":
-		_, err := fmt.Fprintln(stdout, version)
-		return err
-	case "help":
-		usage(stdout)
-		return nil
 	default:
 		usage(stdout)
 		return fmt.Errorf("unknown command %q", command)
@@ -151,14 +156,29 @@ func healthcheck(ctx context.Context, addr string) error {
 	return nil
 }
 
-// healthURL turns a listen address into the URL of the health endpoint.
+// healthURL turns a listen address into the URL of the health endpoint. A
+// wildcard listen address is dialled on loopback: 0.0.0.0 and :: mean
+// "everywhere", not "here", and not every platform routes them to localhost.
 func healthURL(addr string) string {
-	if strings.HasPrefix(addr, ":") {
-		addr = "127.0.0.1" + addr
-	}
-	if !strings.Contains(addr, "://") {
-		addr = "http://" + addr
+	scheme := "http://"
+	addr = strings.TrimRight(addr, "/")
+	if rest, ok := strings.CutPrefix(addr, "https://"); ok {
+		scheme, addr = "https://", rest
+	} else if rest, ok := strings.CutPrefix(addr, "http://"); ok {
+		addr = rest
 	}
 
-	return strings.TrimRight(addr, "/") + "/api/v1/health"
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return scheme + addr + "/api/v1/health"
+	}
+
+	switch host {
+	case "", "0.0.0.0":
+		host = "127.0.0.1"
+	case "::":
+		host = "::1"
+	}
+
+	return scheme + net.JoinHostPort(host, port) + "/api/v1/health"
 }

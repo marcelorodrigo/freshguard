@@ -33,6 +33,7 @@ Rules of thumb: `inventory` and `auth` never import `net/http`; handlers never w
 | `make test` | `go test ./...` and the web tests. |
 | `make check` | gofmt, vet, staticcheck, Go tests, vue-tsc, ESLint, Vitest. The only gate CI runs. |
 | `make size` · `make rss` · `make cold` | Enforce the budgets in `docs/REWRITE.md`; each fails over budget. |
+| `make clean` · `make clean-data` | Drop build output; `clean-data` also deletes `data/` and `data-dev/` (destructive). |
 
 Single Go test: `go test ./internal/httpapi -run TestHealth -v`. Single web test: `cd web && pnpm vitest run src/App.test.ts`. Format: `make fmt`. Static analysis alone: `staticcheck ./...` (install once with `go install honnef.co/go/tools/cmd/staticcheck@2026.2.2`).
 

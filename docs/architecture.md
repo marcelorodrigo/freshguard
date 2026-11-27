@@ -135,7 +135,7 @@ No DDEV, no dev container, no PHP, no Composer. Docker is packaging only.
 | `internal/auth` | table-driven `go test` | argon2 verify, session expiry, reset token single use, last-admin rules. |
 | `internal/barcode` | `httptest` fake OFF | Success, not found, invalid, upstream failure, timeout, retry, cache TTLs. |
 | `internal/httpapi` | `httptest` + temp data dir | Auth, origin rejection, `must_reset`, validation rule tokens, pagination, error envelope, SPA fallback. |
-| `web/` | Vitest + Vue Test Utils | API client, form state, expiry-status helper, i18n key parity. |
+| `web/` | Vitest + Vue Test Utils | API client, error-to-message mapping, locale detection, screen states. Locale key parity is a `vue-tsc` failure, not a test. |
 
 No browser E2E in v1. The manual walkthrough is the `PARITY.md` checklist, executed once per release.
 

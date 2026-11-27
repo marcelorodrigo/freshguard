@@ -18,6 +18,11 @@ export default [
   {
     rules: {
       'vue/multi-word-component-names': 'off',
+      // vue-i18n's type augmentation is an interface that only extends.
+      '@typescript-eslint/no-empty-object-type': [
+        'error',
+        { allowInterfaces: 'with-single-extends' },
+      ],
     },
   },
 ];

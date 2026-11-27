@@ -35,6 +35,40 @@ func TestRunHelp(t *testing.T) {
 	}
 }
 
+func TestRunVersionAndHelpIgnoreBrokenConfig(t *testing.T) {
+	t.Parallel()
+
+	broken := func(key string) string {
+		if key == "FRESHGUARD_LOG_LEVEL" {
+			return "verbose"
+		}
+		return ""
+	}
+
+	for _, command := range []string{"version", "help"} {
+		var stdout bytes.Buffer
+		if err := run(context.Background(), []string{command}, broken, &stdout); err != nil {
+			t.Errorf("run(%s) with broken config = %v, want success", command, err)
+		}
+	}
+}
+
+func TestRunServeValidatesConfig(t *testing.T) {
+	t.Parallel()
+
+	var stdout bytes.Buffer
+	broken := func(key string) string {
+		if key == "FRESHGUARD_LOG_LEVEL" {
+			return "verbose"
+		}
+		return ""
+	}
+
+	if err := run(context.Background(), []string{"serve"}, broken, &stdout); err == nil {
+		t.Fatal("run(serve) with broken config = nil error, want the config failure")
+	}
+}
+
 func TestRunUnknownCommand(t *testing.T) {
 	t.Parallel()
 
@@ -80,10 +114,15 @@ func TestHealthURL(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]string{
-		":8080":            "http://127.0.0.1:8080/api/v1/health",
-		"127.0.0.1:9000":   "http://127.0.0.1:9000/api/v1/health",
-		"http://app:8080":  "http://app:8080/api/v1/health",
-		"https://app.test": "https://app.test/api/v1/health",
+		":8080":             "http://127.0.0.1:8080/api/v1/health",
+		"127.0.0.1:9000":    "http://127.0.0.1:9000/api/v1/health",
+		"0.0.0.0:9000":      "http://127.0.0.1:9000/api/v1/health",
+		"[::]:9000":         "http://[::1]:9000/api/v1/health",
+		"http://app:8080":   "http://app:8080/api/v1/health",
+		"https://app.test":  "https://app.test/api/v1/health",
+		"https://app.test/": "https://app.test/api/v1/health",
+		"http://[::1]:8080": "http://[::1]:8080/api/v1/health",
+		"app.test":          "http://app.test/api/v1/health",
 	}
 
 	for addr, want := range tests {

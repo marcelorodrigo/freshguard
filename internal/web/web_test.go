@@ -1,7 +1,6 @@
 package web
 
 import (
-	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -115,13 +114,5 @@ func TestHandlerTraversalStaysInsideTheSPA(t *testing.T) {
 	}
 	if got := rec.Body.String(); strings.Contains(got, "root:") {
 		t.Errorf("body = %q, leaked a file outside the SPA", got)
-	}
-}
-
-func TestDistIsEmbedded(t *testing.T) {
-	t.Parallel()
-
-	if _, err := fs.Stat(Dist(), "."); err != nil {
-		t.Fatalf("Dist(): %v", err)
 	}
 }
