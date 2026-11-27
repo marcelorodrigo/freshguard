@@ -61,7 +61,7 @@ Every write path is one transaction. There is no cross-request state, no cache t
 - Connection pragmas: `journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`, `synchronous=NORMAL`, `temp_store=MEMORY`.
 - `PRAGMA optimize` on start and after import; `analysis_limit=1000`.
 - Migrations: `internal/store/migrations/NNNN_name.sql`, applied in numeric order inside a transaction, each bumping `PRAGMA user_version`. An applied file is never edited.
-- Backups: `PRAGMA wal_checkpoint(TRUNCATE)` then copy `freshguard.db`; documented in the README.
+- Backups: stop the server so no writes can continue, run `PRAGMA wal_checkpoint(TRUNCATE)`, then copy `freshguard.db`. The checkpoint moves committed WAL data into the database file; copying while writes continue is not a consistent backup.
 
 ## Auth
 
@@ -69,7 +69,7 @@ Every write path is one transaction. There is no cross-request state, no cache t
 - **Sessions**: `fg_session` cookie, 32 random bytes base64url, `HttpOnly`, `SameSite=Lax`, `Secure` when the request is HTTPS. Only `sha256(secret)` is stored. TTL 30 days, sliding, refreshed at most once per hour to avoid a write per request.
 - **Origin check**: non-GET requests authenticated by cookie must carry `Origin` (or `Sec-Fetch-Site: same-origin`) whose host equals the request host. Bearer requests are exempt; v1 has no bearer clients.
 - **Must reset**: an admin-set temporary password sets `must_reset = 1`. Until the user chooses a new one, every endpoint except `GET /me`, `PATCH /me` and `DELETE /session` answers `403 must_reset`; signing out stays reachable so a flagged account is never trapped. A CLI reset link lets the user choose the password and clears the flag.
-- **Rate limits**: in-memory token buckets — 10 login attempts per 15 minutes per IP+email, 60 barcode lookups per minute per user, 600 API requests per minute per IP.
+- **Rate limits**: in-memory fixed-window counters — 10 login attempts per 15 minutes per IP+email, 600 requests per minute per IP for every other API route except health. The barcode route adds its own 60-per-minute per-user bucket when it lands (#490).
 - **Setup**: `POST /api/v1/setup` succeeds only while `users` is empty; `GET /api/v1/health` reports `setup_required`.
 
 ## Embedded assets

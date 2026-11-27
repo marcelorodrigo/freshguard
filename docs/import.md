@@ -156,13 +156,13 @@ Run in this order. Nothing here is reversible except by restoring the Laravel da
 5. **Import with `--dry-run`.** Review every line of the report; investigate any `dropped` row before continuing.
 6. **Import for real.** Same command without `--dry-run`.
 7. **Smoke-test on :8081.** Log in via the CLI reset link, walk `PARITY.md`'s screens, open one item with several batches, consume one unit, delete a location that holds batches and confirm the refusal.
-8. **Switch the proxy.** Point Coolify/nginx at `:8080` (the Go server) and stop the Laravel container. Keep its volume and image.
+8. **Switch the proxy.** Point Coolify/nginx at the Go listener on `:8081`; confirm the health check and a smoke request through the proxy, then stop the Laravel container. Keep its volume and image.
 9. **Watch for a week.** Logs at `info`, the SQLite file size, and a daily check that `GET /api/v1/health` answers.
 10. **Delete.** Follow `REWRITE.md` step 10 in one PR: Laravel tree, DDEV config, PHP workflows, PHP Dockerfile, and the Go `import` subcommand. Tag `v1.0.0` on the merge commit and `v1.0.0-laravel` on the last Laravel release for the record.
 
 ### Rollback
 
-Within the week: stop the Go container, `php artisan up` the Laravel container, point the proxy back. The Laravel database was never written to, so rollback loses only the writes made in the new app during that window — acceptable, because the household knows about the cutover.
+Within the week: stop the Go container, start the stopped Laravel container, run `php artisan up` to clear maintenance mode, and verify Laravel health before pointing the proxy back. The Laravel database was never written to, so rollback loses only the writes made in the new app during that window — acceptable, because the household knows about the cutover.
 
 ## After cutover
 

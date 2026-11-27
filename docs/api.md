@@ -34,7 +34,7 @@ Cookie-authenticated **non-GET** requests must carry an `Origin` header (or `Sec
 
 `must_reset = 1` blocks everything except `GET /api/v1/me`, `PATCH /api/v1/me` and `DELETE /api/v1/session` with `403 must_reset`. Signing out stays reachable: a flagged account must not be trapped in the session it cannot use.
 
-Rate limits: login 10 per 15 min per IP+email; barcode 60 per minute per user; everything else 600 per minute per IP. Exceeding one is `429 rate_limited`.
+Rate limits: login is 10 per 15 min per IP+email; every other API route except health is 600 per minute per IP. The barcode route adds its own 60-per-minute per-user bucket when it lands (#490). Exceeding one is `429 rate_limited`.
 
 ## Routes
 
@@ -299,8 +299,7 @@ The mapping to UI toasts is in `PARITY.md`. `name`/`description`/`tags` are the 
 | 403 | `forbidden` | Admin-only route, non-admin caller. |
 | 403 | `bad_origin` | Cookie-authenticated non-GET without a matching `Origin`. |
 | 403 | `must_reset` | Password change required. |
-| 404 | `not_found` | Unknown id or route. |
-| 405 | `method_not_allowed` | Known path, wrong method. |
+| 404 | `not_found` | Unknown id or route, including a known API path with the wrong method (the API catch-all answers JSON). |
 | 409 | `conflict` | Setup already complete. |
 | 409 | `location_has_batches` | Delete blocked; `fields.ids` names the offenders. |
 | 409 | `batch_unavailable` | Consume lost the race. |

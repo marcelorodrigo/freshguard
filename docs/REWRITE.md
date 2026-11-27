@@ -22,7 +22,7 @@ This document is the contract for the port: the goals, every decision with its r
 | Small memory footprint | ≤ 50 MB RSS idle with the SPA served | `make rss` |
 | One container | no MariaDB, no Redis, no queue worker | `docker compose up` starts the app only |
 | Fast start | ≤ 200 ms to first byte on `GET /api/v1/health` | `make cold` |
-| One-file backup | copying `data/freshguard.db` is a complete backup | documented, no extra tooling |
+| One-file backup | with the server stopped, `PRAGMA wal_checkpoint(TRUNCATE)` then copying `data/freshguard.db` is a complete backup | documented, no extra tooling |
 | Android app | installable shell that loads your own server | debug APK artifact in CI |
 | Agent-friendly stack | Go + TypeScript + Kotlin, conventions written down | `make check` is the only gate |
 
@@ -118,7 +118,7 @@ Each step ends with `make check` green and a conventional commit.
 | 2 | `internal/auth` + `internal/httpapi/auth.go`: setup, login, logout, `GET/PATCH /me`, password change, `freshguard user create\|password` | httptest suite covers setup-once, cookie lifetime, origin rejection, must-reset flow, last-admin rules. |
 | 3 | `internal/inventory` + `httpapi`: items, batches, locations, tags, search, dashboard | Ported table tests for search tiers, consume, atomic bulk delete, cycle rejection; all green. |
 | 4 | `internal/barcode`: OFF client with the same validation, caching, retries, timeouts and error classes | Fake-OFF httptest covers success/not-found/invalid/upstream/timeout/cache. |
-| 5 | `web/`: shell, i18n, API client, seven screens, barcode component | Every `PARITY.md` box ticked; `npm run type-check && npm run lint && npm run test` green. |
+| 5 | `web/`: shell, i18n, API client, seven screens, barcode component | Every `PARITY.md` box ticked; `pnpm run type-check && pnpm run lint && pnpm run test` green. |
 | 6 | `mobile/android`: setup screen, WebView, back handling, CI debug APK | APK installs, loads a LAN/HTTPS server, survives rotation and back. |
 | 7 | CI, multi-stage Dockerfile, compose, README, deployment docs | Image ≤ 30 MB; `make size`, `make rss`, `make cold` meet the targets. |
 | 8 | `docs/import.md` implemented end to end | `--dry-run` against the production export reports zero mismatches. |
