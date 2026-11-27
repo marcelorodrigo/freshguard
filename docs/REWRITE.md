@@ -91,6 +91,7 @@ Deliberate differences a user can see. Each one exists because a decision remove
 | D21 | No background work in v1: no `jobs` package, no scheduler. | Reminders were the only job. | Scaffolding a runner for v2. |
 | D22 | These documents are the first commit on `rewrite/go-sqlite`; `master` stays untouched until the rewrite merges. | The plan changes as the port reveals things; it belongs with the code it describes, and `master` keeps a working Laravel app until cutover is proven. | Landing the docs on `master` first. |
 | D23 | pnpm 12 with a committed `web/pnpm-lock.yaml`. | A strict, content-addressed store: no phantom dependencies, lifecycle scripts blocked by default, one lockfile per app. | npm (hoisted, permissive resolution), yarn, Bun. |
+| D24 | `vue-router` 5 with HTML5 history and navigation guards. | Client routes, deep links, setup/login redirects and the `must_reset` gate need one owner; the server already falls back to `index.html`, so hash routing or a hand-rolled matcher would only add bugs. | Hand-rolled history handling; TanStack Router; no client router. |
 
 ## v2: expiry reminders
 
