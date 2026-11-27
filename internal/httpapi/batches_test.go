@@ -41,17 +41,26 @@ func createBatchHTTP(t *testing.T, env *testEnv, cookie *http.Cookie, itemID str
 	return decodeBody[batchResponse](t, rec)
 }
 
-func TestBatchLifecycleAndComputedQuantity(t *testing.T) {
+// milkWithOneBatch creates a milk item with a 2-unit Fridge batch.
+func milkWithOneBatch(t *testing.T, env *testEnv, cookie *http.Cookie) (itemDetailResponse, batchResponse) {
+	t.Helper()
+
+	item := createItemHTTP(t, env, cookie, map[string]any{"name": "Whole milk"})
+	env.insertLocation(t, "loc-fridge", "Fridge", "")
+	first := createBatchHTTP(t, env, cookie, item.ID, map[string]any{
+		"location_id": "loc-fridge", "expires_at": "2026-02-10", "quantity": 2,
+	})
+
+	return item, first
+}
+
+func TestBatchCreateComputesQuantityAndEarliestExpiration(t *testing.T) {
 	t.Parallel()
 
 	env := newTestEnv(t)
 	cookie, _ := env.setup(t)
-	item := createItemHTTP(t, env, cookie, map[string]any{"name": "Whole milk"})
-	env.insertLocation(t, "loc-fridge", "Fridge", "")
+	item, first := milkWithOneBatch(t, env, cookie)
 
-	first := createBatchHTTP(t, env, cookie, item.ID, map[string]any{
-		"location_id": "loc-fridge", "expires_at": "2026-02-10", "quantity": 2,
-	})
 	if first.Location.ID != "loc-fridge" || first.Location.Name != "Fridge" {
 		t.Errorf("location = %+v, want the Fridge ref", first.Location)
 	}
@@ -71,6 +80,14 @@ func TestBatchLifecycleAndComputedQuantity(t *testing.T) {
 	if len(detail.Batches) != 2 || detail.Batches[0].ID != second.ID || detail.Batches[1].ID != first.ID {
 		t.Errorf("batches = %+v, want expiry ascending", detail.Batches)
 	}
+}
+
+func TestBatchUpdateAndDeleteRecomputeQuantity(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	cookie, _ := env.setup(t)
+	item, first := milkWithOneBatch(t, env, cookie)
 
 	rec := env.send(t, request{
 		method:  http.MethodPatch,
@@ -86,9 +103,9 @@ func TestBatchLifecycleAndComputedQuantity(t *testing.T) {
 		t.Errorf("patched quantity = %d, want 7", patched.Quantity)
 	}
 
-	detail = getItemHTTP(t, env, cookie, item.ID)
-	if detail.Quantity != 10 {
-		t.Errorf("quantity after update = %d, want 10", detail.Quantity)
+	detail := getItemHTTP(t, env, cookie, item.ID)
+	if detail.Quantity != 7 {
+		t.Errorf("quantity after update = %d, want 7", detail.Quantity)
 	}
 
 	rec = env.send(t, request{
@@ -102,8 +119,8 @@ func TestBatchLifecycleAndComputedQuantity(t *testing.T) {
 	}
 
 	detail = getItemHTTP(t, env, cookie, item.ID)
-	if detail.Quantity != 3 || detail.BatchCount != 1 || detail.EarliestExpiration != "2026-02-01" {
-		t.Errorf("detail after delete = quantity %d, batches %d, earliest %q; want 3, 1, 2026-02-01",
+	if detail.Quantity != 0 || detail.BatchCount != 0 || detail.EarliestExpiration != "" {
+		t.Errorf("detail after delete = quantity %d, batches %d, earliest %q; want zero",
 			detail.Quantity, detail.BatchCount, detail.EarliestExpiration)
 	}
 

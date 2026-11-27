@@ -24,10 +24,11 @@ func (e *testEnv) addNamedLocation(t *testing.T, locationID, name, parentID stri
 	}
 }
 
-func TestBatchWritesRecomputeQuantityAndEarliestExpiration(t *testing.T) {
-	t.Parallel()
+// milkWithTwoBatches creates an item with a 2-unit batch expiring later and a
+// 3-unit batch expiring first, both in the Fridge.
+func milkWithTwoBatches(t *testing.T, env *testEnv) (Item, Batch, Batch) {
+	t.Helper()
 
-	env := newTestEnv(t)
 	ctx := context.Background()
 	item := createItem(t, env, ItemInput{Name: "Milk"})
 	env.addLocation(t, "loc-fridge")
@@ -38,9 +39,6 @@ func TestBatchWritesRecomputeQuantityAndEarliestExpiration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateBatch: %v", err)
 	}
-	if first.LocationName != "Fridge" || first.Quantity != 2 {
-		t.Errorf("batch = %+v, want the Fridge batch of 2", first)
-	}
 
 	second, err := env.service.CreateBatch(ctx, item.ID, BatchInput{
 		LocationID: "loc-fridge", ExpiresAt: "2026-02-01", Quantity: 3,
@@ -49,7 +47,20 @@ func TestBatchWritesRecomputeQuantityAndEarliestExpiration(t *testing.T) {
 		t.Fatalf("CreateBatch: %v", err)
 	}
 
-	got, err := env.service.Get(ctx, item.ID)
+	return item, first, second
+}
+
+func TestCreateBatchComputesQuantityAndEarliestExpiration(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	item, first, second := milkWithTwoBatches(t, env)
+
+	if first.LocationName != "Fridge" || first.Quantity != 2 {
+		t.Errorf("batch = %+v, want the Fridge batch of 2", first)
+	}
+
+	got, err := env.service.Get(context.Background(), item.ID)
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
@@ -65,6 +76,14 @@ func TestBatchWritesRecomputeQuantityAndEarliestExpiration(t *testing.T) {
 	if got.Batches[0].ID != second.ID || got.Batches[1].ID != first.ID {
 		t.Errorf("batches are not sorted by expiry ascending: %+v", got.Batches)
 	}
+}
+
+func TestUpdateBatchRecomputesQuantityAndEarliestExpiration(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	ctx := context.Background()
+	item, first, second := milkWithTwoBatches(t, env)
 
 	more := 7
 	updated, err := env.service.UpdateBatch(ctx, first.ID, BatchPatch{Quantity: &more})
@@ -75,7 +94,7 @@ func TestBatchWritesRecomputeQuantityAndEarliestExpiration(t *testing.T) {
 		t.Errorf("updated quantity = %d, want 7", updated.Quantity)
 	}
 
-	got, err = env.service.Get(ctx, item.ID)
+	got, err := env.service.Get(ctx, item.ID)
 	if err != nil {
 		t.Fatalf("Get after update: %v", err)
 	}
@@ -98,17 +117,25 @@ func TestBatchWritesRecomputeQuantityAndEarliestExpiration(t *testing.T) {
 	if got.EarliestExpiration != "2026-02-10" {
 		t.Errorf("earliest expiration = %q, want the new minimum 2026-02-10", got.EarliestExpiration)
 	}
+}
+
+func TestDeleteBatchRecomputesQuantityAndEarliestExpiration(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	ctx := context.Background()
+	item, first, second := milkWithTwoBatches(t, env)
 
 	if err := env.service.DeleteBatch(ctx, first.ID); err != nil {
 		t.Fatalf("DeleteBatch: %v", err)
 	}
 
-	got, err = env.service.Get(ctx, item.ID)
+	got, err := env.service.Get(ctx, item.ID)
 	if err != nil {
 		t.Fatalf("Get after delete: %v", err)
 	}
-	if got.Quantity != 3 || got.BatchCount != 1 || got.EarliestExpiration != "2026-03-01" {
-		t.Errorf("after delete = quantity %d, batches %d, earliest %q; want 3, 1, 2026-03-01",
+	if got.Quantity != 3 || got.BatchCount != 1 || got.EarliestExpiration != "2026-02-01" {
+		t.Errorf("after delete = quantity %d, batches %d, earliest %q; want 3, 1, 2026-02-01",
 			got.Quantity, got.BatchCount, got.EarliestExpiration)
 	}
 
