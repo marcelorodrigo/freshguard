@@ -33,14 +33,15 @@ func newTestEnv(t *testing.T) *testEnv {
 	t.Helper()
 
 	clock := &testClock{now: testNow}
-	svc := testAuth(t, clock)
+	svc, stock := testAuth(t, clock)
 
 	srv := newServer(Options{
-		Version: "1.0.0",
-		Logger:  slog.New(slog.DiscardHandler),
-		Web:     testWeb(),
-		Auth:    svc,
-		Now:     clock.Now,
+		Version:   "1.0.0",
+		Logger:    slog.New(slog.DiscardHandler),
+		Web:       testWeb(),
+		Auth:      svc,
+		Inventory: stock,
+		Now:       clock.Now,
 	})
 
 	mux := srv.routes()

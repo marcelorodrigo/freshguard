@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
+	"github.com/marcelorodrigo/freshguard/internal/inventory"
 	"github.com/marcelorodrigo/freshguard/internal/store"
 )
 
@@ -26,7 +27,7 @@ func (c *testClock) Now() time.Time { return c.now }
 
 func (c *testClock) Advance(d time.Duration) { c.now = c.now.Add(d) }
 
-func testAuth(t *testing.T, clock *testClock) *auth.Service {
+func testAuth(t *testing.T, clock *testClock) (*auth.Service, *inventory.Service) {
 	t.Helper()
 
 	st, err := store.Open(t.TempDir())
@@ -39,7 +40,8 @@ func testAuth(t *testing.T, clock *testClock) *auth.Service {
 		}
 	})
 
-	return auth.New(auth.Options{Store: st, Now: clock.Now})
+	return auth.New(auth.Options{Store: st, Now: clock.Now}),
+		inventory.New(inventory.Options{Store: st, Now: clock.Now})
 }
 
 func testWeb() fstest.MapFS {
@@ -53,13 +55,15 @@ func testHandler(t *testing.T) http.Handler {
 	t.Helper()
 
 	clock := &testClock{now: testNow}
+	accounts, stock := testAuth(t, clock)
 
 	return New(Options{
-		Version: "1.0.0",
-		Logger:  slog.New(slog.DiscardHandler),
-		Web:     testWeb(),
-		Auth:    testAuth(t, clock),
-		Now:     clock.Now,
+		Version:   "1.0.0",
+		Logger:    slog.New(slog.DiscardHandler),
+		Web:       testWeb(),
+		Auth:      accounts,
+		Inventory: stock,
+		Now:       clock.Now,
 	})
 }
 

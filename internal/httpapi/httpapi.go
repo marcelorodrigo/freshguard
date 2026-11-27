@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
+	"github.com/marcelorodrigo/freshguard/internal/inventory"
 	"github.com/marcelorodrigo/freshguard/internal/web"
 )
 
@@ -38,6 +39,8 @@ type Options struct {
 	Web fs.FS
 	// Auth is the account and session service. Required.
 	Auth *auth.Service
+	// Inventory is the item and tag service. Required.
+	Inventory *inventory.Service
 	// Now overrides the clock in tests. Nil uses time.Now.
 	Now func() time.Time
 }
@@ -61,12 +64,16 @@ func newServer(opts Options) *server {
 	if opts.Auth == nil {
 		panic("httpapi: New requires Options.Auth")
 	}
+	if opts.Inventory == nil {
+		panic("httpapi: New requires Options.Inventory")
+	}
 
 	return &server{
 		version:      opts.Version,
 		logger:       opts.Logger,
 		web:          opts.Web,
 		auth:         opts.Auth,
+		inventory:    opts.Inventory,
 		now:          opts.Now,
 		loginLimiter: newLoginLimiter(),
 	}
@@ -77,6 +84,7 @@ type server struct {
 	logger       *slog.Logger
 	web          fs.FS
 	auth         *auth.Service
+	inventory    *inventory.Service
 	now          func() time.Time
 	loginLimiter *loginLimiter
 }
@@ -95,6 +103,14 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("PATCH /api/v1/me", s.authenticated(s.updateMe))
 	mux.HandleFunc("GET /api/v1/password-resets/{token}", s.resetToken)
 	mux.HandleFunc("POST /api/v1/password-resets/{token}", s.resetPassword)
+
+	mux.HandleFunc("GET /api/v1/items", s.authenticated(s.listItems))
+	mux.HandleFunc("POST /api/v1/items", s.authenticated(s.createItem))
+	mux.HandleFunc("POST /api/v1/items/bulk-delete", s.authenticated(s.bulkDeleteItems))
+	mux.HandleFunc("GET /api/v1/items/{id}", s.authenticated(s.getItem))
+	mux.HandleFunc("PATCH /api/v1/items/{id}", s.authenticated(s.updateItem))
+	mux.HandleFunc("DELETE /api/v1/items/{id}", s.authenticated(s.deleteItem))
+	mux.HandleFunc("GET /api/v1/tags", s.authenticated(s.listTags))
 
 	mux.HandleFunc("/api", s.notFound)
 	mux.HandleFunc("/api/", s.notFound)
