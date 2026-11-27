@@ -110,14 +110,14 @@ Nothing is required: `./freshguard` in an empty directory starts a working serve
 
 ## Dev loop
 
-Prerequisites: Go 1.26+, Node 26+, npm 11+ (Go is not installed on the author's machine yet).
+Prerequisites: Go 1.26+, Node 26+, pnpm 12+.
 
 | Target | What it does |
 | --- | --- |
-| `make dev` | `vite` on :5173 proxying `/api` to `go run ./cmd/freshguard` on :8080 (`FRESHGUARD_DATA_DIR=./data-dev`). |
-| `make web` | `cd web && npm ci && npm run build` → `internal/web/dist`. |
+| `make dev` | `vite` on :5174 proxying `/api` to `go run ./cmd/freshguard` on :8080 (`FRESHGUARD_DATA_DIR=./data-dev`). |
+| `make web` | `cd web && pnpm install --frozen-lockfile && pnpm run build` → `internal/web/dist`. |
 | `make server` | `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$(git describe …)" -o bin/freshguard ./cmd/freshguard`. |
-| `make test` | `go test ./...` and `cd web && npm run test`. |
+| `make test` | `go test ./...` and `cd web && pnpm run test`. |
 | `make check` | `gofmt -l`, `go vet`, `staticcheck`, `go test ./...`, `vue-tsc`, ESLint, Vitest. The only gate CI runs. |
 | `make size` | Strip and report binary size; fails above 30 MB. |
 | `make rss` | Start the binary on a temp data dir, `curl /health`, report `ps -o rss=`. Fails above 50 MB. |

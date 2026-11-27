@@ -90,6 +90,7 @@ Deliberate differences a user can see. Each one exists because a decision remove
 | D20 | No `api_tokens` table in v1. | Nothing consumes the API in v1; the Android shell uses the WebView session. | Shipping tokens ahead of a client. |
 | D21 | No background work in v1: no `jobs` package, no scheduler. | Reminders were the only job. | Scaffolding a runner for v2. |
 | D22 | These documents are the first commit on `rewrite/go-sqlite`; `master` stays untouched until the rewrite merges. | The plan changes as the port reveals things; it belongs with the code it describes, and `master` keeps a working Laravel app until cutover is proven. | Landing the docs on `master` first. |
+| D23 | pnpm 12 with a committed `web/pnpm-lock.yaml`. | A strict, content-addressed store: no phantom dependencies, lifecycle scripts blocked by default, one lockfile per app. | npm (hoisted, permissive resolution), yarn, Bun. |
 
 ## v2: expiry reminders
 
@@ -111,7 +112,7 @@ Each step ends with `make check` green and a conventional commit.
 
 | Step | Deliverable | Exit criterion |
 | --- | --- | --- |
-| 0 | `rewrite/go-sqlite` with this plan as its first commit, rewritten `AGENTS.md` (Go/Vue/Kotlin), `go.mod`, `Makefile`, `cmd/freshguard` skeleton, `internal/web/dist/.gitkeep` | `make check` passes on an empty server; `freshguard serve` answers `GET /health`. |
+| 0 | `rewrite/go-sqlite` with this plan as its first commit, rewritten `AGENTS.md` (Go/Vue/Kotlin), `go.mod`, `Makefile`, `cmd/freshguard` skeleton, `internal/web/dist/.gitkeep` | `make check` passes on an empty server; `freshguard serve` answers `GET /api/v1/health`. |
 | 1 | `internal/store`: `Open`, embedded migrations `0001_init.sql`, writer/reader pools, `PRAGMA optimize` | Fresh DB migrates twice without error; `user_version` matches the file count. |
 | 2 | `internal/auth` + `internal/httpapi/auth.go`: setup, login, logout, `GET/PATCH /me`, password change, `freshguard user create\|password` | httptest suite covers setup-once, cookie lifetime, origin rejection, must-reset flow, last-admin rules. |
 | 3 | `internal/inventory` + `httpapi`: items, batches, locations, tags, search, dashboard | Ported table tests for search tiers, consume, atomic bulk delete, cycle rejection; all green. |

@@ -7,6 +7,7 @@
 .phpunit.result.cache
 /.fleet
 /.idea
+/.openidea
 /.nova
 /.phpunit.cache
 /.vscode
@@ -32,3 +33,12 @@ yarn-error.log
 
 # Filament vendor packages
 /public/css/marcelorodrigo/
+
+# Go rewrite: built binary, local data, SPA build output
+/bin/
+/data/
+/data-dev/
+/internal/web/dist/*
+!/internal/web/dist/.gitkeep
+/web/node_modules/
+/web/coverage/
