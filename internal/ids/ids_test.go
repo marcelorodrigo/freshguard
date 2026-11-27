@@ -23,7 +23,7 @@ func TestNewIsUUIDv7(t *testing.T) {
 	if got := parsed.Variant(); got != uuid.RFC4122 {
 		t.Errorf("variant = %v, want RFC4122", got)
 	}
-	if other := New(); other == id {
+	if New() == id {
 		t.Error("two calls returned the same id")
 	}
 }
