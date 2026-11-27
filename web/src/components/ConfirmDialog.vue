@@ -54,6 +54,7 @@ watch(() => props.open, sync);
   <dialog
     ref="dialog"
     class="w-[min(28rem,calc(100vw-2rem))] rounded-2xl p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40"
+    data-test="confirm-dialog"
     @close="handleClose"
     @cancel.prevent="emit('cancel')"
     @keydown.esc.prevent="emit('cancel')"
@@ -71,6 +72,7 @@ watch(() => props.open, sync);
         <button
           type="button"
           class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          data-test="confirm-dialog-cancel"
           @click="emit('cancel')"
         >
           {{ cancelLabel }}
@@ -78,6 +80,7 @@ watch(() => props.open, sync);
         <button
           type="button"
           class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          data-test="confirm-dialog-confirm"
           @click="emit('confirm')"
         >
           {{ confirmLabel }}

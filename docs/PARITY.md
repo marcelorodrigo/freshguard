@@ -114,17 +114,17 @@ API `GET|POST /api/v1/items/{id}/batches`, `PATCH|DELETE /api/v1/batches/{id}`.
 
 Route `/locations`. API `GET|POST /api/v1/locations`, `PATCH|DELETE /api/v1/locations/{id}`, `POST /api/v1/locations/bulk-delete`.
 
-- [ ] Columns: **Name**, **Description**, **Parent**; **Created** and **Updated** toggleable and hidden by default.
-- [ ] Searchable by name, description and parent name; sortable by name, created, updated.
-- [ ] Create and edit open a modal with: **Name** (required ≤ 255), **Description** (≤ 255), **Notify Expiration (Days)** (integer ≥ 0, default 0, suffix `days`), **Parent Location** (searchable select, optional).
-- [ ] Choosing itself, a child or any deeper descendant as parent is refused with a field error.
-- [ ] Delete is disabled when the location holds batches, with tooltip `Locations containing inventory cannot be deleted.`
-- [ ] Delete modal text: `Child locations will be kept and become root locations.`
-- [ ] Blocked delete (race) shows `Location cannot be deleted` / `This location contains inventory. Remove all batches before deleting it.`
-- [ ] Bulk delete modal text: `This deletion is atomic: if any selected location contains inventory, no locations will be deleted. Child locations will be kept and become root locations.`
-- [ ] Blocked bulk delete shows `Locations were not deleted` / `No locations were deleted because at least one selected location contains inventory.` and deletes none.
-- [ ] If a child location is displayed with its parent deleted elsewhere, it appears as a root location, not as an error.
-- [ ] Header action **New Location** with a plus icon.
+- [x] Columns: **Name**, **Description**, **Parent**; **Created** and **Updated** toggleable and hidden by default.
+- [x] Searchable by name, description and parent name; sortable by name, created, updated.
+- [x] Create and edit open a modal with: **Name** (required ≤ 255), **Description** (≤ 255), **Notify Expiration (Days)** (integer ≥ 0, default 0, suffix `days`), **Parent Location** (searchable select, optional).
+- [x] Choosing itself, a child or any deeper descendant as parent is refused with a field error.
+- [x] Delete is disabled when the location holds batches, with tooltip `Locations containing inventory cannot be deleted.`
+- [x] Delete modal text: `Child locations will be kept and become root locations.`
+- [x] Blocked delete (race) shows `Location cannot be deleted` / `This location contains inventory. Remove all batches before deleting it.`
+- [x] Bulk delete modal text: `This deletion is atomic: if any selected location contains inventory, no locations will be deleted. Child locations will be kept and become root locations.`
+- [x] Blocked bulk delete shows `Locations were not deleted` / `No locations were deleted because at least one selected location contains inventory.` and deletes none.
+- [x] If a child location is displayed with its parent deleted elsewhere, it appears as a root location, not as an error.
+- [x] Header action **New Location** with a plus icon.
 
 ## Quick Consume
 

@@ -3,10 +3,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   bulkDeleteItems,
+  bulkDeleteLocations,
   createBatch,
   createItem,
+  createLocation,
   deleteBatch,
   deleteItem,
+  deleteLocation,
   getHealth,
   getItem,
   listItems,
@@ -16,6 +19,7 @@ import {
   logout,
   updateBatch,
   updateItem,
+  updateLocation,
 } from './api';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -409,5 +413,88 @@ describe('listLocations', () => {
     );
     expect(page.data).toHaveLength(1);
     expect(page.data[0]?.name).toBe('Fridge');
+  });
+});
+
+const location = {
+  id: 'loc-1',
+  name: 'Fridge',
+  description: '',
+  expiration_notify_days: 0,
+  parent: null,
+  batch_count: 0,
+  created_at: '2026-01-24T08:27:26Z',
+  updated_at: '2026-01-24T08:27:26Z',
+};
+
+describe('location writes', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts a location with its parent', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(location, 201));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createLocation({
+      name: 'Fridge',
+      description: 'Top shelf',
+      expiration_notify_days: 3,
+      parent_id: 'loc-kitchen',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/locations',
+      expect.objectContaining({
+        method: 'POST',
+        body: '{"name":"Fridge","description":"Top shelf","expiration_notify_days":3,"parent_id":"loc-kitchen"}',
+      }),
+    );
+  });
+
+  it('patches a location and can clear its parent with null', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(location));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await updateLocation('loc with space', { name: 'Fridge', parent_id: null });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/locations/loc%20with%20space',
+      expect.objectContaining({
+        method: 'PATCH',
+        body: '{"name":"Fridge","parent_id":null}',
+      }),
+    );
+  });
+
+  it('deletes one location', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(deleteLocation('loc-1')).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/locations/loc-1',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  it('bulk deletes locations atomically', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ deleted: 2 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(bulkDeleteLocations(['loc-1', 'loc-2'])).resolves.toEqual({
+      deleted: 2,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/locations/bulk-delete',
+      expect.objectContaining({
+        method: 'POST',
+        body: '{"ids":["loc-1","loc-2"]}',
+      }),
+    );
   });
 });

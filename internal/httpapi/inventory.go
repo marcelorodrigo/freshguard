@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
 	"github.com/marcelorodrigo/freshguard/internal/inventory"
@@ -250,6 +251,7 @@ func (s *server) listTags(w http.ResponseWriter, r *http.Request, _ auth.User) {
 // for an unexpected error, which the caller logs and answers as 500.
 func writeInventoryError(w http.ResponseWriter, err error) bool {
 	var fieldErr *inventory.FieldError
+	var hasBatches *inventory.LocationHasBatchesError
 
 	switch {
 	case errors.As(err, &fieldErr):
@@ -258,10 +260,18 @@ func writeInventoryError(w http.ResponseWriter, err error) bool {
 			Message: "invalid input",
 			Fields:  map[string]string{fieldErr.Field: fieldErr.Rule},
 		}})
+	case errors.As(err, &hasBatches):
+		writeJSON(w, http.StatusConflict, errorResponse{Error: errorBody{
+			Code:    CodeLocationHasBatches,
+			Message: "location still holds batches",
+			Fields:  map[string]string{"ids": strings.Join(hasBatches.IDs, ",")},
+		}})
 	case errors.Is(err, inventory.ErrItemNotFound):
 		writeError(w, http.StatusNotFound, CodeNotFound, "no such item")
 	case errors.Is(err, inventory.ErrBatchNotFound):
 		writeError(w, http.StatusNotFound, CodeNotFound, "no such batch")
+	case errors.Is(err, inventory.ErrLocationNotFound):
+		writeError(w, http.StatusNotFound, CodeNotFound, "no such location")
 	default:
 		return false
 	}
