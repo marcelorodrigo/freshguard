@@ -209,32 +209,9 @@ type authedHandler func(w http.ResponseWriter, r *http.Request, user auth.User)
 // its own profile and sign out.
 func (s *server) authenticated(next authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(sessionCookieName)
-		if err != nil || cookie.Value == "" {
-			writeError(w, http.StatusUnauthorized, CodeUnauthorized, "sign in required")
+		session, ok := s.sessionFrom(w, r)
+		if !ok {
 			return
-		}
-
-		// A cookie is ambient authority: a cross-site form post would carry it.
-		// Browsers label those requests, and the label must agree with this host.
-		if r.Method != http.MethodGet && r.Method != http.MethodHead && !sameOrigin(r) {
-			writeError(w, http.StatusForbidden, CodeBadOrigin, "origin does not match this host")
-			return
-		}
-
-		session, err := s.auth.Session(r.Context(), cookie.Value)
-		if err != nil {
-			if errors.Is(err, auth.ErrSessionInvalid) {
-				s.clearSessionCookie(w, r)
-				writeError(w, http.StatusUnauthorized, CodeUnauthorized, "invalid or expired session")
-				return
-			}
-			s.internal(w, r, "session", err)
-			return
-		}
-
-		if session.Extended {
-			s.setSessionCookie(w, r, cookie.Value, session.ExpiresAt)
 		}
 
 		if session.User.MustReset && !allowedWhileMustReset(r) {
@@ -244,6 +221,40 @@ func (s *server) authenticated(next authedHandler) http.HandlerFunc {
 
 		next(w, r, session.User)
 	}
+}
+
+// sessionFrom resolves the cookie and origin, sliding the session when the
+// service asks. It writes the error response and reports false to stop.
+func (s *server) sessionFrom(w http.ResponseWriter, r *http.Request) (auth.Session, bool) {
+	cookie, err := r.Cookie(sessionCookieName)
+	if err != nil || cookie.Value == "" {
+		writeError(w, http.StatusUnauthorized, CodeUnauthorized, "sign in required")
+		return auth.Session{}, false
+	}
+
+	// A cookie is ambient authority: a cross-site form post would carry it.
+	// Browsers label those requests, and the label must agree with this host.
+	if r.Method != http.MethodGet && r.Method != http.MethodHead && !sameOrigin(r) {
+		writeError(w, http.StatusForbidden, CodeBadOrigin, "origin does not match this host")
+		return auth.Session{}, false
+	}
+
+	session, err := s.auth.Session(r.Context(), cookie.Value)
+	if err != nil {
+		if errors.Is(err, auth.ErrSessionInvalid) {
+			s.clearSessionCookie(w, r)
+			writeError(w, http.StatusUnauthorized, CodeUnauthorized, "invalid or expired session")
+			return auth.Session{}, false
+		}
+		s.internal(w, r, "session", err)
+		return auth.Session{}, false
+	}
+
+	if session.Extended {
+		s.setSessionCookie(w, r, cookie.Value, session.ExpiresAt)
+	}
+
+	return session, true
 }
 
 // allowedWhileMustReset is the short list docs/api.md permits a flagged

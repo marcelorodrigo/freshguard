@@ -231,34 +231,11 @@ func (s *Service) updateProfilePassword(ctx context.Context, userID string, patc
 		return User{}, err
 	}
 
-	if patch.Name != nil {
-		name := strings.TrimSpace(*patch.Name)
-		if err := ValidateName(name); err != nil {
-			return User{}, err
-		}
-		user.Name = name
-	}
-	if patch.Email != nil {
-		email := strings.TrimSpace(*patch.Email)
-		if err := ValidateEmail(email); err != nil {
-			return User{}, err
-		}
-		user.Email = email
-	}
-
-	if err := ValidatePassword(*patch.Password); err != nil {
+	if err := applyProfileFields(&user, patch); err != nil {
 		return User{}, err
 	}
-	if patch.CurrentPassword == nil || *patch.CurrentPassword == "" {
-		return User{}, fieldError("current_password", "required")
-	}
-
-	ok, err := VerifyPassword(*patch.CurrentPassword, hash)
-	if err != nil {
-		return User{}, fmt.Errorf("verify current password for user %s: %w", userID, err)
-	}
-	if !ok {
-		return User{}, fieldError("current_password", "mismatch")
+	if err := checkCurrentPassword(*patch.Password, patch.CurrentPassword, hash, userID); err != nil {
+		return User{}, err
 	}
 
 	newHash, err := HashPassword(*patch.Password)
@@ -267,25 +244,74 @@ func (s *Service) updateProfilePassword(ctx context.Context, userID string, patc
 	}
 
 	user.UpdatedAt = s.now().UTC()
+	if err := s.writeProfilePassword(ctx, &user, hash, newHash); err != nil {
+		return User{}, err
+	}
+
+	return s.userByID(ctx, userID)
+}
+
+// applyProfileFields validates and applies the sent name and email.
+func applyProfileFields(user *User, patch ProfilePatch) error {
+	if patch.Name != nil {
+		name := strings.TrimSpace(*patch.Name)
+		if err := ValidateName(name); err != nil {
+			return err
+		}
+		user.Name = name
+	}
+	if patch.Email != nil {
+		email := strings.TrimSpace(*patch.Email)
+		if err := ValidateEmail(email); err != nil {
+			return err
+		}
+		user.Email = email
+	}
+	return nil
+}
+
+// checkCurrentPassword verifies the password being changed against the hash
+// read before any write.
+func checkCurrentPassword(password string, current *string, hash, userID string) error {
+	if err := ValidatePassword(password); err != nil {
+		return err
+	}
+	if current == nil || *current == "" {
+		return fieldError("current_password", "required")
+	}
+
+	ok, err := VerifyPassword(*current, hash)
+	if err != nil {
+		return fmt.Errorf("verify current password for user %s: %w", userID, err)
+	}
+	if !ok {
+		return fieldError("current_password", "mismatch")
+	}
+	return nil
+}
+
+// writeProfilePassword updates the row only while password_hash still matches
+// the read, so a concurrent reset wins instead of being overwritten.
+func (s *Service) writeProfilePassword(ctx context.Context, user *User, hash, newHash string) error {
 	result, err := s.db.Writer().ExecContext(ctx, `UPDATE users
 		SET name = ?, email = ?, password_hash = ?, must_reset = 0, updated_at = ?
 		WHERE id = ? AND password_hash = ?`,
 		user.Name, user.Email, newHash, formatTime(user.UpdatedAt), user.ID, hash)
 	if err != nil {
 		if store.IsUniqueViolation(err) {
-			return User{}, fieldError("email", "unique")
+			return fieldError("email", "unique")
 		}
-		return User{}, fmt.Errorf("update user password %s: %w", user.ID, err)
-	}
-	updated, err := result.RowsAffected()
-	if err != nil {
-		return User{}, fmt.Errorf("count updated users: %w", err)
-	}
-	if updated == 0 {
-		return User{}, fieldError("current_password", "mismatch")
+		return fmt.Errorf("update user password %s: %w", user.ID, err)
 	}
 
-	return s.userByID(ctx, userID)
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("count updated users: %w", err)
+	}
+	if updated == 0 {
+		return fieldError("current_password", "mismatch")
+	}
+	return nil
 }
 
 // SetTemporaryPassword replaces a user's password with one they did not

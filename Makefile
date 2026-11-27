@@ -22,7 +22,7 @@ SIZE_BUDGET_BYTES := 30000000
 RSS_BUDGET_KB      := 51200
 COLD_BUDGET_MS     := 200
 
-.PHONY: dev web server test check gotest web-test web-check cover fmt fmt-check vet staticcheck size rss cold clean clean-data
+.PHONY: dev web server test check gotest web-test web-check cover fmt fmt-check vet staticcheck complexity size rss cold clean clean-data
 
 dev: web/node_modules
 	@set -m; \
@@ -63,7 +63,7 @@ cover: web/node_modules
 web-check: web/node_modules
 	cd web && $(PNPM) run type-check && $(PNPM) run lint && $(PNPM) run test
 
-check: fmt-check vet staticcheck gotest web-check
+check: fmt-check vet staticcheck complexity gotest web-check
 
 fmt:
 	gofmt -w cmd internal
@@ -81,6 +81,11 @@ vet:
 
 staticcheck:
 	$(GO) run honnef.co/go/tools/cmd/staticcheck ./...
+
+# Sonar flags functions over 15; keep the gate local so review catches nothing
+# the agent could have caught before the push. -test includes _test.go files.
+complexity:
+	$(GO) run github.com/uudashr/gocognit/cmd/gocognit -test -exact-recursion -over 15 cmd internal
 
 size: server
 	@bytes=$$(wc -c < $(BIN) | tr -d ' '); \

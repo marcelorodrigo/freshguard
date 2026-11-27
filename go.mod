@@ -2,7 +2,10 @@ module github.com/marcelorodrigo/freshguard
 
 go 1.26.0
 
-tool honnef.co/go/tools/cmd/staticcheck
+tool (
+	github.com/uudashr/gocognit/cmd/gocognit
+	honnef.co/go/tools/cmd/staticcheck
+)
 
 require (
 	github.com/google/uuid v1.6.0
@@ -17,6 +20,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/uudashr/gocognit v1.3.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
