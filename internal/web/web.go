@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	indexName    = "index.html"
-	assetsPrefix = "/assets/"
+	indexName          = "index.html"
+	assetsPrefix       = "/assets/"
+	cacheControlHeader = "Cache-Control"
 )
 
 //go:embed all:dist
@@ -34,6 +35,11 @@ func Dist() fs.FS {
 // that is not a file, so the SPA owns the non-API paths. A missing file under
 // /assets/ is a 404, never index.html: a missing chunk must fail loudly.
 func Handler(fsys fs.FS) http.Handler {
+	// FileServerFS resolves and cleans the request path itself; this handler
+	// only decides which kind of response a path gets. No request path is ever
+	// handed to a file API directly.
+	files := http.FileServerFS(fsys)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			w.Header().Set("Allow", "GET, HEAD")
@@ -45,10 +51,14 @@ func Handler(fsys fs.FS) http.Handler {
 		if name == "" {
 			name = indexName
 		}
+		if !fs.ValidPath(name) {
+			http.NotFound(w, r)
+			return
+		}
 
 		if info, err := fs.Stat(fsys, name); err == nil && !info.IsDir() {
 			setCacheHeader(w, name)
-			http.ServeFileFS(w, r, fsys, name)
+			files.ServeHTTP(w, r)
 			return
 		}
 
@@ -58,12 +68,12 @@ func Handler(fsys fs.FS) http.Handler {
 		}
 
 		if _, err := fs.Stat(fsys, indexName); err != nil {
-			w.Header().Set("Cache-Control", "no-store")
+			w.Header().Set(cacheControlHeader, "no-store")
 			http.Error(w, "SPA not built: run make web", http.StatusServiceUnavailable)
 			return
 		}
 
-		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set(cacheControlHeader, "no-cache")
 		http.ServeFileFS(w, r, fsys, indexName)
 	})
 }
@@ -71,8 +81,8 @@ func Handler(fsys fs.FS) http.Handler {
 func setCacheHeader(w http.ResponseWriter, name string) {
 	switch {
 	case strings.HasPrefix("/"+name, assetsPrefix):
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		w.Header().Set(cacheControlHeader, "public, max-age=31536000, immutable")
 	case name == indexName:
-		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set(cacheControlHeader, "no-cache")
 	}
 }

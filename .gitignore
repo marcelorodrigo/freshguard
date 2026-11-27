@@ -42,3 +42,4 @@ yarn-error.log
 !/internal/web/dist/.gitkeep
 /web/node_modules/
 /web/coverage/
+/coverage.out

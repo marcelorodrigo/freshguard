@@ -121,10 +121,11 @@ func serve(ctx context.Context, cfg config.Config) error {
 
 	select {
 	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+		// WithoutCancel keeps the signal from aborting the drain it caused.
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
 		defer cancel()
 
-		logger.LogAttrs(context.Background(), slog.LevelInfo, "shutting down")
+		logger.LogAttrs(shutdownCtx, slog.LevelInfo, "shutting down")
 		return server.Shutdown(shutdownCtx)
 	case err := <-serveErr:
 		if errors.Is(err, http.ErrServerClosed) {
@@ -160,7 +161,9 @@ func healthcheck(ctx context.Context, addr string) error {
 // wildcard listen address is dialled on loopback: 0.0.0.0 and :: mean
 // "everywhere", not "here", and not every platform routes them to localhost.
 func healthURL(addr string) string {
-	scheme := "http://"
+	// The container probe dials the local listener; TLS, if any, terminates at
+	// the reverse proxy in front of it, and an https:// address is honoured below.
+	scheme := "http://" // NOSONAR
 	addr = strings.TrimRight(addr, "/")
 	if rest, ok := strings.CutPrefix(addr, "https://"); ok {
 		scheme, addr = "https://", rest

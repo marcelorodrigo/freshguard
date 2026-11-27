@@ -7,11 +7,14 @@ SHELL := /bin/sh
 
 GO      ?= go
 PNPM    ?= pnpm
+
+# The Laravel vendor/ tree (deleted in step 10) looks like a Go vendor
+# directory. -mod=readonly ignores it and refuses to rewrite go.mod.
+export GOFLAGS ?= -mod=readonly
+
 BIN     := bin/freshguard
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -s -w -X main.version=$(VERSION)
-
-STATICCHECK := $(shell command -v staticcheck 2>/dev/null || echo "$$($(GO) env GOPATH)/bin/staticcheck")
 
 DEV_ADDR := 127.0.0.1:8080
 
@@ -19,7 +22,7 @@ SIZE_BUDGET_BYTES := 30000000
 RSS_BUDGET_KB      := 51200
 COLD_BUDGET_MS     := 200
 
-.PHONY: dev web server test check gotest web-test web-check fmt fmt-check vet staticcheck size rss cold clean clean-data
+.PHONY: dev web server test check gotest web-test web-check cover fmt fmt-check vet staticcheck size rss cold clean clean-data
 
 dev: web/node_modules
 	@trap 'kill 0' EXIT INT TERM; \
@@ -45,6 +48,10 @@ web-test: web/node_modules
 
 test: gotest web-test
 
+cover: web/node_modules
+	$(GO) test -covermode=atomic -coverprofile=coverage.out ./...
+	cd web && $(PNPM) run test:coverage
+
 web-check: web/node_modules
 	cd web && $(PNPM) run type-check && $(PNPM) run lint && $(PNPM) run test
 
@@ -65,11 +72,7 @@ vet:
 	$(GO) vet ./...
 
 staticcheck:
-	@test -x "$(STATICCHECK)" || { \
-		echo "staticcheck not found: go install honnef.co/go/tools/cmd/staticcheck@latest"; \
-		exit 1; \
-	}
-	$(STATICCHECK) ./...
+	$(GO) run honnef.co/go/tools/cmd/staticcheck ./...
 
 size: server
 	@bytes=$$(wc -c < $(BIN) | tr -d ' '); \
@@ -119,7 +122,7 @@ cold: server
 	if [ $$took -gt "$(COLD_BUDGET_MS)" ]; then echo "cold: over budget"; exit 1; fi
 
 clean:
-	rm -rf bin internal/web/dist
+	rm -rf bin internal/web/dist coverage.out
 	@mkdir -p internal/web/dist
 	@touch internal/web/dist/.gitkeep
 

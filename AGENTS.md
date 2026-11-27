@@ -31,11 +31,14 @@ Rules of thumb: `inventory` and `auth` never import `net/http`; handlers never w
 | `make web` | Build the SPA into `internal/web/dist` for `go:embed`. |
 | `make server` | Build one stripped, static `bin/freshguard`. |
 | `make test` | `go test ./...` and the web tests. |
-| `make check` | gofmt, vet, staticcheck, Go tests, vue-tsc, ESLint, Vitest. The only gate CI runs. |
+| `make check` | gofmt, vet, staticcheck, Go tests, vue-tsc, ESLint, Vitest. The gate CI runs. |
+| `make cover` | Go and web coverage into `coverage.out` and `web/coverage/lcov.info`, the files Sonar reads. |
 | `make size` · `make rss` · `make cold` | Enforce the budgets in `docs/REWRITE.md`; each fails over budget. |
 | `make clean` · `make clean-data` | Drop build output; `clean-data` also deletes `data/` and `data-dev/` (destructive). |
 
-Single Go test: `go test ./internal/httpapi -run TestHealth -v`. Single web test: `cd web && pnpm vitest run src/App.test.ts`. Format: `make fmt`. Static analysis alone: `staticcheck ./...` (install once with `go install honnef.co/go/tools/cmd/staticcheck@2026.2.2`).
+Single Go test: `go test ./internal/httpapi -run TestHealth -v`. Single web test: `cd web && pnpm vitest run src/App.test.ts`. Format: `make fmt`. Static analysis alone: `make staticcheck`, which runs the tool pinned by the `tool` directive in `go.mod`.
+
+The Laravel `vendor/` tree is still in the repository root, so Go reads the module as vendored and refuses to build. The Makefile exports `GOFLAGS=-mod=readonly`; export the same before running `go` commands outside make, until step 10 deletes the tree.
 
 Run `make check` before every commit. Do not push with a red gate.
 

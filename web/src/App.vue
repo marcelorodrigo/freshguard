@@ -8,19 +8,19 @@ import { errorMessageKey, type ErrorMessageKey } from './errorMessages';
 const { t } = useI18n();
 
 const health = ref<Health | null>(null);
-const error = ref<ErrorMessageKey | null>(null);
+const failure = ref<ErrorMessageKey | null>(null);
 const loading = ref(true);
 
-const errorText = computed(() => (error.value === null ? '' : t(error.value)));
+const errorText = computed(() => (failure.value === null ? '' : t(failure.value)));
 
 async function load(): Promise<void> {
   loading.value = true;
-  error.value = null;
+  failure.value = null;
 
   try {
     health.value = await getHealth();
-  } catch (failure) {
-    error.value = errorMessageKey(failure);
+  } catch (error) {
+    failure.value = errorMessageKey(error);
   } finally {
     loading.value = false;
   }
@@ -49,7 +49,7 @@ onMounted(load);
       </p>
 
       <p
-        v-else-if="error"
+        v-else-if="failure"
         class="mt-6 text-sm text-red-600"
         role="alert"
         data-test="error"

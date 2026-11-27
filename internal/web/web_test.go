@@ -76,7 +76,7 @@ func TestHandlerHidesEmptyDistBehindHint(t *testing.T) {
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d, want 503", rec.Code)
 	}
-	if got := rec.Body.String(); got == "" {
+	if rec.Body.String() == "" {
 		t.Error("body is empty, want the build hint")
 	}
 }

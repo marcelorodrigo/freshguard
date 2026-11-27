@@ -17,7 +17,7 @@ func TestRunVersion(t *testing.T) {
 		t.Fatalf("run(version): %v", err)
 	}
 
-	if got := strings.TrimSpace(stdout.String()); got == "" {
+	if strings.TrimSpace(stdout.String()) == "" {
 		t.Fatal("version printed nothing")
 	}
 }

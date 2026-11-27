@@ -118,7 +118,8 @@ Prerequisites: Go 1.26+, Node 26+, pnpm 12+.
 | `make web` | `cd web && pnpm install --frozen-lockfile && pnpm run build` → `internal/web/dist`. |
 | `make server` | `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$(git describe …)" -o bin/freshguard ./cmd/freshguard`. |
 | `make test` | `go test ./...` and `cd web && pnpm run test`. |
-| `make check` | `gofmt -l`, `go vet`, `staticcheck`, `go test ./...`, `vue-tsc`, ESLint, Vitest. The only gate CI runs. |
+| `make check` | `gofmt -l`, `go vet`, `staticcheck`, `go test ./...`, `vue-tsc`, ESLint, Vitest. The gate CI runs. |
+| `make cover` | `go test -coverprofile=coverage.out` and `pnpm run test:coverage`; CI scans those reports with Sonar. |
 | `make size` | Strip and report binary size; fails above 30 MB. |
 | `make rss` | Start the binary on a temp data dir, `curl /health`, report `ps -o rss=`. Fails above 50 MB. |
 | `make cold` | Time the first response on a fresh data dir. Fails above 200 ms. |
