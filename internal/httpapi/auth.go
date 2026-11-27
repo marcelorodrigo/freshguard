@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -8,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
@@ -367,8 +368,10 @@ func formatTimestamp(t time.Time) string {
 
 // loginKey scopes the bucket to the caller and the address being tried, so one
 // noisy client cannot lock every account out and one account cannot be hammered.
+// The address is hashed so a spray of long emails cannot grow the key.
 func loginKey(r *http.Request, email string) string {
-	return clientIP(r) + "\x00" + strings.ToLower(strings.TrimSpace(email))
+	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(email))))
+	return clientIP(r) + "\x00" + hex.EncodeToString(sum[:])
 }
 
 func clientIP(r *http.Request) string {
@@ -377,44 +380,4 @@ func clientIP(r *http.Request) string {
 		return r.RemoteAddr
 	}
 	return host
-}
-
-// loginLimiter is a fixed-window counter, one entry per address and email.
-// There is no background work in v1, so expired entries are pruned on use.
-type loginLimiter struct {
-	mu      sync.Mutex
-	entries map[string]loginEntry
-}
-
-type loginEntry struct {
-	count int
-	reset time.Time
-}
-
-func newLoginLimiter() *loginLimiter {
-	return &loginLimiter{entries: make(map[string]loginEntry)}
-}
-
-func (l *loginLimiter) allow(key string, now time.Time) bool {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	for entryKey, entry := range l.entries {
-		if !now.Before(entry.reset) {
-			delete(l.entries, entryKey)
-		}
-	}
-
-	entry, seen := l.entries[key]
-	if !seen {
-		l.entries[key] = loginEntry{count: 1, reset: now.Add(loginWindow)}
-		return true
-	}
-	if entry.count >= loginAttempts {
-		return false
-	}
-
-	entry.count++
-	l.entries[key] = entry
-	return true
 }

@@ -44,6 +44,9 @@ const (
 	resetTokenBytes = 32
 	// userAgentMaxLength keeps a hostile header out of the database.
 	userAgentMaxLength = 512
+	// maxConcurrentPasswordChecks bounds the 64 MiB argon2 work done by login
+	// requests, so a burst cannot exhaust memory.
+	maxConcurrentPasswordChecks = 4
 
 	timeLayout = time.RFC3339
 )
@@ -138,9 +141,10 @@ type Options struct {
 
 // Service is the account and session logic.
 type Service struct {
-	db  *store.Store
-	ttl time.Duration
-	now func() time.Time
+	db            *store.Store
+	ttl           time.Duration
+	now           func() time.Time
+	passwordSlots chan struct{}
 }
 
 // New builds the service. It panics without a Store: that is a wiring bug, not
@@ -156,7 +160,12 @@ func New(opts Options) *Service {
 		opts.Now = time.Now
 	}
 
-	return &Service{db: opts.Store, ttl: opts.SessionTTL, now: opts.Now}
+	return &Service{
+		db:            opts.Store,
+		ttl:           opts.SessionTTL,
+		now:           opts.Now,
+		passwordSlots: make(chan struct{}, maxConcurrentPasswordChecks),
+	}
 }
 
 // SetupRequired reports whether the household has no accounts yet.

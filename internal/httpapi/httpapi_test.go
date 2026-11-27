@@ -1,15 +1,18 @@
 package httpapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 	"time"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
+	"github.com/marcelorodrigo/freshguard/internal/inventory"
 	"github.com/marcelorodrigo/freshguard/internal/store"
 )
 
@@ -26,7 +29,7 @@ func (c *testClock) Now() time.Time { return c.now }
 
 func (c *testClock) Advance(d time.Duration) { c.now = c.now.Add(d) }
 
-func testAuth(t *testing.T, clock *testClock) *auth.Service {
+func testAuth(t *testing.T, clock *testClock) (*auth.Service, *inventory.Service) {
 	t.Helper()
 
 	st, err := store.Open(t.TempDir())
@@ -39,7 +42,8 @@ func testAuth(t *testing.T, clock *testClock) *auth.Service {
 		}
 	})
 
-	return auth.New(auth.Options{Store: st, Now: clock.Now})
+	return auth.New(auth.Options{Store: st, Now: clock.Now}),
+		inventory.New(inventory.Options{Store: st, Now: clock.Now})
 }
 
 func testWeb() fstest.MapFS {
@@ -53,13 +57,15 @@ func testHandler(t *testing.T) http.Handler {
 	t.Helper()
 
 	clock := &testClock{now: testNow}
+	accounts, stock := testAuth(t, clock)
 
 	return New(Options{
-		Version: "1.0.0",
-		Logger:  slog.New(slog.DiscardHandler),
-		Web:     testWeb(),
-		Auth:    testAuth(t, clock),
-		Now:     clock.Now,
+		Version:   "1.0.0",
+		Logger:    slog.New(slog.DiscardHandler),
+		Web:       testWeb(),
+		Auth:      accounts,
+		Inventory: stock,
+		Now:       clock.Now,
 	})
 }
 
@@ -159,5 +165,33 @@ func TestWrongMethodOnKnownAPIPathStaysJSON(t *testing.T) {
 	}
 	if got := rec.Header().Get("Content-Type"); got != "application/json; charset=utf-8" {
 		t.Errorf("Content-Type = %q, want the error envelope", got)
+	}
+}
+
+func TestRequestLogUsesTheRoutePattern(t *testing.T) {
+	t.Parallel()
+
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	clock := &testClock{now: testNow}
+	accounts, stock := testAuth(t, clock)
+	srv := newServer(Options{
+		Version:   "1.0.0",
+		Logger:    logger,
+		Web:       testWeb(),
+		Auth:      accounts,
+		Inventory: stock,
+		Now:       clock.Now,
+	})
+
+	rec := httptest.NewRecorder()
+	logRequests(logger, srv.routes()).ServeHTTP(rec,
+		httptest.NewRequest(http.MethodGet, "/api/v1/password-resets/secret-token-value", nil))
+
+	if strings.Contains(logs.String(), "secret-token-value") {
+		t.Fatalf("request log leaked the token: %s", logs.String())
+	}
+	if !strings.Contains(logs.String(), "password-resets/{token}") {
+		t.Errorf("request log has no route pattern: %s", logs.String())
 	}
 }

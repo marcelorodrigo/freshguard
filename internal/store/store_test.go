@@ -59,6 +59,24 @@ func TestOpenCreatesTheSchema(t *testing.T) {
 	}
 }
 
+func TestOpenWithRelativeDataDir(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	st, err := Open("data")
+	if err != nil {
+		t.Fatalf("Open(relative data dir): %v", err)
+	}
+	t.Cleanup(func() {
+		if err := st.Close(); err != nil {
+			t.Errorf("Close: %v", err)
+		}
+	})
+
+	if _, err := os.Stat(filepath.Join("data", FileName)); err != nil {
+		t.Errorf("database file at data/%s: %v", FileName, err)
+	}
+}
+
 func TestOpenRejectsADatabaseThatIsADirectory(t *testing.T) {
 	t.Parallel()
 

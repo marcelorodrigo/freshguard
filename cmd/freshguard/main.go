@@ -27,6 +27,7 @@ import (
 	"github.com/marcelorodrigo/freshguard/internal/auth"
 	"github.com/marcelorodrigo/freshguard/internal/config"
 	"github.com/marcelorodrigo/freshguard/internal/httpapi"
+	"github.com/marcelorodrigo/freshguard/internal/inventory"
 	"github.com/marcelorodrigo/freshguard/internal/store"
 )
 
@@ -141,6 +142,7 @@ func runServer(ctx context.Context, cfg config.Config, logger *slog.Logger, list
 	}()
 
 	accounts := auth.New(auth.Options{Store: db, SessionTTL: cfg.SessionTTL})
+	stock := inventory.New(inventory.Options{Store: db})
 
 	setupRequired, err := accounts.SetupRequired(ctx)
 	if err != nil {
@@ -149,9 +151,10 @@ func runServer(ctx context.Context, cfg config.Config, logger *slog.Logger, list
 
 	server := &http.Server{
 		Handler: httpapi.New(httpapi.Options{
-			Version: version,
-			Logger:  logger,
-			Auth:    accounts,
+			Version:   version,
+			Logger:    logger,
+			Auth:      accounts,
+			Inventory: stock,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
