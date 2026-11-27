@@ -499,3 +499,17 @@ livewire(ListUsers::class)
   - `$view`: `protected string` (not `protected static string`) on `Page` and `Widget` classes
 
 </laravel-boost-guidelines>
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues in `marcelorodrigo/freshguard`, driven by the `gh` CLI, with blocking edges as native issue dependencies. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
