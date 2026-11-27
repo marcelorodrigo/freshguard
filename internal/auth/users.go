@@ -163,7 +163,69 @@ func (s *Service) UpdateProfile(ctx context.Context, userID string, patch Profil
 	if patch.Name == nil && patch.Email == nil && patch.Password == nil {
 		return s.userByID(ctx, userID)
 	}
+	if patch.Password == nil {
+		return s.updateProfileFields(ctx, userID, patch)
+	}
+	return s.updateProfilePassword(ctx, userID, patch)
+}
 
+// updateProfileFields writes only the submitted columns, so a profile edit
+// cannot carry a stale password_hash or must_reset back over a reset.
+func (s *Service) updateProfileFields(ctx context.Context, userID string, patch ProfilePatch) (User, error) {
+	user, err := s.userByID(ctx, userID)
+	if err != nil {
+		return User{}, err
+	}
+
+	sets := make([]string, 0, 3)
+	args := make([]any, 0, 4)
+
+	if patch.Name != nil {
+		name := strings.TrimSpace(*patch.Name)
+		if err := ValidateName(name); err != nil {
+			return User{}, err
+		}
+		user.Name = name
+		sets = append(sets, "name = ?")
+		args = append(args, name)
+	}
+	if patch.Email != nil {
+		email := strings.TrimSpace(*patch.Email)
+		if err := ValidateEmail(email); err != nil {
+			return User{}, err
+		}
+		user.Email = email
+		sets = append(sets, "email = ?")
+		args = append(args, email)
+	}
+
+	updatedAt := s.now().UTC()
+	sets = append(sets, "updated_at = ?")
+	args = append(args, formatTime(updatedAt), userID)
+
+	result, err := s.db.Writer().ExecContext(ctx,
+		"UPDATE users SET "+strings.Join(sets, ", ")+" WHERE id = ?", args...)
+	if err != nil {
+		if store.IsUniqueViolation(err) {
+			return User{}, fieldError("email", "unique")
+		}
+		return User{}, fmt.Errorf("update user %s: %w", userID, err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return User{}, fmt.Errorf("count updated users: %w", err)
+	}
+	if updated == 0 {
+		return User{}, ErrUserNotFound
+	}
+
+	return s.userByID(ctx, userID)
+}
+
+// updateProfilePassword binds the verified hash to the write. A reset that
+// commits after the read changes password_hash, so this update matches no row
+// and reports the current password as stale instead of restoring the old hash.
+func (s *Service) updateProfilePassword(ctx context.Context, userID string, patch ProfilePatch) (User, error) {
 	user, hash, err := s.userWithHashByID(ctx, userID)
 	if err != nil {
 		return User{}, err
@@ -176,7 +238,6 @@ func (s *Service) UpdateProfile(ctx context.Context, userID string, patch Profil
 		}
 		user.Name = name
 	}
-
 	if patch.Email != nil {
 		email := strings.TrimSpace(*patch.Email)
 		if err := ValidateEmail(email); err != nil {
@@ -185,42 +246,46 @@ func (s *Service) UpdateProfile(ctx context.Context, userID string, patch Profil
 		user.Email = email
 	}
 
-	if patch.Password != nil {
-		if err := ValidatePassword(*patch.Password); err != nil {
-			return User{}, err
-		}
-		if patch.CurrentPassword == nil || *patch.CurrentPassword == "" {
-			return User{}, fieldError("current_password", "required")
-		}
+	if err := ValidatePassword(*patch.Password); err != nil {
+		return User{}, err
+	}
+	if patch.CurrentPassword == nil || *patch.CurrentPassword == "" {
+		return User{}, fieldError("current_password", "required")
+	}
 
-		ok, err := VerifyPassword(*patch.CurrentPassword, hash)
-		if err != nil {
-			return User{}, fmt.Errorf("verify current password for user %s: %w", userID, err)
-		}
-		if !ok {
-			return User{}, fieldError("current_password", "mismatch")
-		}
+	ok, err := VerifyPassword(*patch.CurrentPassword, hash)
+	if err != nil {
+		return User{}, fmt.Errorf("verify current password for user %s: %w", userID, err)
+	}
+	if !ok {
+		return User{}, fieldError("current_password", "mismatch")
+	}
 
-		hash, err = HashPassword(*patch.Password)
-		if err != nil {
-			return User{}, err
-		}
-		user.MustReset = false
+	newHash, err := HashPassword(*patch.Password)
+	if err != nil {
+		return User{}, err
 	}
 
 	user.UpdatedAt = s.now().UTC()
-
-	if _, err := s.db.Writer().ExecContext(ctx, `UPDATE users
-		SET name = ?, email = ?, password_hash = ?, must_reset = ?, updated_at = ?
-		WHERE id = ?`,
-		user.Name, user.Email, hash, user.MustReset, formatTime(user.UpdatedAt), user.ID); err != nil {
+	result, err := s.db.Writer().ExecContext(ctx, `UPDATE users
+		SET name = ?, email = ?, password_hash = ?, must_reset = 0, updated_at = ?
+		WHERE id = ? AND password_hash = ?`,
+		user.Name, user.Email, newHash, formatTime(user.UpdatedAt), user.ID, hash)
+	if err != nil {
 		if store.IsUniqueViolation(err) {
 			return User{}, fieldError("email", "unique")
 		}
-		return User{}, fmt.Errorf("update user %s: %w", user.ID, err)
+		return User{}, fmt.Errorf("update user password %s: %w", user.ID, err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return User{}, fmt.Errorf("count updated users: %w", err)
+	}
+	if updated == 0 {
+		return User{}, fieldError("current_password", "mismatch")
 	}
 
-	return user, nil
+	return s.userByID(ctx, userID)
 }
 
 // SetTemporaryPassword replaces a user's password with one they did not

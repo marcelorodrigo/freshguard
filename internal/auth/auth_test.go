@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -274,6 +275,10 @@ func TestUpdateProfile(t *testing.T) {
 	if updated.Email != email {
 		t.Errorf("email = %q, want %q", updated.Email, email)
 	}
+
+	if _, err := f.svc.Login(ctx, email, testPassword, ""); err != nil {
+		t.Errorf("login after a profile edit = %v, want the password unchanged", err)
+	}
 }
 
 func TestUpdateProfileWithoutChanges(t *testing.T) {
@@ -444,6 +449,60 @@ func TestPasswordReset(t *testing.T) {
 
 	if _, err := f.svc.Login(ctx, testEmail, newPassword, ""); err != nil {
 		t.Errorf("login with the reset password = %v, want success", err)
+	}
+}
+
+func TestResetPasswordRedeemsTokenOnce(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	f.firstAdmin(t)
+	ctx := context.Background()
+
+	token, err := f.svc.CreateResetToken(ctx, testEmail)
+	if err != nil {
+		t.Fatalf("CreateResetToken: %v", err)
+	}
+
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+
+	for _, password := range []string{"first new password", "second new password"} {
+		wg.Add(1)
+		go func(password string) {
+			defer wg.Done()
+			<-start
+			errs <- f.svc.ResetPassword(ctx, token.Secret, password)
+		}(password)
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	successes, invalid := 0, 0
+	for err := range errs {
+		switch {
+		case err == nil:
+			successes++
+		case errors.Is(err, ErrResetTokenInvalid):
+			invalid++
+		default:
+			t.Errorf("ResetPassword error = %v, want success or ErrResetTokenInvalid", err)
+		}
+	}
+	if successes != 1 || invalid != 1 {
+		t.Fatalf("reset attempts = %d success, %d invalid; want exactly one of each", successes, invalid)
+	}
+
+	workingPasswords := 0
+	for _, password := range []string{"first new password", "second new password"} {
+		if _, err := f.svc.Login(ctx, testEmail, password, ""); err == nil {
+			workingPasswords++
+		}
+	}
+	if workingPasswords != 1 {
+		t.Errorf("passwords that authenticate = %d, want exactly the winning one", workingPasswords)
 	}
 }
 

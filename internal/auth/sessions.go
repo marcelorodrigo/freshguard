@@ -11,6 +11,13 @@ import (
 // Login checks the credentials and opens a session. An unknown email costs the
 // same password hashing as a known one, so timing does not enumerate accounts.
 func (s *Service) Login(ctx context.Context, email, password, userAgent string) (NewSession, error) {
+	select {
+	case s.passwordSlots <- struct{}{}:
+		defer func() { <-s.passwordSlots }()
+	case <-ctx.Done():
+		return NewSession{}, ctx.Err()
+	}
+
 	user, hash, err := s.userWithHashByEmail(ctx, strings.TrimSpace(email))
 	if errors.Is(err, sql.ErrNoRows) {
 		_, _ = VerifyPassword(password, timingEqualizerHash)
@@ -36,12 +43,23 @@ func (s *Service) Login(ctx context.Context, email, password, userAgent string) 
 	now := s.now().UTC()
 	expiresAt := now.Add(s.ttl)
 
-	if _, err := s.db.Writer().ExecContext(ctx, `INSERT INTO sessions
+	// The insert names the hash that was verified. If a password reset commits
+	// between the read and the write, no row is inserted and the stale
+	// credentials are rejected instead of opening a session for the old hash.
+	result, err := s.db.Writer().ExecContext(ctx, `INSERT INTO sessions
 		(id, user_id, user_agent, created_at, last_seen_at, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		sessionID, user.ID, truncate(userAgent, userAgentMaxLength),
-		formatTime(now), formatTime(now), formatTime(expiresAt)); err != nil {
+		SELECT ?, id, ?, ?, ?, ? FROM users WHERE id = ? AND password_hash = ?`,
+		sessionID, truncate(userAgent, userAgentMaxLength),
+		formatTime(now), formatTime(now), formatTime(expiresAt), user.ID, hash)
+	if err != nil {
 		return NewSession{}, fmt.Errorf("insert session: %w", err)
+	}
+	inserted, err := result.RowsAffected()
+	if err != nil {
+		return NewSession{}, fmt.Errorf("count inserted sessions: %w", err)
+	}
+	if inserted == 0 {
+		return NewSession{}, ErrInvalidCredentials
 	}
 
 	return NewSession{User: user, Secret: secret, ExpiresAt: expiresAt}, nil
