@@ -6,6 +6,7 @@
 package inventory
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -36,11 +37,13 @@ const (
 )
 
 // ErrItemNotFound, ErrBatchNotFound and ErrLocationNotFound name an id that
-// does not exist.
+// does not exist. ErrBatchUnavailable means a consume raced another writer:
+// the batch was gone or empty before the unit could be taken.
 var (
 	ErrItemNotFound     = errors.New("inventory: item not found")
 	ErrBatchNotFound    = errors.New("inventory: batch not found")
 	ErrLocationNotFound = errors.New("inventory: location not found")
+	ErrBatchUnavailable = errors.New("inventory: batch unavailable")
 )
 
 // LocationHasBatchesError reports locations that still hold inventory. Deleting
@@ -257,6 +260,20 @@ func normalizeTags(tags []string) []string {
 	}
 
 	return normalized
+}
+
+// jsonIDs encodes an id list as the JSON array json_each reads, keeping every
+// SQL statement constant instead of building a placeholder list.
+func jsonIDs(ids []string) (string, error) {
+	if ids == nil {
+		ids = []string{}
+	}
+
+	encoded, err := json.Marshal(ids)
+	if err != nil {
+		return "", fmt.Errorf("encode id list: %w", err)
+	}
+	return string(encoded), nil
 }
 
 // uniqueNonEmpty trims, drops blanks and removes duplicate ids while keeping

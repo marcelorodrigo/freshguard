@@ -6,6 +6,7 @@ import {
   bulkDeleteLocations,
   createBatch,
   createItem,
+  consumeBatch,
   createLocation,
   deleteBatch,
   deleteItem,
@@ -17,6 +18,7 @@ import {
   listTags,
   login,
   logout,
+  searchItems,
   updateBatch,
   updateItem,
   updateLocation,
@@ -495,6 +497,58 @@ describe('location writes', () => {
         method: 'POST',
         body: '{"ids":["loc-1","loc-2"]}',
       }),
+    );
+  });
+});
+
+describe('searchItems', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('sends the term and unwraps the data envelope', async () => {
+    const result = {
+      id: '0190a1b2-0000-7000-8000-000000000002',
+      name: 'Whole milk',
+      description: '1 L',
+      batches: [
+        {
+          id: '0190a1b2-0000-7000-8000-000000000003',
+          location: { id: 'loc-fridge', name: 'Fridge' },
+          expires_at: '2026-02-01',
+          quantity: 2,
+        },
+      ],
+    };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: [result] }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(searchItems('whole milk')).resolves.toEqual([result]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/search?q=whole+milk',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+  });
+});
+
+describe('consumeBatch', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts an empty body to the batch consume endpoint', async () => {
+    const result = {
+      item: { id: '0190a1b2-0000-7000-8000-000000000002', name: 'Whole milk' },
+      batch: { id: '0190a1b2-0000-7000-8000-000000000003', quantity: 1 },
+      deleted: false,
+    };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(result));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(consumeBatch('batch id')).resolves.toEqual(result);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/batches/batch%20id/consume',
+      expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
     );
   });
 });

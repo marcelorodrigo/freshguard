@@ -15,6 +15,7 @@ import ItemsListView from './views/ItemsListView.vue';
 import LocationsListView from './views/LocationsListView.vue';
 import LoginView from './views/LoginView.vue';
 import PlaceholderView from './views/PlaceholderView.vue';
+import QuickConsumeView from './views/QuickConsumeView.vue';
 import SetupView from './views/SetupView.vue';
 
 const routes: RouteRecordRaw[] = [
@@ -64,7 +65,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'quick-consume',
         name: 'quick-consume',
-        component: PlaceholderView,
+        component: QuickConsumeView,
       },
       {
         path: 'locations',

@@ -87,18 +87,18 @@ async function handleSignOut(): Promise<void> {
           {{ t('nav.inventory') }}
         </p>
         <RouterLink
-          to="/items"
-          class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-          active-class="bg-emerald-50 text-emerald-800"
-        >
-          {{ t('nav.items') }}
-        </RouterLink>
-        <RouterLink
           to="/quick-consume"
           class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
           active-class="bg-emerald-50 text-emerald-800"
         >
           {{ t('nav.quickConsume') }}
+        </RouterLink>
+        <RouterLink
+          to="/items"
+          class="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+          active-class="bg-emerald-50 text-emerald-800"
+        >
+          {{ t('nav.items') }}
         </RouterLink>
 
         <RouterLink

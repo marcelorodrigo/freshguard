@@ -7,6 +7,22 @@ import (
 	"github.com/marcelorodrigo/freshguard/internal/inventory"
 )
 
+type consumedItemResponse struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type consumedBatchResponse struct {
+	ID       string `json:"id"`
+	Quantity int    `json:"quantity"`
+}
+
+type consumeResponse struct {
+	Item    consumedItemResponse   `json:"item"`
+	Batch   *consumedBatchResponse `json:"batch"`
+	Deleted bool                   `json:"deleted"`
+}
+
 type batchRequest struct {
 	LocationID string `json:"location_id"`
 	ExpiresAt  string `json:"expires_at"`
@@ -73,6 +89,27 @@ func (s *server) deleteBatch(w http.ResponseWriter, r *http.Request, _ auth.User
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *server) consumeBatch(w http.ResponseWriter, r *http.Request, _ auth.User) {
+	result, err := s.inventory.ConsumeBatch(r.Context(), r.PathValue("id"))
+	if err != nil {
+		if writeInventoryError(w, err) {
+			return
+		}
+		s.internal(w, r, "consume batch", err)
+		return
+	}
+
+	response := consumeResponse{
+		Item:    consumedItemResponse{ID: result.ItemID, Name: result.ItemName},
+		Deleted: result.Deleted,
+	}
+	if !result.Deleted {
+		response.Batch = &consumedBatchResponse{ID: result.BatchID, Quantity: result.BatchQuantity}
+	}
+
+	writeJSON(w, http.StatusOK, response)
 }
 
 func newBatchResponse(batch inventory.Batch) batchResponse {

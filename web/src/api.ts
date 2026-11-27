@@ -351,6 +351,43 @@ export function deleteBatch(id: string): Promise<void> {
   return request<void>(batchPath(id), { method: 'DELETE' });
 }
 
+/** A batch inside a Quick Consume result. */
+export interface SearchBatch {
+  id: string;
+  location: { id: string; name: string };
+  expires_at: string;
+  quantity: number;
+}
+
+/** An item in the Quick Consume results, with the batches that have stock. */
+export interface SearchResult {
+  id: string;
+  name: string;
+  description: string;
+  batches: SearchBatch[];
+}
+
+/** The payload of `POST /api/v1/batches/{id}/consume`. */
+export interface ConsumeResult {
+  item: { id: string; name: string };
+  batch: { id: string; quantity: number } | null;
+  deleted: boolean;
+}
+
+/** Runs the Quick Consume tiered search; a short term answers an empty list. */
+export async function searchItems(term: string): Promise<SearchResult[]> {
+  const params = new URLSearchParams({ q: term });
+  const body = await request<{ data: SearchResult[] }>(
+    '/api/v1/search?' + params.toString(),
+  );
+  return body.data;
+}
+
+/** Removes one unit from a batch, deleting the row when it reaches zero. */
+export function consumeBatch(id: string): Promise<ConsumeResult> {
+  return request<ConsumeResult>(`${batchPath(id)}/consume`, { method: 'POST' });
+}
+
 /** Lists locations, the choices a batch's location select offers. */
 export function listLocations(
   filters: LocationFilters = {},

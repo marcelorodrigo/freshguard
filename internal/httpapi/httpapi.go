@@ -31,6 +31,8 @@ const (
 
 	// CodeLocationHasBatches blocks a location delete that still holds stock.
 	CodeLocationHasBatches = "location_has_batches"
+	// CodeBatchUnavailable is a consume that raced a delete or another consume.
+	CodeBatchUnavailable = "batch_unavailable"
 )
 
 // Options configures the root handler.
@@ -119,6 +121,8 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("POST /api/v1/items/{id}/batches", s.authenticated(s.createBatch))
 	mux.HandleFunc("PATCH /api/v1/batches/{id}", s.authenticated(s.updateBatch))
 	mux.HandleFunc("DELETE /api/v1/batches/{id}", s.authenticated(s.deleteBatch))
+	mux.HandleFunc("POST /api/v1/batches/{id}/consume", s.authenticated(s.consumeBatch))
+	mux.HandleFunc("GET /api/v1/search", s.authenticated(s.search))
 	mux.HandleFunc("GET /api/v1/locations", s.authenticated(s.listLocations))
 	mux.HandleFunc("POST /api/v1/locations", s.authenticated(s.createLocation))
 	mux.HandleFunc("POST /api/v1/locations/bulk-delete", s.authenticated(s.bulkDeleteLocations))

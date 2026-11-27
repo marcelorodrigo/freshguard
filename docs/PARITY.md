@@ -130,20 +130,20 @@ Route `/locations`. API `GET|POST /api/v1/locations`, `PATCH|DELETE /api/v1/loca
 
 Route `/quick-consume?search=`. API `GET /api/v1/search`, `POST /api/v1/batches/{id}/consume`.
 
-- [ ] Heading **Quick Consume**; navigation group **Inventory**, sorted above the other inventory items.
-- [ ] Search field placeholder `Search items by name, barcode, or description...`, helper `Type at least 2 characters to search`, magnifier prefix icon.
-- [ ] Typing debounces for 200 ms; fewer than 2 trimmed characters clears the results.
-- [ ] The search term lives in the URL as `?search=` and survives reload and back/forward.
-- [ ] Initial empty state: `Start typing to search` / `Search for items by name, barcode, or description`.
-- [ ] No results: `No items found` / `Try adjusting your search terms`.
-- [ ] Each result: item name in bold, large, with the description as a tooltip.
-- [ ] Batch rows: **Location**, **Expires**, **Qty** and a consume action.
-- [ ] Expiry rendering (`d/m/Y`) and status: past → red warning triangle; today to 7 days → amber clock; later → green check; no date → grey question mark.
-- [ ] **Consume** asks `Consume 1 unit?` / `This will reduce the batch quantity by 1. If it reaches zero, the batch will be deleted.`
-- [ ] Success toast: `Item consumed` / `1 unit has been removed from :item`.
-- [ ] Race toast: `Item no longer available` / `This batch has already been consumed or is no longer available.`
-- [ ] Results refresh after every consume; the term stays in the field.
-- [ ] Only items with at least one batch are returned; at most 10 results, deterministically ordered.
+- [x] Heading **Quick Consume**; navigation group **Inventory**, sorted above the other inventory items.
+- [x] Search field placeholder `Search items by name, barcode, or description...`, helper `Type at least 2 characters to search`, magnifier prefix icon.
+- [x] Typing debounces for 200 ms; fewer than 2 trimmed characters clears the results.
+- [x] The search term lives in the URL as `?search=` and survives reload and back/forward.
+- [x] Initial empty state: `Start typing to search` / `Search for items by name, barcode, or description`.
+- [x] No results: `No items found` / `Try adjusting your search terms`.
+- [x] Each result: item name in bold, large, with the description as a tooltip.
+- [x] Batch rows: **Location**, **Expires**, **Qty** and a consume action.
+- [x] Expiry rendering (`d/m/Y`) and status: past → red warning triangle; today to 7 days → amber clock; later → green check; no date → grey question mark.
+- [x] **Consume** asks `Consume 1 unit?` / `This will reduce the batch quantity by 1. If it reaches zero, the batch will be deleted.`
+- [x] Success toast: `Item consumed` / `1 unit has been removed from {item}`.
+- [x] Race toast: `Item no longer available` / `This batch has already been consumed or is no longer available.`
+- [x] Results refresh after every consume; the term stays in the field.
+- [x] Only items with at least one batch are returned; at most 10 results, deterministically ordered.
 
 ## Users (admin only)
 
@@ -252,7 +252,7 @@ The English source for `web/src/i18n/en.ts`. `pt-BR.ts` mirrors it key for key.
 | `quickConsume.confirmTitle` | Consume 1 unit? |
 | `quickConsume.confirmBody` | This will reduce the batch quantity by 1. If it reaches zero, the batch will be deleted. |
 | `quickConsume.consumedTitle` | Item consumed |
-| `quickConsume.consumedBody` | 1 unit has been removed from :item |
+| `quickConsume.consumedBody` | 1 unit has been removed from {item} |
 | `quickConsume.unavailableTitle` | Item no longer available |
 | `quickConsume.unavailableBody` | This batch has already been consumed or is no longer available. |
 | `dashboard.recentlyExpired` | Recently Expired |

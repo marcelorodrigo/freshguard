@@ -270,6 +270,8 @@ func writeInventoryError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusNotFound, CodeNotFound, "no such item")
 	case errors.Is(err, inventory.ErrBatchNotFound):
 		writeError(w, http.StatusNotFound, CodeNotFound, "no such batch")
+	case errors.Is(err, inventory.ErrBatchUnavailable):
+		writeError(w, http.StatusConflict, CodeBatchUnavailable, "batch is no longer available")
 	case errors.Is(err, inventory.ErrLocationNotFound):
 		writeError(w, http.StatusNotFound, CodeNotFound, "no such location")
 	default:
