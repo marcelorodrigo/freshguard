@@ -87,15 +87,7 @@ func newItemResponse(item inventory.Item) itemResponse {
 func newItemDetailResponse(item inventory.Item) itemDetailResponse {
 	batches := make([]batchResponse, len(item.Batches))
 	for i, batch := range item.Batches {
-		batches[i] = batchResponse{
-			ID:        batch.ID,
-			ItemID:    batch.ItemID,
-			Location:  locationRef{ID: batch.LocationID, Name: batch.LocationName},
-			ExpiresAt: batch.ExpiresAt,
-			Quantity:  batch.Quantity,
-			CreatedAt: formatTimestamp(batch.CreatedAt),
-			UpdatedAt: formatTimestamp(batch.UpdatedAt),
-		}
+		batches[i] = newBatchResponse(batch)
 	}
 
 	return itemDetailResponse{
@@ -268,6 +260,8 @@ func writeInventoryError(w http.ResponseWriter, err error) bool {
 		}})
 	case errors.Is(err, inventory.ErrItemNotFound):
 		writeError(w, http.StatusNotFound, CodeNotFound, "no such item")
+	case errors.Is(err, inventory.ErrBatchNotFound):
+		writeError(w, http.StatusNotFound, CodeNotFound, "no such batch")
 	default:
 		return false
 	}

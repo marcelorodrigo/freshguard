@@ -355,26 +355,10 @@ func (s *Service) batchesForItem(ctx context.Context, itemID string) ([]Batch, e
 
 	batches := make([]Batch, 0)
 	for rows.Next() {
-		var (
-			batch     Batch
-			createdAt string
-			updatedAt string
-		)
-		if err := rows.Scan(&batch.ID, &batch.ItemID, &batch.LocationID,
-			&batch.LocationName, &batch.ExpiresAt, &batch.Quantity,
-			&createdAt, &updatedAt); err != nil {
+		batch, err := scanBatch(rows)
+		if err != nil {
 			return nil, fmt.Errorf("scan item batch: %w", err)
 		}
-
-		created, err := parseTime(createdAt)
-		if err != nil {
-			return nil, err
-		}
-		updated, err := parseTime(updatedAt)
-		if err != nil {
-			return nil, err
-		}
-		batch.CreatedAt, batch.UpdatedAt = created, updated
 		batches = append(batches, batch)
 	}
 	if err := rows.Err(); err != nil {
@@ -382,6 +366,32 @@ func (s *Service) batchesForItem(ctx context.Context, itemID string) ([]Batch, e
 	}
 
 	return batches, nil
+}
+
+// scanBatch reads the batch columns shared by batchesForItem and batch.
+func scanBatch(row rowScanner) (Batch, error) {
+	var (
+		batch     Batch
+		createdAt string
+		updatedAt string
+	)
+	if err := row.Scan(&batch.ID, &batch.ItemID, &batch.LocationID,
+		&batch.LocationName, &batch.ExpiresAt, &batch.Quantity,
+		&createdAt, &updatedAt); err != nil {
+		return Batch{}, err
+	}
+
+	created, err := parseTime(createdAt)
+	if err != nil {
+		return Batch{}, err
+	}
+	updated, err := parseTime(updatedAt)
+	if err != nil {
+		return Batch{}, err
+	}
+	batch.CreatedAt, batch.UpdatedAt = created, updated
+
+	return batch, nil
 }
 
 func scanItem(row rowScanner) (Item, error) {

@@ -101,14 +101,14 @@ Routes `/items/new`, `/items/{id}`. API `GET|POST /api/v1/items`, `PATCH /api/v1
 
 API `GET|POST /api/v1/items/{id}/batches`, `PATCH|DELETE /api/v1/batches/{id}`.
 
-- [ ] Section title **Batches**; header action **New Batch** with a plus icon.
-- [ ] Table columns: **Location**, **Expiration Date** (`d-m-Y`), **Quantity**, and **Created At** (`d-m-Y H:i`) hidden by default.
-- [ ] Default sort: expiration ascending.
+- [x] Section title **Batches**; header action **New Batch** with a plus icon.
+- [x] Table columns: **Location**, **Expiration Date** (`d-m-Y`), **Quantity**, and **Created At** (`d-m-Y H:i`) hidden by default.
+- [x] Default sort: expiration ascending.
 - [ ] Searchable by location; sortable by location, expiration, quantity.
 - [ ] Row actions **Edit** and **Delete**, each with its icon.
-- [ ] Batch form: **Location** (searchable select, required), **Expiration Date** (date, required, defaults to today + 7 days), **Quantity** (integer, required, min 1).
-- [ ] Saving a batch updates the item's read-only quantity immediately.
-- [ ] Consuming the last unit elsewhere leaves no zero-quantity row here.
+- [x] Batch form: **Location** (searchable select, required), **Expiration Date** (date, required, defaults to today + 7 days), **Quantity** (integer, required, min 1).
+- [x] Saving a batch updates the item's read-only quantity immediately.
+- [x] Consuming the last unit elsewhere leaves no zero-quantity row here.
 
 ## Locations
 

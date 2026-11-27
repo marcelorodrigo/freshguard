@@ -16,7 +16,7 @@ JSON over HTTP under `/api/v1`. The SPA is the only client in v1; the API is pub
 
 - Requests and responses are `application/json; charset=utf-8`. Requests with a body must send `Content-Type: application/json`.
 - Success bodies are either a resource object or `{"data": [...], "meta": {...}}` for collections.
-- Errors are `{"error": {"code": "...", "message": "...", "fields": {...}}}`; `fields` is present only for `invalid_input` and holds **rule tokens**, not prose: `{"name": "required", "expires_at": "date"}`.
+- Errors are `{"error": {"code": "...", "message": "...", "fields": {...}}}`; `fields` is present only for `invalid_input` and holds **rule tokens**, not prose: `{"name": "required", "expires_at": "date"}`. The tokens v1 emits are `required`, `max`, `min`, `email`, `unique`, `mismatch`, `date`, `exists` and `cycle`.
 - Collection queries: `?page=1&per_page=10` (max 100, default 10, matching the Filament table), `?sort=<field>&dir=asc|desc`, `?q=<term>`.
 - Collection responses: `{"data": [...], "meta": {"page": 1, "per_page": 10, "total": 42, "pages": 5}}`.
 - Timestamps are RFC3339 UTC; `expires_at` is `YYYY-MM-DD`.
@@ -193,11 +193,20 @@ A missing `current_password` is `422 invalid_input` with `{"current_password":"r
 {"location_id":"0190…","expires_at":"2026-02-01","quantity":2}
 ```
 
-`location_id` required and must exist; `expires_at` required, `YYYY-MM-DD`; `quantity` required, integer ≥ 1.
+`location_id` required and must exist; `expires_at` required, `YYYY-MM-DD`; `quantity` required, integer ≥ 1. `201` with the batch:
 
-`PATCH /api/v1/batches/{id}` accepts `location_id`, `expires_at`, `quantity` (≥ 1).
+```json
+{"id":"0190a1b2-…","item_id":"0190a1b2-…","location":{"id":"0190a1b2-…","name":"Fridge"},
+ "expires_at":"2026-02-01","quantity":2,"created_at":"…","updated_at":"…"}
+```
 
-`DELETE /api/v1/batches/{id}` → `204`.
+Rule tokens: `location_id: required|exists`, `expires_at: required|date`, `quantity: min`. An unknown item is `404 not_found`. The item's `quantity` and `earliest_expiration` are computed, so they change on the next read with no stored aggregate to drift.
+
+`PATCH /api/v1/batches/{id}` accepts `location_id`, `expires_at`, `quantity` (≥ 1) and returns the batch. A batch never exists with quantity zero: `quantity: 0` is `422` with `{"quantity":"min"}` and the schema refuses a zero row.
+
+`DELETE /api/v1/batches/{id}` → `204`; an unknown id is `404 not_found`.
+
+`GET /api/v1/locations` returns the paginated collection the batch form's location select reads: `id`, `name`, `description`, `expiration_notify_days`, `parent` (`null` for a root location), `batch_count`, `created_at`, `updated_at`. `q` matches name, description and parent name; `sort` ∈ `name`, `created_at`, `updated_at`.
 
 `POST /api/v1/batches/{id}/consume`
 

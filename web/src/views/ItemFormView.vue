@@ -5,16 +5,25 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 
 import {
   ApiError,
+  createBatch,
   createItem,
+  deleteBatch,
   getItem,
+  listLocations,
   listTags,
+  updateBatch,
   updateItem,
+  type Batch,
+  type BatchInput,
   type ItemDetail,
   type ItemInput,
+  type Location,
   type Tag,
 } from '../api';
+import ConfirmDialog from '../components/ConfirmDialog.vue';
 import TagInput from '../components/TagInput.vue';
 import { errorMessageKey, fieldErrorKey } from '../errorMessages';
+import { formatDate, formatDateTime } from '../format';
 import { pushToast } from '../toast';
 
 const { t } = useI18n();
@@ -44,6 +53,58 @@ const errors = reactive({
 
 const quantity = computed(() => item.value?.quantity ?? 0);
 
+const locations = ref<Location[]>([]);
+const showCreatedAt = ref(false);
+const batchFormOpen = ref(false);
+const editingBatchID = ref<string | null>(null);
+const batchSaving = ref(false);
+const pendingBatchDelete = ref<Batch | null>(null);
+
+const batchForm = reactive({
+  location_id: '',
+  expires_at: '',
+  quantity: 1,
+});
+
+const batchErrors = reactive({
+  location_id: '',
+  expires_at: '',
+  quantity: '',
+  form: '',
+});
+
+/** Batches always read in expiry order, matching the old relation manager. */
+const batches = computed(() =>
+  [...(item.value?.batches ?? [])].sort(
+    (left, right) =>
+      left.expires_at.localeCompare(right.expires_at) ||
+      left.id.localeCompare(right.id),
+  ),
+);
+
+function toISODate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** The old date picker defaulted to a week from today. */
+function defaultExpiresAt(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  return toISODate(date);
+}
+
+async function loadLocations(): Promise<void> {
+  try {
+    const page = await listLocations({ per_page: 100 });
+    locations.value = page.data;
+  } catch {
+    // The select stays empty and the Batches section explains why.
+  }
+}
+
 async function loadSuggestions(): Promise<void> {
   try {
     suggestions.value = await listTags();
@@ -56,6 +117,9 @@ async function load(): Promise<void> {
   loading.value = true;
   failure.value = '';
   errors.form = '';
+  batchFormOpen.value = false;
+  editingBatchID.value = null;
+  pendingBatchDelete.value = null;
 
   try {
     if (isCreate.value) {
@@ -71,6 +135,7 @@ async function load(): Promise<void> {
       form.barcode = detail.barcode;
       form.description = detail.description;
       form.tags = [...detail.tags];
+      void loadLocations();
     }
     void loadSuggestions();
   } catch (error) {
@@ -144,6 +209,113 @@ async function submit(): Promise<void> {
     }
   } finally {
     saving.value = false;
+  }
+}
+
+function resetBatchErrors(): void {
+  batchErrors.location_id = '';
+  batchErrors.expires_at = '';
+  batchErrors.quantity = '';
+  batchErrors.form = '';
+}
+
+function openCreateBatch(): void {
+  resetBatchErrors();
+  editingBatchID.value = null;
+  batchForm.location_id = locations.value[0]?.id ?? '';
+  batchForm.expires_at = defaultExpiresAt();
+  batchForm.quantity = 1;
+  batchFormOpen.value = true;
+}
+
+function openEditBatch(batch: Batch): void {
+  resetBatchErrors();
+  editingBatchID.value = batch.id;
+  batchForm.location_id = batch.location.id;
+  batchForm.expires_at = batch.expires_at;
+  batchForm.quantity = batch.quantity;
+  batchFormOpen.value = true;
+}
+
+function closeBatchForm(): void {
+  batchFormOpen.value = false;
+  editingBatchID.value = null;
+  resetBatchErrors();
+}
+
+async function refreshItem(): Promise<void> {
+  const id = String(route.params.id ?? '');
+  if (id === '') {
+    return;
+  }
+  item.value = await getItem(id);
+}
+
+function validateBatch(): boolean {
+  batchErrors.location_id = batchForm.location_id === '' ? t('errors.required') : '';
+  batchErrors.expires_at = batchForm.expires_at === '' ? t('errors.required') : '';
+
+  const quantity = Number(batchForm.quantity);
+  batchErrors.quantity = !Number.isInteger(quantity) || quantity < 1 ? t('errors.min') : '';
+
+  return batchErrors.location_id === '' &&
+    batchErrors.expires_at === '' &&
+    batchErrors.quantity === '';
+}
+
+async function saveBatch(): Promise<void> {
+  if (batchSaving.value) {
+    return;
+  }
+  batchErrors.form = '';
+  if (!validateBatch()) {
+    return;
+  }
+
+  const input: BatchInput = {
+    location_id: batchForm.location_id,
+    expires_at: batchForm.expires_at,
+    quantity: Number(batchForm.quantity),
+  };
+
+  batchSaving.value = true;
+  try {
+    if (editingBatchID.value === null) {
+      await createBatch(String(route.params.id ?? ''), input);
+      pushToast({ level: 'success', title: t('items.batchCreated') });
+    } else {
+      await updateBatch(editingBatchID.value, input);
+      pushToast({ level: 'success', title: t('items.batchUpdated') });
+    }
+    await refreshItem();
+    closeBatchForm();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      for (const [field, rule] of Object.entries(error.fields)) {
+        if (field in batchErrors) {
+          batchErrors[field as keyof typeof batchErrors] = t(fieldErrorKey(rule));
+        }
+      }
+    }
+    batchErrors.form = t(errorMessageKey(error));
+  } finally {
+    batchSaving.value = false;
+  }
+}
+
+async function confirmDeleteBatch(): Promise<void> {
+  const batch = pendingBatchDelete.value;
+  pendingBatchDelete.value = null;
+  if (batch === null) {
+    return;
+  }
+
+  try {
+    await deleteBatch(batch.id);
+    await refreshItem();
+    pushToast({ level: 'success', title: t('items.batchDeleted') });
+  } catch (error) {
+    pushToast({ level: 'error', title: t(errorMessageKey(error)) });
   }
 }
 </script>
@@ -330,5 +502,295 @@ async function submit(): Promise<void> {
         </button>
       </div>
     </form>
+
+    <section
+      v-if="!isCreate && !loading && !failure"
+      class="mt-6 rounded-xl border border-slate-200 bg-white p-6"
+      data-test="batches-section"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold">
+          {{ t('items.batches') }}
+        </h2>
+
+        <div class="flex items-center gap-2">
+          <details class="relative">
+            <summary
+              class="cursor-pointer list-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {{ t('common.columns') }}
+            </summary>
+            <div class="absolute right-0 z-20 mt-1 w-48 rounded-lg border border-slate-200 bg-white py-2 shadow-lg">
+              <label class="flex items-center gap-2 px-3 py-1.5 text-sm">
+                <input
+                  v-model="showCreatedAt"
+                  type="checkbox"
+                  class="rounded border-slate-300"
+                  data-test="batch-created-toggle"
+                >
+                {{ t('common.createdAt') }}
+              </label>
+            </div>
+          </details>
+
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
+            data-test="new-batch"
+            @click="openCreateBatch"
+          >
+            <svg
+              class="size-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
+              />
+            </svg>
+            {{ t('items.newBatch') }}
+          </button>
+        </div>
+      </div>
+
+      <p
+        v-if="batchFormOpen"
+        class="mt-4 text-sm font-semibold text-slate-700"
+        data-test="batch-form-title"
+      >
+        {{ editingBatchID === null ? t('items.newBatch') : t('items.editBatch') }}
+      </p>
+
+      <div
+        v-if="batchFormOpen"
+        class="mt-3 grid gap-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-3"
+        @keydown.enter.prevent="saveBatch"
+      >
+        <div>
+          <label
+            for="batch-location"
+            class="block text-sm font-medium text-slate-700"
+          >
+            {{ t('common.location') }} <span class="text-red-600">*</span>
+          </label>
+          <select
+            id="batch-location"
+            v-model="batchForm.location_id"
+            required
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+            data-test="batch-location"
+            @change="batchErrors.location_id = ''"
+          >
+            <option value="">
+              {{ t('items.selectLocation') }}
+            </option>
+            <option
+              v-for="location in locations"
+              :key="location.id"
+              :value="location.id"
+            >
+              {{ location.name }}
+            </option>
+          </select>
+          <p
+            v-if="batchErrors.location_id"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ batchErrors.location_id }}
+          </p>
+        </div>
+
+        <div>
+          <label
+            for="batch-expires"
+            class="block text-sm font-medium text-slate-700"
+          >
+            {{ t('items.expirationDate') }} <span class="text-red-600">*</span>
+          </label>
+          <input
+            id="batch-expires"
+            v-model="batchForm.expires_at"
+            type="date"
+            required
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+            data-test="batch-expires"
+            @input="batchErrors.expires_at = ''"
+          >
+          <p
+            v-if="batchErrors.expires_at"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ batchErrors.expires_at }}
+          </p>
+        </div>
+
+        <div>
+          <label
+            for="batch-quantity"
+            class="block text-sm font-medium text-slate-700"
+          >
+            {{ t('common.quantity') }} <span class="text-red-600">*</span>
+          </label>
+          <input
+            id="batch-quantity"
+            v-model.number="batchForm.quantity"
+            type="number"
+            required
+            min="1"
+            step="1"
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+            data-test="batch-quantity"
+            @input="batchErrors.quantity = ''"
+          >
+          <p
+            v-if="batchErrors.quantity"
+            class="mt-1 text-sm text-red-600"
+          >
+            {{ batchErrors.quantity }}
+          </p>
+        </div>
+
+        <p
+          v-if="locations.length === 0"
+          class="text-sm text-slate-600 sm:col-span-3"
+          data-test="batches-no-locations"
+        >
+          {{ t('items.noLocations') }}
+        </p>
+
+        <p
+          v-if="batchErrors.form"
+          class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 sm:col-span-3"
+          role="alert"
+          data-test="batch-error"
+        >
+          {{ batchErrors.form }}
+        </p>
+
+        <div class="flex items-center justify-end gap-3 sm:col-span-3">
+          <button
+            type="button"
+            class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            @click="closeBatchForm"
+          >
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
+            :disabled="batchSaving || locations.length === 0"
+            data-test="batch-save"
+            @click="saveBatch"
+          >
+            {{ batchSaving ? t('common.saving') : t('common.save') }}
+          </button>
+        </div>
+      </div>
+
+      <p
+        v-if="batches.length === 0"
+        class="mt-4 text-sm text-slate-500"
+        data-test="batches-empty"
+      >
+        {{ t('items.noBatches') }}
+      </p>
+
+      <div
+        v-else
+        class="mt-4 overflow-x-auto rounded-xl border border-slate-200"
+      >
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-3 py-3 text-left font-semibold text-slate-600">
+                {{ t('common.location') }}
+              </th>
+              <th class="px-3 py-3 text-left font-semibold text-slate-600">
+                {{ t('items.expirationDate') }}
+              </th>
+              <th class="px-3 py-3 text-left font-semibold text-slate-600">
+                {{ t('common.quantity') }}
+              </th>
+              <th
+                v-if="showCreatedAt"
+                class="px-3 py-3 text-left font-semibold text-slate-600"
+              >
+                {{ t('common.createdAt') }}
+              </th>
+              <th class="px-3 py-3 text-right font-semibold text-slate-600">
+                {{ t('common.actions') }}
+              </th>
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-slate-100">
+            <tr
+              v-for="batch in batches"
+              :key="batch.id"
+              class="hover:bg-slate-50"
+              data-test="batch-row"
+            >
+              <td
+                class="px-3 py-3 font-medium"
+                data-test="batch-location"
+              >
+                {{ batch.location.name }}
+              </td>
+              <td
+                class="px-3 py-3 whitespace-nowrap"
+                data-test="batch-expires"
+              >
+                {{ formatDate(batch.expires_at) }}
+              </td>
+              <td
+                class="px-3 py-3 tabular-nums"
+                data-test="batch-quantity"
+              >
+                {{ batch.quantity }}
+              </td>
+              <td
+                v-if="showCreatedAt"
+                class="px-3 py-3 whitespace-nowrap"
+                data-test="batch-created"
+              >
+                {{ formatDateTime(batch.created_at) }}
+              </td>
+              <td class="px-3 py-3">
+                <div class="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                    data-test="batch-edit"
+                    @click="openEditBatch(batch)"
+                  >
+                    {{ t('common.edit') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                    data-test="batch-delete"
+                    @click="pendingBatchDelete = batch"
+                  >
+                    {{ t('common.delete') }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <ConfirmDialog
+      :open="pendingBatchDelete !== null"
+      :title="t('items.deleteBatchTitle')"
+      :body="t('items.deleteBatchConfirm')"
+      :confirm-label="t('common.delete')"
+      :cancel-label="t('common.cancel')"
+      @confirm="confirmDeleteBatch"
+      @cancel="pendingBatchDelete = null"
+    />
   </section>
 </template>
+

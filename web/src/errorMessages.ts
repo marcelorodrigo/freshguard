@@ -22,6 +22,8 @@ const FIELD_RULES = [
   'email',
   'unique',
   'mismatch',
+  'date',
+  'exists',
   'cycle',
   'invalid_input',
 ] as const;

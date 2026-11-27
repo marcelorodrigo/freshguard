@@ -54,6 +54,38 @@ export interface ItemDetail extends Item {
   batches: Batch[];
 }
 
+/** The payload of batch creation. */
+export interface BatchInput {
+  location_id: string;
+  expires_at: string;
+  quantity: number;
+}
+
+/** A subset of batch fields; omitted fields are left alone. */
+export type BatchPatch = Partial<BatchInput>;
+
+/** A location from `GET /api/v1/locations`. */
+export interface Location {
+  id: string;
+  name: string;
+  description: string;
+  expiration_notify_days: number;
+  parent: { id: string; name: string } | null;
+  batch_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LocationSort = 'name' | 'created_at' | 'updated_at';
+
+export interface LocationFilters {
+  q?: string;
+  sort?: LocationSort;
+  dir?: 'asc' | 'desc';
+  page?: number;
+  per_page?: number;
+}
+
 /** A tag suggestion from `GET /api/v1/tags`. */
 export interface Tag {
   id: string;
@@ -200,6 +232,10 @@ function itemPath(id: string): string {
   return `/api/v1/items/${encodeURIComponent(id)}`;
 }
 
+function batchPath(id: string): string {
+  return `/api/v1/batches/${encodeURIComponent(id)}`;
+}
+
 /** Reads the server's liveness, build version, clock and setup state. */
 export function getHealth(): Promise<Health> {
   return request<Health>('/api/v1/health');
@@ -281,6 +317,51 @@ export function bulkDeleteItems(ids: string[]): Promise<{ deleted: number }> {
     '/api/v1/items/bulk-delete',
     jsonInit('POST', { ids }),
   );
+}
+
+/** Adds a batch to an item; the item's quantity follows on the next read. */
+export function createBatch(itemId: string, input: BatchInput): Promise<Batch> {
+  return request<Batch>(
+    `${itemPath(itemId)}/batches`,
+    jsonInit('POST', input),
+  );
+}
+
+/** Changes a subset of a batch. */
+export function updateBatch(id: string, patch: BatchPatch): Promise<Batch> {
+  return request<Batch>(batchPath(id), jsonInit('PATCH', patch));
+}
+
+/** Deletes one batch; the item's quantity follows on the next read. */
+export function deleteBatch(id: string): Promise<void> {
+  return request<void>(batchPath(id), { method: 'DELETE' });
+}
+
+/** Lists locations, the choices a batch's location select offers. */
+export function listLocations(
+  filters: LocationFilters = {},
+): Promise<Page<Location>> {
+  const params = new URLSearchParams();
+
+  if (filters.q !== undefined && filters.q !== '') {
+    params.set('q', filters.q);
+  }
+  if (filters.sort !== undefined) {
+    params.set('sort', filters.sort);
+  }
+  if (filters.dir !== undefined) {
+    params.set('dir', filters.dir);
+  }
+  if (filters.page !== undefined) {
+    params.set('page', String(filters.page));
+  }
+  if (filters.per_page !== undefined) {
+    params.set('per_page', String(filters.per_page));
+  }
+
+  const query = params.toString();
+  const path = query === '' ? '/api/v1/locations' : '/api/v1/locations?' + query;
+  return request<Page<Location>>(path);
 }
 
 /** Reads the 50 most used tags. */
