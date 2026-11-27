@@ -3,11 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   bulkDeleteItems,
+  createItem,
+  deleteItem,
   getHealth,
+  getItem,
   listItems,
   listTags,
   login,
   logout,
+  updateItem,
 } from './api';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -209,5 +213,98 @@ describe('listTags', () => {
     await expect(listTags()).resolves.toEqual([
       { id: 'tag-1', name: 'Dairy', item_count: 2 },
     ]);
+  });
+});
+
+
+const item = {
+  id: '0190a1b2-0000-7000-8000-000000000002',
+  name: 'Whole milk',
+  barcode: '7891000100103',
+  description: '1 L',
+  tags: ['Dairy'],
+  quantity: 0,
+  earliest_expiration: '',
+  batch_count: 0,
+  created_at: '2026-01-24T08:27:26Z',
+  updated_at: '2026-01-24T08:27:26Z',
+};
+
+describe('item requests', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('encodes the item id when reading a detail', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ ...item, batches: [] }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getItem('id with space')).resolves.toMatchObject({
+      id: item.id,
+      batches: [],
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/items/id%20with%20space',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+  });
+
+  it('posts an item and its tags', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ ...item, batches: [] }, 201),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createItem({
+      name: 'Whole milk',
+      barcode: '7891000100103',
+      description: '1 L',
+      tags: ['Dairy'],
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/items',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'Whole milk',
+          barcode: '7891000100103',
+          description: '1 L',
+          tags: ['Dairy'],
+        }),
+      }),
+    );
+  });
+
+  it('patches an item', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ ...item, batches: [] }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await updateItem(item.id, { name: 'Milk', tags: ['Fridge'] });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/items/' + item.id,
+      expect.objectContaining({
+        method: 'PATCH',
+        body: '{"name":"Milk","tags":["Fridge"]}',
+      }),
+    );
+  });
+
+  it('accepts the empty body of a 204 delete', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(deleteItem(item.id)).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/items/' + item.id,
+      expect.objectContaining({ method: 'DELETE' }),
+    );
   });
 });
