@@ -157,7 +157,13 @@ func dsn(path string, readonly bool, pragmas []string) string {
 	}
 
 	u := url.URL{Scheme: "file", Path: path, RawQuery: query.Encode()}
-	return u.String()
+	value := u.String()
+	if !filepath.IsAbs(path) {
+		// file://data would make "data" an authority; keep relative paths as
+		// file:relative/path so the host stays empty.
+		value = strings.TrimPrefix(value, "file://")
+	}
+	return value
 }
 
 // migration is one embedded SQL file, numbered by its name.
