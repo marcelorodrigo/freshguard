@@ -68,7 +68,8 @@ jobs:
           DB_DATABASE: db
           DB_USERNAME: db
           DB_PASSWORD: db
-      - name: SonarQube Scan
+      - name: SonarQube Scan (master only)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
