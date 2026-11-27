@@ -43,47 +43,53 @@ export function resolveNavigation(
   to: NavigationTarget,
   state: NavigationState,
 ): NavigationDecision {
-  const onSetup = to.name === 'setup';
-  const onLogin = to.name === 'login';
-
   if (state.setupRequired) {
-    return onSetup ? true : { name: 'setup', replace: true };
+    return to.name === 'setup' ? true : { name: 'setup', replace: true };
   }
 
-  if (onSetup) {
+  if (to.name === 'setup') {
     return state.user
       ? { name: 'items', replace: true }
       : { name: 'login', replace: true };
   }
 
   if (state.user === null) {
-    if (onLogin || to.requiresAuth !== true) {
-      return true;
-    }
-    return {
-      name: 'login',
-      query: { redirect: to.fullPath },
-      replace: true,
-    };
+    return signedOutDecision(to);
   }
 
   if (state.user.must_reset) {
-    return to.name === 'change-password'
-      ? true
-      : { name: 'change-password', replace: true };
+    return mustResetDecision(to);
   }
 
+  return signedInDecision(to, state.user);
+}
+
+function signedOutDecision(to: NavigationTarget): NavigationDecision {
+  if (to.name === 'login' || to.requiresAuth !== true) {
+    return true;
+  }
+  return {
+    name: 'login',
+    query: { redirect: to.fullPath },
+    replace: true,
+  };
+}
+
+function mustResetDecision(to: NavigationTarget): NavigationDecision {
+  return to.name === 'change-password'
+    ? true
+    : { name: 'change-password', replace: true };
+}
+
+function signedInDecision(to: NavigationTarget, user: User): NavigationDecision {
   if (to.name === 'change-password') {
     return { name: 'items', replace: true };
   }
-
-  if (onLogin) {
+  if (to.name === 'login') {
     return safeRedirect(to.query?.redirect);
   }
-
-  if (to.adminOnly === true && !state.user.is_admin) {
+  if (to.adminOnly === true && !user.is_admin) {
     return { name: 'items', replace: true };
   }
-
   return true;
 }

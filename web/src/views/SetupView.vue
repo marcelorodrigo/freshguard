@@ -31,8 +31,13 @@ const submitting = ref(false);
 function validate(): boolean {
   errors.name = form.name.trim() === '' ? t('errors.required') : '';
   errors.email = form.email.trim() === '' ? t('errors.required') : '';
-  errors.password =
-    form.password.length < 8 ? t('errors.min') : form.password.length > 255 ? t('errors.max') : '';
+  if (form.password.length < 8) {
+    errors.password = t('errors.min');
+  } else if (form.password.length > 255) {
+    errors.password = t('errors.max');
+  } else {
+    errors.password = '';
+  }
   errors.password_confirmation =
     form.password === form.password_confirmation ? '' : t('auth.passwordMismatch');
 

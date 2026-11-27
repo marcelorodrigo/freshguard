@@ -89,12 +89,13 @@ function validate(): boolean {
   const barcode = form.barcode.trim();
   const description = form.description.trim();
 
-  errors.name =
-    name === ''
-      ? t('errors.required')
-      : name.length > 255
-        ? t('errors.max')
-        : '';
+  if (name === '') {
+    errors.name = t('errors.required');
+  } else if (name.length > 255) {
+    errors.name = t('errors.max');
+  } else {
+    errors.name = '';
+  }
   errors.barcode = barcode.length > 255 ? t('errors.max') : '';
   errors.description = description.length > 1000 ? t('errors.max') : '';
 
@@ -286,13 +287,17 @@ async function submit(): Promise<void> {
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-slate-700">
+            <label
+              for="item-tags"
+              class="block text-sm font-medium text-slate-700"
+            >
               {{ t('common.tags') }}
             </label>
             <div class="mt-1">
               <TagInput
                 v-model="form.tags"
                 :suggestions="suggestions"
+                input-id="item-tags"
               />
             </div>
           </div>

@@ -7,6 +7,7 @@ import type { Tag } from '../api';
 const props = defineProps<{
   modelValue: string[];
   suggestions: Tag[];
+  inputId: string;
 }>();
 
 const emit = defineEmits<{
@@ -105,6 +106,7 @@ function onBlur(): void {
       </span>
 
       <input
+        :id="inputId"
         v-model="draft"
         type="text"
         class="min-w-32 flex-1 border-0 bg-transparent px-1 py-1 text-sm focus:outline-none"

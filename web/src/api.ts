@@ -251,7 +251,8 @@ export function listItems(filters: ItemFilters = {}): Promise<Page<Item>> {
   }
 
   const query = params.toString();
-  return request<Page<Item>>(`/api/v1/items${query === '' ? '' : `?${query}`}`);
+  const path = query === '' ? '/api/v1/items' : '/api/v1/items?' + query;
+  return request<Page<Item>>(path);
 }
 
 /** Reads one item with its batches. */

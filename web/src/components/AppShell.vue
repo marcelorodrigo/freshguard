@@ -36,10 +36,11 @@ async function handleSignOut(): Promise<void> {
 
 <template>
   <div class="min-h-screen bg-slate-50 text-slate-900 lg:flex">
-    <div
+    <button
       v-if="navOpen"
+      type="button"
       class="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
-      aria-hidden="true"
+      :aria-label="t('app.closeMenu')"
       @click="navOpen = false"
     />
 

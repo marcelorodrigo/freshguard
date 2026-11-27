@@ -278,11 +278,17 @@ async function confirmDelete(): Promise<void> {
         <thead class="bg-slate-50">
           <tr>
             <th class="w-10 px-3 py-3 text-left">
+              <label
+                for="select-all-items"
+                class="sr-only"
+              >
+                {{ t('items.selectAll') }}
+              </label>
               <input
+                id="select-all-items"
                 type="checkbox"
                 class="rounded border-slate-300"
                 :checked="allSelected"
-                :aria-label="t('items.selectAll')"
                 @change="toggleAll"
               >
             </th>

@@ -56,6 +56,7 @@ watch(() => props.open, sync);
     class="w-[min(28rem,calc(100vw-2rem))] rounded-2xl p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40"
     @close="handleClose"
     @cancel.prevent="emit('cancel')"
+    @keydown.esc.prevent="emit('cancel')"
     @click.self="emit('cancel')"
   >
     <div class="p-6">
