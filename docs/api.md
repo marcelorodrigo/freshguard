@@ -118,7 +118,7 @@ Anything else under `/api/*` is `404 not_found` as JSON; anything else is the SP
 {"status":"ok","version":"1.0.0","setup_required":true,"time":"2026-01-24T08:27:26Z"}
 ```
 
-Never authenticated and never rate-limited. Reads only the user count and a `SELECT 1`.
+Never authenticated and never rate-limited. Reads only the user count and a `SELECT 1`. The walking skeleton answers `status`, `version` and `time`; `setup_required` arrives with the setup flow (step 2), when there is a user count to read.
 
 ### `POST /api/v1/setup`
 

@@ -110,15 +110,16 @@ Nothing is required: `./freshguard` in an empty directory starts a working serve
 
 ## Dev loop
 
-Prerequisites: Go 1.26+, Node 26+, npm 11+ (Go is not installed on the author's machine yet).
+Prerequisites: Go 1.26+, Node 26+, pnpm 12+.
 
 | Target | What it does |
 | --- | --- |
-| `make dev` | `vite` on :5173 proxying `/api` to `go run ./cmd/freshguard` on :8080 (`FRESHGUARD_DATA_DIR=./data-dev`). |
-| `make web` | `cd web && npm ci && npm run build` → `internal/web/dist`. |
+| `make dev` | `vite` on :5174 proxying `/api` to `go run ./cmd/freshguard` on :8080 (`FRESHGUARD_DATA_DIR=./data-dev`). |
+| `make web` | `cd web && pnpm install --frozen-lockfile && pnpm run build` → `internal/web/dist`. |
 | `make server` | `CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=$(git describe …)" -o bin/freshguard ./cmd/freshguard`. |
-| `make test` | `go test ./...` and `cd web && npm run test`. |
-| `make check` | `gofmt -l`, `go vet`, `staticcheck`, `go test ./...`, `vue-tsc`, ESLint, Vitest. The only gate CI runs. |
+| `make test` | `go test ./...` and `cd web && pnpm run test`. |
+| `make check` | `gofmt -l`, `go vet`, `staticcheck`, `go test ./...`, `vue-tsc`, ESLint, Vitest. The gate CI runs. |
+| `make cover` | `go test -coverprofile=coverage.out` and `pnpm run test:coverage`; CI scans those reports with Sonar. |
 | `make size` | Strip and report binary size; fails above 30 MB. |
 | `make rss` | Start the binary on a temp data dir, `curl /health`, report `ps -o rss=`. Fails above 50 MB. |
 | `make cold` | Time the first response on a fresh data dir. Fails above 200 ms. |
@@ -135,7 +136,7 @@ No DDEV, no dev container, no PHP, no Composer. Docker is packaging only.
 | `internal/auth` | table-driven `go test` | argon2 verify, session expiry, reset token single use, last-admin rules. |
 | `internal/barcode` | `httptest` fake OFF | Success, not found, invalid, upstream failure, timeout, retry, cache TTLs. |
 | `internal/httpapi` | `httptest` + temp data dir | Auth, origin rejection, `must_reset`, validation rule tokens, pagination, error envelope, SPA fallback. |
-| `web/` | Vitest + Vue Test Utils | API client, form state, expiry-status helper, i18n key parity. |
+| `web/` | Vitest + Vue Test Utils | API client, error-to-message mapping, locale detection, screen states. Locale key parity is a `vue-tsc` failure, not a test. |
 
 No browser E2E in v1. The manual walkthrough is the `PARITY.md` checklist, executed once per release.
 
