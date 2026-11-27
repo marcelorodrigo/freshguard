@@ -113,6 +113,10 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("GET /api/v1/items/{id}", s.authenticated(s.getItem))
 	mux.HandleFunc("PATCH /api/v1/items/{id}", s.authenticated(s.updateItem))
 	mux.HandleFunc("DELETE /api/v1/items/{id}", s.authenticated(s.deleteItem))
+	mux.HandleFunc("POST /api/v1/items/{id}/batches", s.authenticated(s.createBatch))
+	mux.HandleFunc("PATCH /api/v1/batches/{id}", s.authenticated(s.updateBatch))
+	mux.HandleFunc("DELETE /api/v1/batches/{id}", s.authenticated(s.deleteBatch))
+	mux.HandleFunc("GET /api/v1/locations", s.authenticated(s.listLocations))
 	mux.HandleFunc("GET /api/v1/tags", s.authenticated(s.listTags))
 
 	mux.HandleFunc("/api", s.notFound)

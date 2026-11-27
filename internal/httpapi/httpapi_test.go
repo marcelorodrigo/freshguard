@@ -29,7 +29,7 @@ func (c *testClock) Now() time.Time { return c.now }
 
 func (c *testClock) Advance(d time.Duration) { c.now = c.now.Add(d) }
 
-func testAuth(t *testing.T, clock *testClock) (*auth.Service, *inventory.Service) {
+func testAuth(t *testing.T, clock *testClock) (*auth.Service, *inventory.Service, *store.Store) {
 	t.Helper()
 
 	st, err := store.Open(t.TempDir())
@@ -43,7 +43,8 @@ func testAuth(t *testing.T, clock *testClock) (*auth.Service, *inventory.Service
 	})
 
 	return auth.New(auth.Options{Store: st, Now: clock.Now}),
-		inventory.New(inventory.Options{Store: st, Now: clock.Now})
+		inventory.New(inventory.Options{Store: st, Now: clock.Now}),
+		st
 }
 
 func testWeb() fstest.MapFS {
@@ -57,7 +58,7 @@ func testHandler(t *testing.T) http.Handler {
 	t.Helper()
 
 	clock := &testClock{now: testNow}
-	accounts, stock := testAuth(t, clock)
+	accounts, stock, _ := testAuth(t, clock)
 
 	return New(Options{
 		Version:   "1.0.0",
@@ -174,7 +175,7 @@ func TestRequestLogUsesTheRoutePattern(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	clock := &testClock{now: testNow}
-	accounts, stock := testAuth(t, clock)
+	accounts, stock, _ := testAuth(t, clock)
 	srv := newServer(Options{
 		Version:   "1.0.0",
 		Logger:    logger,

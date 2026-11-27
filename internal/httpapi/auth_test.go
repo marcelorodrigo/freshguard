@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
+	"github.com/marcelorodrigo/freshguard/internal/store"
 )
 
 const (
@@ -24,6 +25,7 @@ const (
 type testEnv struct {
 	handler http.Handler
 	auth    *auth.Service
+	db      *store.Store
 	clock   *testClock
 }
 
@@ -33,7 +35,7 @@ func newTestEnv(t *testing.T) *testEnv {
 	t.Helper()
 
 	clock := &testClock{now: testNow}
-	svc, stock := testAuth(t, clock)
+	svc, stock, db := testAuth(t, clock)
 
 	srv := newServer(Options{
 		Version:   "1.0.0",
@@ -54,6 +56,7 @@ func newTestEnv(t *testing.T) *testEnv {
 	return &testEnv{
 		handler: logRequests(srv.logger, mux),
 		auth:    svc,
+		db:      db,
 		clock:   clock,
 	}
 }

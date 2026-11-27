@@ -29,10 +29,14 @@ const (
 	TagSuggestionLimit = 50
 
 	timeLayout = time.RFC3339
+	dateLayout = "2006-01-02"
 )
 
-// ErrItemNotFound is returned when an id does not name an item.
-var ErrItemNotFound = errors.New("inventory: item not found")
+// ErrItemNotFound and ErrBatchNotFound name an id that does not exist.
+var (
+	ErrItemNotFound  = errors.New("inventory: item not found")
+	ErrBatchNotFound = errors.New("inventory: batch not found")
+)
 
 // FieldError is a validation failure expressed as the rule token the API
 // returns, for example Field: "name", Rule: "required".
@@ -74,6 +78,21 @@ type Batch struct {
 	UpdatedAt    time.Time
 }
 
+// BatchPatch is a subset of the fields PATCH /batches/{id} may change. A nil
+// field is left alone.
+type BatchPatch struct {
+	LocationID *string
+	ExpiresAt  *string
+	Quantity   *int
+}
+
+// BatchInput is the payload of batch creation.
+type BatchInput struct {
+	LocationID string
+	ExpiresAt  string
+	Quantity   int
+}
+
 // Tag is a suggestion with the number of items carrying it.
 type Tag struct {
 	ID        string
@@ -88,6 +107,28 @@ type Page struct {
 	PerPage int
 	Total   int
 	Pages   int
+}
+
+// Location is one row of the location list.
+type Location struct {
+	ID                   string
+	Name                 string
+	Description          string
+	ExpirationNotifyDays int
+	ParentID             string
+	ParentName           string
+	BatchCount           int
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+}
+
+// LocationPage is one page of locations and its metadata.
+type LocationPage struct {
+	Locations []Location
+	Page      int
+	PerPage   int
+	Total     int
+	Pages     int
 }
 
 // ListParams is the validated shape of an item list query.

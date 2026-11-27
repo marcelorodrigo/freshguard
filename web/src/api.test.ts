@@ -3,14 +3,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   bulkDeleteItems,
+  createBatch,
   createItem,
+  deleteBatch,
   deleteItem,
   getHealth,
   getItem,
   listItems,
+  listLocations,
   listTags,
   login,
   logout,
+  updateBatch,
   updateItem,
 } from './api';
 
@@ -306,5 +310,104 @@ describe('item requests', () => {
       '/api/v1/items/' + item.id,
       expect.objectContaining({ method: 'DELETE' }),
     );
+  });
+});
+
+
+const batch = {
+  id: 'batch-1',
+  item_id: 'item-1',
+  location: { id: 'loc-1', name: 'Fridge' },
+  expires_at: '2026-02-01',
+  quantity: 2,
+  created_at: '2026-01-24T08:27:26Z',
+  updated_at: '2026-01-24T08:27:26Z',
+};
+
+describe('batch requests', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts a batch under its item', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(batch, 201));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      createBatch('item with space', {
+        location_id: 'loc-1',
+        expires_at: '2026-02-01',
+        quantity: 2,
+      }),
+    ).resolves.toEqual(batch);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/items/item%20with%20space/batches',
+      expect.objectContaining({
+        method: 'POST',
+        body: '{"location_id":"loc-1","expires_at":"2026-02-01","quantity":2}',
+      }),
+    );
+  });
+
+  it('patches a batch by id', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(batch));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await updateBatch('batch with space', { quantity: 3 });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/batches/batch%20with%20space',
+      expect.objectContaining({ method: 'PATCH', body: '{"quantity":3}' }),
+    );
+  });
+
+  it('accepts the empty body of a 204 batch delete', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(deleteBatch('batch-1')).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/batches/batch-1',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+});
+
+describe('listLocations', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('serializes the collection query and unwraps the page', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        data: [
+          {
+            id: 'loc-1',
+            name: 'Fridge',
+            description: '',
+            expiration_notify_days: 0,
+            parent: null,
+            batch_count: 2,
+            created_at: '2026-01-24T08:27:26Z',
+            updated_at: '2026-01-24T08:27:26Z',
+          },
+        ],
+        meta: { page: 1, per_page: 100, total: 1, pages: 1 },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const page = await listLocations({ per_page: 100, sort: 'name' });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/locations?sort=name&per_page=100',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0]?.name).toBe('Fridge');
   });
 });
