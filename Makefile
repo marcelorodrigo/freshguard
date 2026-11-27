@@ -25,9 +25,17 @@ COLD_BUDGET_MS     := 200
 .PHONY: dev web server test check gotest web-test web-check cover fmt fmt-check vet staticcheck size rss cold clean clean-data
 
 dev: web/node_modules
-	@trap 'kill 0' EXIT INT TERM; \
-		FRESHGUARD_ADDR=$(DEV_ADDR) FRESHGUARD_DATA_DIR=./data-dev $(GO) run ./cmd/freshguard & \
-		( cd web && $(PNPM) run dev ) & \
+	@set -m; \
+		server=""; vite=""; \
+		cleanup() { \
+			trap - EXIT INT TERM; \
+			[ -z "$$server" ] || kill -TERM -- -"$$server" 2>/dev/null || true; \
+			[ -z "$$vite" ] || kill -TERM -- -"$$vite" 2>/dev/null || true; \
+			wait; \
+		}; \
+		trap cleanup EXIT INT TERM; \
+		FRESHGUARD_ADDR=$(DEV_ADDR) FRESHGUARD_DATA_DIR=./data-dev $(GO) run ./cmd/freshguard & server=$$!; \
+		( cd web && $(PNPM) run dev ) & vite=$$!; \
 		wait
 
 web: web/node_modules
@@ -89,9 +97,13 @@ rss: server
 	FRESHGUARD_ADDR=127.0.0.1:0 FRESHGUARD_DATA_DIR="$$tmp/data" ./$(BIN) serve >"$$log" 2>&1 & \
 	pid=$$!; \
 	trap 'kill $$pid 2>/dev/null; rm -rf "$$tmp"' EXIT INT TERM; \
+	deadline=$$(($$(date +%s) + 10)); \
 	addr=""; \
 	until [ -n "$$addr" ] && curl -fsS --max-time 1 "http://$$addr/api/v1/health" >/dev/null 2>&1; do \
 		kill -0 $$pid 2>/dev/null || { echo "rss: server exited before answering"; cat "$$log"; exit 1; }; \
+		if [ "$$(date +%s)" -ge "$$deadline" ]; then \
+			echo "rss: server did not answer within 10 s"; cat "$$log"; exit 1; \
+		fi; \
 		addr=$$(sed -n 's/.*msg=listening addr=\([^ ]*\) .*/\1/p' "$$log" | head -1); \
 		sleep 0.05; \
 	done; \
