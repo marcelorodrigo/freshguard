@@ -1,0 +1,13 @@
+# The SPA's ESLint setup lives in web/ with its own pnpm project, while the
+# repository root still carries the legacy Laravel package.json (npm) until
+# step 10 deletes that tree. CodeRabbit discovers web/eslint.config.js but the
+# sandbox cannot resolve @eslint/js, eslint-plugin-vue or typescript-eslint
+# from the root package manager, so it skips the run.
+#
+# `make check` runs ESLint with pnpm in web/ locally and in CI. That is the
+# gate; the duplicate CodeRabbit run is off until the legacy tree is gone.
+language: en-US
+reviews:
+  tools:
+    eslint:
+      enabled: false
