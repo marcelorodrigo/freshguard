@@ -25,6 +25,9 @@ const (
 	MaxNameLength        = 255
 	MaxBarcodeLength     = 255
 	MaxDescriptionLength = 1000
+	// MaxLocationDescriptionLength bounds a location's description, matching
+	// the old Filament form's maxLength(255).
+	MaxLocationDescriptionLength = 255
 	// TagSuggestionLimit is the number of tags the form offers.
 	TagSuggestionLimit = 50
 
@@ -32,11 +35,23 @@ const (
 	dateLayout = "2006-01-02"
 )
 
-// ErrItemNotFound and ErrBatchNotFound name an id that does not exist.
+// ErrItemNotFound, ErrBatchNotFound and ErrLocationNotFound name an id that
+// does not exist.
 var (
-	ErrItemNotFound  = errors.New("inventory: item not found")
-	ErrBatchNotFound = errors.New("inventory: batch not found")
+	ErrItemNotFound     = errors.New("inventory: item not found")
+	ErrBatchNotFound    = errors.New("inventory: batch not found")
+	ErrLocationNotFound = errors.New("inventory: location not found")
 )
+
+// LocationHasBatchesError reports locations that still hold inventory. Deleting
+// them is refused and IDs names the offenders so a bulk caller can say which.
+type LocationHasBatchesError struct {
+	IDs []string
+}
+
+func (e *LocationHasBatchesError) Error() string {
+	return "inventory: location still holds batches"
+}
 
 // FieldError is a validation failure expressed as the rule token the API
 // returns, for example Field: "name", Rule: "required".
@@ -129,6 +144,23 @@ type LocationPage struct {
 	PerPage   int
 	Total     int
 	Pages     int
+}
+
+// LocationInput is the payload of location creation.
+type LocationInput struct {
+	Name                 string
+	Description          string
+	ExpirationNotifyDays int
+	ParentID             string
+}
+
+// LocationPatch is a subset of the fields PATCH /locations/{id} may change. A
+// nil field is left alone; a non-nil ParentID of "" makes it a root location.
+type LocationPatch struct {
+	Name                 *string
+	Description          *string
+	ExpirationNotifyDays *int
+	ParentID             *string
 }
 
 // ListParams is the validated shape of an item list query.
@@ -225,6 +257,27 @@ func normalizeTags(tags []string) []string {
 	}
 
 	return normalized
+}
+
+// uniqueNonEmpty trims, drops blanks and removes duplicate ids while keeping
+// the caller's order.
+func uniqueNonEmpty(values []string) []string {
+	unique := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
+	}
+
+	return unique
 }
 
 func (p ListParams) normalized() ListParams {

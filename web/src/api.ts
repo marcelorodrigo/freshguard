@@ -78,6 +78,16 @@ export interface Location {
 
 export type LocationSort = 'name' | 'created_at' | 'updated_at';
 
+export interface LocationInput {
+  name: string;
+  description?: string;
+  expiration_notify_days: number;
+  parent_id?: string | null;
+}
+
+/** A subset of location fields; a null parent makes it a root location. */
+export type LocationPatch = Partial<LocationInput>;
+
 export interface LocationFilters {
   q?: string;
   sort?: LocationSort;
@@ -236,6 +246,10 @@ function batchPath(id: string): string {
   return `/api/v1/batches/${encodeURIComponent(id)}`;
 }
 
+function locationPath(id: string): string {
+  return `/api/v1/locations/${encodeURIComponent(id)}`;
+}
+
 /** Reads the server's liveness, build version, clock and setup state. */
 export function getHealth(): Promise<Health> {
   return request<Health>('/api/v1/health');
@@ -362,6 +376,34 @@ export function listLocations(
   const query = params.toString();
   const path = query === '' ? '/api/v1/locations' : '/api/v1/locations?' + query;
   return request<Page<Location>>(path);
+}
+
+/** Creates a location, optionally inside a parent. */
+export function createLocation(input: LocationInput): Promise<Location> {
+  return request<Location>('/api/v1/locations', jsonInit('POST', input));
+}
+
+/** Changes a subset of a location; a null parent makes it a root location. */
+export function updateLocation(
+  id: string,
+  patch: LocationPatch,
+): Promise<Location> {
+  return request<Location>(locationPath(id), jsonInit('PATCH', patch));
+}
+
+/** Deletes one location; its children become root locations. */
+export function deleteLocation(id: string): Promise<void> {
+  return request<void>(locationPath(id), { method: 'DELETE' });
+}
+
+/** Deletes many locations atomically. */
+export function bulkDeleteLocations(
+  ids: string[],
+): Promise<{ deleted: number }> {
+  return request<{ deleted: number }>(
+    '/api/v1/locations/bulk-delete',
+    jsonInit('POST', { ids }),
+  );
 }
 
 /** Reads the 50 most used tags. */

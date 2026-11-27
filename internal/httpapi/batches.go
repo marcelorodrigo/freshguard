@@ -75,22 +75,6 @@ func (s *server) deleteBatch(w http.ResponseWriter, r *http.Request, _ auth.User
 	w.WriteHeader(http.StatusNoContent)
 }
 
-type locationResponse struct {
-	ID                   string       `json:"id"`
-	Name                 string       `json:"name"`
-	Description          string       `json:"description"`
-	ExpirationNotifyDays int          `json:"expiration_notify_days"`
-	Parent               *locationRef `json:"parent"`
-	BatchCount           int          `json:"batch_count"`
-	CreatedAt            string       `json:"created_at"`
-	UpdatedAt            string       `json:"updated_at"`
-}
-
-type locationsResponse struct {
-	Data []locationResponse `json:"data"`
-	Meta pageMeta           `json:"meta"`
-}
-
 func newBatchResponse(batch inventory.Batch) batchResponse {
 	return batchResponse{
 		ID:        batch.ID,
@@ -101,53 +85,4 @@ func newBatchResponse(batch inventory.Batch) batchResponse {
 		CreatedAt: formatTimestamp(batch.CreatedAt),
 		UpdatedAt: formatTimestamp(batch.UpdatedAt),
 	}
-}
-
-func newLocationResponse(location inventory.Location) locationResponse {
-	var parent *locationRef
-	if location.ParentID != "" {
-		parent = &locationRef{ID: location.ParentID, Name: location.ParentName}
-	}
-
-	return locationResponse{
-		ID:                   location.ID,
-		Name:                 location.Name,
-		Description:          location.Description,
-		ExpirationNotifyDays: location.ExpirationNotifyDays,
-		Parent:               parent,
-		BatchCount:           location.BatchCount,
-		CreatedAt:            formatTimestamp(location.CreatedAt),
-		UpdatedAt:            formatTimestamp(location.UpdatedAt),
-	}
-}
-
-func (s *server) listLocations(w http.ResponseWriter, r *http.Request, _ auth.User) {
-	query := r.URL.Query()
-
-	page, err := s.inventory.ListLocations(r.Context(), inventory.ListParams{
-		Q:       query.Get("q"),
-		Sort:    query.Get("sort"),
-		Dir:     query.Get("dir"),
-		Page:    queryInt(r, "page"),
-		PerPage: queryInt(r, "per_page"),
-	})
-	if err != nil {
-		s.internal(w, r, "list locations", err)
-		return
-	}
-
-	locations := make([]locationResponse, len(page.Locations))
-	for i, location := range page.Locations {
-		locations[i] = newLocationResponse(location)
-	}
-
-	writeJSON(w, http.StatusOK, locationsResponse{
-		Data: locations,
-		Meta: pageMeta{
-			Page:    page.Page,
-			PerPage: page.PerPage,
-			Total:   page.Total,
-			Pages:   page.Pages,
-		},
-	})
 }

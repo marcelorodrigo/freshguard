@@ -228,7 +228,7 @@ Rule tokens: `location_id: required|exists`, `expires_at: required|date`, `quant
 
 `name` required ≤ 255; `description` ≤ 255; `expiration_notify_days` integer ≥ 0, default 0; `parent_id` nullable, must exist, must not create a cycle (`{"parent_id":"cycle"}`).
 
-`PATCH /api/v1/locations/{id}` accepts the same fields.
+`PATCH /api/v1/locations/{id}` accepts the same fields. An omitted field is left alone; `"parent_id": null` makes the location a root location.
 
 `DELETE /api/v1/locations/{id}` → `204`; `409 location_has_batches` when any batch points at it. Children become root locations.
 
@@ -238,7 +238,7 @@ Rule tokens: `location_id: required|exists`, `expires_at: required|date`, `quant
 {"ids":["0190…","0191…"]}
 ```
 
-Atomic, matching the old bulk action: if **any** selected location holds batches, none is deleted and the whole request is `409 location_has_batches` with `{"error":{"code":"location_has_batches","message":"…","fields":{"ids":"0190…"}}}`. Otherwise `200 {"deleted": 3}`.
+Atomic, matching the old bulk action: if **any** selected location holds batches, none is deleted and the whole request is `409 location_has_batches` with `{"error":{"code":"location_has_batches","message":"…","fields":{"ids":"0190…"}}}`. Several offenders are comma-separated in `fields.ids`. Otherwise `200 {"deleted": 3}`; missing and duplicate ids are ignored, so `deleted` counts rows that existed.
 
 ### Tags
 

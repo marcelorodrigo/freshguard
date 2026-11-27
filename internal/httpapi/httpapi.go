@@ -28,6 +28,9 @@ const (
 	CodeConflict     = "conflict"
 	CodeRateLimited  = "rate_limited"
 	CodeInternal     = "internal"
+
+	// CodeLocationHasBatches blocks a location delete that still holds stock.
+	CodeLocationHasBatches = "location_has_batches"
 )
 
 // Options configures the root handler.
@@ -117,6 +120,10 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("PATCH /api/v1/batches/{id}", s.authenticated(s.updateBatch))
 	mux.HandleFunc("DELETE /api/v1/batches/{id}", s.authenticated(s.deleteBatch))
 	mux.HandleFunc("GET /api/v1/locations", s.authenticated(s.listLocations))
+	mux.HandleFunc("POST /api/v1/locations", s.authenticated(s.createLocation))
+	mux.HandleFunc("POST /api/v1/locations/bulk-delete", s.authenticated(s.bulkDeleteLocations))
+	mux.HandleFunc("PATCH /api/v1/locations/{id}", s.authenticated(s.updateLocation))
+	mux.HandleFunc("DELETE /api/v1/locations/{id}", s.authenticated(s.deleteLocation))
 	mux.HandleFunc("GET /api/v1/tags", s.authenticated(s.listTags))
 
 	mux.HandleFunc("/api", s.notFound)

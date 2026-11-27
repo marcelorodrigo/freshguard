@@ -267,19 +267,7 @@ func (s *Service) DeleteItem(ctx context.Context, itemID string) error {
 // BulkDelete removes every listed item in one transaction. Missing ids are
 // ignored, so the response reports how many rows actually existed.
 func (s *Service) BulkDelete(ctx context.Context, itemIDs []string) (int, error) {
-	unique := make([]string, 0, len(itemIDs))
-	seen := make(map[string]struct{}, len(itemIDs))
-	for _, itemID := range itemIDs {
-		itemID = strings.TrimSpace(itemID)
-		if itemID == "" {
-			continue
-		}
-		if _, exists := seen[itemID]; exists {
-			continue
-		}
-		seen[itemID] = struct{}{}
-		unique = append(unique, itemID)
-	}
+	unique := uniqueNonEmpty(itemIDs)
 	if len(unique) == 0 {
 		return 0, nil
 	}
