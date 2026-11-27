@@ -13,6 +13,8 @@ import (
 const (
 	itemTieBreak = ", i.name ASC, i.id ASC"
 
+	// The SUM is safe because batch writes reject an item total beyond the
+	// signed 64-bit range in the same transaction as the insert or update.
 	itemSelect = `SELECT
 	i.id, i.name, COALESCE(i.barcode, ''), COALESCE(i.description, ''),
 	COALESCE(SUM(b.quantity), 0) AS quantity,
@@ -76,7 +78,7 @@ func (s *Service) ListItems(ctx context.Context, params ListParams) (Page, error
 		itemIDs[i] = page.Items[i].ID
 	}
 
-	tags, err := s.tagsForItems(ctx, itemIDs)
+	tags, err := s.tagsForItems(ctx, s.db.Reader(), itemIDs)
 	if err != nil {
 		return Page{}, err
 	}
@@ -90,9 +92,16 @@ func (s *Service) ListItems(ctx context.Context, params ListParams) (Page, error
 	return page, nil
 }
 
-// Get returns one item with its tags and batches.
+// Get returns one item with its tags and batches. One read-only transaction
+// keeps the item, its tags and its batches on the same snapshot.
 func (s *Service) Get(ctx context.Context, itemID string) (Item, error) {
-	item, err := scanItem(s.db.Reader().QueryRowContext(ctx,
+	tx, err := s.db.Reader().BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return Item{}, fmt.Errorf("begin read item %s: %w", itemID, err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	item, err := scanItem(tx.QueryRowContext(ctx,
 		itemSelect+" WHERE i.id = ? GROUP BY i.id", itemID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Item{}, ErrItemNotFound
@@ -101,7 +110,7 @@ func (s *Service) Get(ctx context.Context, itemID string) (Item, error) {
 		return Item{}, fmt.Errorf("read item %s: %w", itemID, err)
 	}
 
-	tags, err := s.tagsForItems(ctx, []string{itemID})
+	tags, err := s.tagsForItems(ctx, tx, []string{itemID})
 	if err != nil {
 		return Item{}, err
 	}
@@ -110,11 +119,15 @@ func (s *Service) Get(ctx context.Context, itemID string) (Item, error) {
 		item.Tags = []string{}
 	}
 
-	batches, err := s.batchesForItem(ctx, itemID)
+	batches, err := s.batchesForItem(ctx, tx, itemID)
 	if err != nil {
 		return Item{}, err
 	}
 	item.Batches = batches
+
+	if err := tx.Commit(); err != nil {
+		return Item{}, fmt.Errorf("commit read item %s: %w", itemID, err)
+	}
 
 	return item, nil
 }
@@ -302,7 +315,7 @@ func (s *Service) BulkDelete(ctx context.Context, itemIDs []string) (int, error)
 	return int(deleted), nil
 }
 
-func (s *Service) tagsForItems(ctx context.Context, itemIDs []string) (map[string][]string, error) {
+func (s *Service) tagsForItems(ctx context.Context, q queryer, itemIDs []string) (map[string][]string, error) {
 	tags := make(map[string][]string, len(itemIDs))
 	if len(itemIDs) == 0 {
 		return tags, nil
@@ -313,7 +326,7 @@ func (s *Service) tagsForItems(ctx context.Context, itemIDs []string) (map[strin
 		args[i] = itemID
 	}
 
-	rows, err := s.db.Reader().QueryContext(ctx, `SELECT it.item_id, t.name
+	rows, err := q.QueryContext(ctx, `SELECT it.item_id, t.name
 		FROM item_tags it
 		JOIN tags t ON t.id = it.tag_id
 		WHERE it.item_id IN (`+placeholders(len(itemIDs))+`)
@@ -340,8 +353,8 @@ func (s *Service) tagsForItems(ctx context.Context, itemIDs []string) (map[strin
 	return tags, nil
 }
 
-func (s *Service) batchesForItem(ctx context.Context, itemID string) ([]Batch, error) {
-	rows, err := s.db.Reader().QueryContext(ctx, `SELECT
+func (s *Service) batchesForItem(ctx context.Context, q queryer, itemID string) ([]Batch, error) {
+	rows, err := q.QueryContext(ctx, `SELECT
 			b.id, b.item_id, l.id, l.name, b.expires_at, b.quantity,
 			b.created_at, b.updated_at
 		FROM batches b
@@ -392,6 +405,11 @@ func scanBatch(row rowScanner) (Batch, error) {
 	batch.CreatedAt, batch.UpdatedAt = created, updated
 
 	return batch, nil
+}
+
+// queryer is the read surface shared by *sql.DB and *sql.Tx.
+type queryer interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
 func scanItem(row rowScanner) (Item, error) {

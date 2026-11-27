@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -45,6 +46,10 @@ func (s *Service) CreateBatch(ctx context.Context, itemID string, in BatchInput)
 	}
 	if !found {
 		return Batch{}, fieldError("location_id", "exists")
+	}
+
+	if err := ensureItemQuantityFits(ctx, tx, itemID, "", in.Quantity); err != nil {
+		return Batch{}, err
 	}
 
 	if _, err := tx.ExecContext(ctx, `INSERT INTO batches
@@ -108,6 +113,10 @@ func (s *Service) UpdateBatch(ctx context.Context, batchID string, patch BatchPa
 	}
 	if !found {
 		return Batch{}, fieldError("location_id", "exists")
+	}
+
+	if err := ensureItemQuantityFits(ctx, tx, itemID, batchID, quantity); err != nil {
+		return Batch{}, err
 	}
 
 	now := s.now().UTC()
@@ -193,6 +202,28 @@ func validateBatch(locationID, expiresAt string, quantity int) error {
 	if quantity < 1 {
 		return fieldError("quantity", "min")
 	}
+	return nil
+}
+
+// ensureItemQuantityFits rejects a write that would push the item's computed
+// SUM past the signed 64-bit range SQLite aggregates in. The check runs in the
+// same transaction as the write, so two concurrent batches cannot both pass.
+func ensureItemQuantityFits(ctx context.Context, tx *sql.Tx, itemID, excludeBatchID string, quantity int) error {
+	query := "SELECT COALESCE(SUM(quantity), 0) FROM batches WHERE item_id = ?"
+	args := []any{itemID}
+	if excludeBatchID != "" {
+		query += " AND id <> ?"
+		args = append(args, excludeBatchID)
+	}
+
+	var total int64
+	if err := tx.QueryRowContext(ctx, query, args...).Scan(&total); err != nil {
+		return fmt.Errorf("sum item quantities: %w", err)
+	}
+	if total > math.MaxInt64-int64(quantity) {
+		return fieldError("quantity", "max")
+	}
+
 	return nil
 }
 

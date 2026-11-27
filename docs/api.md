@@ -200,7 +200,7 @@ A missing `current_password` is `422 invalid_input` with `{"current_password":"r
  "expires_at":"2026-02-01","quantity":2,"created_at":"…","updated_at":"…"}
 ```
 
-Rule tokens: `location_id: required|exists`, `expires_at: required|date`, `quantity: min`. An unknown item is `404 not_found`. The item's `quantity` and `earliest_expiration` are computed, so they change on the next read with no stored aggregate to drift.
+Rule tokens: `location_id: required|exists`, `expires_at: required|date`, `quantity: min|max`. An unknown item is `404 not_found`. The item's computed total is bounded to the signed 64-bit range, so `quantity: max` rejects a write that would overflow `SUM`. The item's `quantity` and `earliest_expiration` are computed, so they change on the next read with no stored aggregate to drift.
 
 `PATCH /api/v1/batches/{id}` accepts `location_id`, `expires_at`, `quantity` (≥ 1) and returns the batch. A batch never exists with quantity zero: `quantity: 0` is `422` with `{"quantity":"min"}` and the schema refuses a zero row.
 

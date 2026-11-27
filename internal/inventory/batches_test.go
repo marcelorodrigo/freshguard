@@ -3,6 +3,7 @@ package inventory
 import (
 	"context"
 	"errors"
+	"math"
 	"strings"
 	"testing"
 )
@@ -222,6 +223,53 @@ func TestCreateBatchValidation(t *testing.T) {
 				t.Errorf("field error = %+v, want %s:%s", fieldErr, tc.field, tc.rule)
 			}
 		})
+	}
+}
+
+func TestBatchWritesRejectTotalsBeyondSignedInt64(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	ctx := context.Background()
+	item := createItem(t, env, ItemInput{Name: "Milk"})
+	env.addLocation(t, "loc-fridge")
+
+	huge := int(math.MaxInt64 - 1)
+	if _, err := env.service.CreateBatch(ctx, item.ID, BatchInput{
+		LocationID: "loc-fridge", ExpiresAt: "2026-02-01", Quantity: huge,
+	}); err != nil {
+		t.Fatalf("CreateBatch within the bound: %v", err)
+	}
+
+	var fieldErr *FieldError
+	if _, err := env.service.CreateBatch(ctx, item.ID, BatchInput{
+		LocationID: "loc-fridge", ExpiresAt: "2026-02-02", Quantity: 2,
+	}); !errors.As(err, &fieldErr) {
+		t.Fatalf("overflowing create error = %v, want a FieldError", err)
+	}
+	if fieldErr.Field != "quantity" || fieldErr.Rule != "max" {
+		t.Errorf("field error = %+v, want quantity:max", fieldErr)
+	}
+
+	last, err := env.service.CreateBatch(ctx, item.ID, BatchInput{
+		LocationID: "loc-fridge", ExpiresAt: "2026-02-03", Quantity: 1,
+	})
+	if err != nil {
+		t.Fatalf("CreateBatch filling the bound: %v", err)
+	}
+
+	two := 2
+	fieldErr = nil
+	if _, err := env.service.UpdateBatch(ctx, last.ID, BatchPatch{Quantity: &two}); !errors.As(err, &fieldErr) {
+		t.Fatalf("overflowing update error = %v, want a FieldError", err)
+	}
+
+	got, err := env.service.Get(ctx, item.ID)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.Quantity != math.MaxInt64 {
+		t.Errorf("quantity = %d, want %d", got.Quantity, int64(math.MaxInt64))
 	}
 }
 
