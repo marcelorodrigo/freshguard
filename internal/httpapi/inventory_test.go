@@ -38,7 +38,7 @@ func TestItemsRequireSession(t *testing.T) {
 	}
 }
 
-func TestCreateAndListItems(t *testing.T) {
+func TestCreateItem(t *testing.T) {
 	t.Parallel()
 
 	env := newTestEnv(t)
@@ -66,6 +66,17 @@ func TestCreateAndListItems(t *testing.T) {
 	if created.Batches == nil || len(created.Batches) != 0 {
 		t.Errorf("batches = %v, want an empty array", created.Batches)
 	}
+}
+
+func TestListItemAndTags(t *testing.T) {
+	t.Parallel()
+
+	env := newTestEnv(t)
+	cookie, _ := env.setup(t)
+	created := createItemHTTP(t, env, cookie, map[string]any{
+		"name": "Whole milk",
+		"tags": []string{"Dairy", "Fridge"},
+	})
 
 	list := env.send(t, request{
 		method: http.MethodGet,

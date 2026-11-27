@@ -188,7 +188,14 @@ async function confirmDelete(): Promise<void> {
     </div>
 
     <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <label
+        for="items-search"
+        class="sr-only"
+      >
+        {{ t('items.searchPlaceholder') }}
+      </label>
       <input
+        id="items-search"
         v-model="search"
         type="search"
         :placeholder="t('items.searchPlaceholder')"
