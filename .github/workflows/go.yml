@@ -3,6 +3,9 @@ name: Go
 on:
   pull_request:
   push:
+    branches:
+      - master
+      - rewrite/go-sqlite
 
 permissions:
   contents: read
