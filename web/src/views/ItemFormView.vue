@@ -105,13 +105,13 @@ async function loadLocations(): Promise<void> {
 
   try {
     const first = await listLocations({ per_page: 100 });
-    const pages = [first];
+    const rest = await Promise.all(
+      Array.from({ length: Math.max(0, first.meta.pages - 1) }, (_, index) =>
+        listLocations({ per_page: 100, page: index + 2 }),
+      ),
+    );
 
-    for (let page = 2; page <= first.meta.pages; page += 1) {
-      pages.push(await listLocations({ per_page: 100, page }));
-    }
-
-    locations.value = pages.flatMap((result) => result.data);
+    locations.value = [first, ...rest].flatMap((result) => result.data);
   } catch (error) {
     locations.value = [];
     locationsError.value = t(errorMessageKey(error));

@@ -1,5 +1,7 @@
 import js from '@eslint/js';
+import sonarjs from 'eslint-plugin-sonarjs';
 import pluginVue from 'eslint-plugin-vue';
+import vueA11y from 'eslint-plugin-vuejs-accessibility';
 import tseslint from 'typescript-eslint';
 
 export default [
@@ -31,6 +33,27 @@ export default [
       parserOptions: {
         parser: tseslint.parser,
       },
+    },
+  },
+  {
+    files: ['**/*.{ts,vue}'],
+    plugins: {
+      sonarjs,
+      'vuejs-accessibility': vueA11y,
+    },
+    rules: {
+      // The three Sonar rules this codebase has hit, enforced before the scan.
+      // Go's twin, gocognit, already runs in `make check`.
+      'no-await-in-loop': 'error',
+      'sonarjs/cognitive-complexity': ['error', 15],
+      'vuejs-accessibility/form-control-has-label': 'error',
+    },
+  },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      // A test drives the DOM one step at a time; the rule targets hot paths.
+      'no-await-in-loop': 'off',
     },
   },
   {

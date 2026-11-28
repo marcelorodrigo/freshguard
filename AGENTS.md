@@ -69,7 +69,9 @@ Run `make check` before every commit. Do not push with a red gate.
 
 ## Git
 
-Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), scoped by area when it helps (`feat(auth): …`). Keep commits small and green; prefer a new commit over amending a published one. Never commit `.env`, `data/`, `bin/` or a built `internal/web/dist`.
+Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`), scoped by area when it helps (`feat(auth): …`). Keep commits small and green; prefer a new commit over amending a published one.
+
+Work each ticket on `feat/<issue>-<slug>` from `master`; commit there, push, and open the PR. `master` takes merged PRs only. Never commit `.env`, `data/`, `bin/` or a built `internal/web/dist`.
 
 ## Definition of done
 
