@@ -137,6 +137,7 @@ async function submit(): Promise<void> {
       class="space-y-4"
       data-test="reset-form"
       @submit.prevent="submit"
+      @keydown.enter.prevent="submit"
     >
       <div>
         <label
@@ -200,7 +201,7 @@ async function submit(): Promise<void> {
       </p>
 
       <button
-        type="submit"
+        type="button"
         class="w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
         :disabled="submitting"
         data-test="reset-submit"

@@ -919,8 +919,8 @@ func TestListUsersPagination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListUsers: %v", err)
 	}
-	if capped.PerPage != MaxUsersPerPage {
-		t.Errorf("per_page = %d, want the %d cap", capped.PerPage, MaxUsersPerPage)
+	if capped.PerPage != maxUsersPerPage {
+		t.Errorf("per_page = %d, want the %d cap", capped.PerPage, maxUsersPerPage)
 	}
 
 	if got := userNames(page.Users); !slices.Equal(got, []string{"Carla", "Marcelo"}) {

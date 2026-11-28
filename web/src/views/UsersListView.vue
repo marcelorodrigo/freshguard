@@ -207,7 +207,7 @@ function validateEmail(email: string): string {
   if (email.length > 255) {
     return t('errors.max');
   }
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : t('errors.email');
+  return /^[^\s@]+@[^\s@]+$/.test(email) ? '' : t('errors.email');
 }
 
 function validatePassword(password: string): string {
@@ -625,6 +625,7 @@ async function confirmDelete(): Promise<void> {
       <form
         class="p-6"
         @submit.prevent="submit"
+        @keydown.enter.prevent="submit"
       >
         <h2
           class="text-lg font-semibold"
@@ -755,7 +756,7 @@ async function confirmDelete(): Promise<void> {
             {{ t('common.cancel') }}
           </button>
           <button
-            type="submit"
+            type="button"
             class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
             :disabled="saving"
             data-test="user-save"

@@ -17,10 +17,10 @@ import (
 // away.
 
 const (
-	// DefaultUsersPerPage and MaxUsersPerPage match the paginated collections
+	// defaultUsersPerPage and maxUsersPerPage match the paginated collections
 	// in docs/api.md.
-	DefaultUsersPerPage = 10
-	MaxUsersPerPage     = 100
+	defaultUsersPerPage = 10
+	maxUsersPerPage     = 100
 )
 
 // ListUsersParams is the query of GET /api/v1/users.
@@ -102,10 +102,10 @@ func (p ListUsersParams) normalized() ListUsersParams {
 		p.Page = 1
 	}
 	if p.PerPage <= 0 {
-		p.PerPage = DefaultUsersPerPage
+		p.PerPage = defaultUsersPerPage
 	}
-	if p.PerPage > MaxUsersPerPage {
-		p.PerPage = MaxUsersPerPage
+	if p.PerPage > maxUsersPerPage {
+		p.PerPage = maxUsersPerPage
 	}
 
 	switch strings.TrimSpace(p.Sort) {

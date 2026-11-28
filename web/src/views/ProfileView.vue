@@ -47,7 +47,7 @@ function validateEmail(): string {
   if (email.length > 255) {
     return t('errors.max');
   }
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : t('errors.email');
+  return /^[^\s@]+@[^\s@]+$/.test(email) ? '' : t('errors.email');
 }
 
 function validatePassword(): boolean {
@@ -153,6 +153,7 @@ async function handleSignOut(): Promise<void> {
     <form
       class="mt-5 space-y-6"
       @submit.prevent="submit"
+      @keydown.enter.prevent="submit"
     >
       <div class="rounded-xl border border-slate-200 bg-white p-5">
         <h2 class="text-base font-semibold">
@@ -306,7 +307,7 @@ async function handleSignOut(): Promise<void> {
       </p>
 
       <button
-        type="submit"
+        type="button"
         class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60"
         :disabled="saving"
         data-test="profile-save"
