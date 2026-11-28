@@ -275,9 +275,9 @@ Batches inside a result are only those with quantity > 0, ordered by `expires_at
 
 `201`. The password is validated like setup. `is_admin` may only be set by an admin (which is the only caller).
 
-`PATCH /api/v1/users/{id}` accepts `name`, `email`, `is_admin`, `password`. Rules ported from `UserPolicy`: an admin cannot demote themselves (the old toggle was disabled on self), email stays unique, changing `is_admin` requires admin.
+`PATCH /api/v1/users/{id}` accepts `name`, `email`, `is_admin`, `password`. Rules ported from `UserPolicy`: an admin cannot demote themselves (`409 cannot_demote_self`, the old toggle was disabled on self), email stays unique, changing `is_admin` requires admin. A password set on another account is temporary: `must_reset = 1` and their sessions are revoked. A password set on your own account is an ordinary change and keeps you signed in.
 
-`DELETE /api/v1/users/{id}` → `204`; `409 cannot_delete_self`; `409 last_admin` when the target is the only admin.
+`DELETE /api/v1/users/{id}` → `204`; `409 cannot_delete_self`; `409 last_admin` when the target is the only admin. The last-admin check comes first, so a sole administrator deleting themselves sees `last_admin`.
 
 `POST /api/v1/users/{id}/password`
 
@@ -314,6 +314,7 @@ The mapping to UI toasts is in `PARITY.md`. `name`/`description`/`tags` are the 
 | 409 | `batch_unavailable` | Consume lost the race. |
 | 409 | `last_admin` | Deleting the only admin. |
 | 409 | `cannot_delete_self` | Self-delete attempt. |
+| 409 | `cannot_demote_self` | An admin removing their own administrator rights. |
 | 422 | `invalid_input` | Validation; `fields` holds rule tokens. |
 | 422 | `invalid_barcode` | Barcode is not 8–14 digits. |
 | 429 | `rate_limited` | A bucket is empty. |

@@ -173,6 +173,16 @@ async function handleSignOut(): Promise<void> {
                 </p>
               </div>
 
+              <div class="border-b border-slate-100 px-2 py-2">
+                <RouterLink
+                  to="/profile"
+                  class="block rounded px-2 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  data-test="profile-link"
+                >
+                  {{ t('profile.title') }}
+                </RouterLink>
+              </div>
+
               <div class="border-b border-slate-100 px-4 py-3">
                 <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">
                   {{ t('profile.language') }}

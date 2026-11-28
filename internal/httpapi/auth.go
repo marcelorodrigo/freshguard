@@ -208,6 +208,15 @@ type authedHandler func(w http.ResponseWriter, r *http.Request, user auth.User)
 // the handler sees the request. A must_reset account may only read and change
 // its own profile and sign out.
 func (s *server) authenticated(next authedHandler) http.HandlerFunc {
+	return s.sessionHandler(false, next)
+}
+
+// administrator additionally requires the account to be an administrator.
+func (s *server) administrator(next authedHandler) http.HandlerFunc {
+	return s.sessionHandler(true, next)
+}
+
+func (s *server) sessionHandler(adminOnly bool, next authedHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, ok := s.sessionFrom(w, r)
 		if !ok {
@@ -216,6 +225,11 @@ func (s *server) authenticated(next authedHandler) http.HandlerFunc {
 
 		if session.User.MustReset && !allowedWhileMustReset(r) {
 			writeError(w, http.StatusForbidden, CodeMustReset, "a new password is required")
+			return
+		}
+
+		if adminOnly && !session.User.IsAdmin {
+			writeError(w, http.StatusForbidden, CodeForbidden, "administrator access required")
 			return
 		}
 
@@ -348,6 +362,14 @@ func writeAuthError(w http.ResponseWriter, err error) bool {
 		writeError(w, http.StatusUnauthorized, CodeUnauthorized, "invalid or expired session")
 	case errors.Is(err, auth.ErrResetTokenInvalid), errors.Is(err, auth.ErrUserNotFound):
 		writeError(w, http.StatusNotFound, CodeNotFound, "no such resource")
+	case errors.Is(err, auth.ErrForbidden):
+		writeError(w, http.StatusForbidden, CodeForbidden, "administrator access required")
+	case errors.Is(err, auth.ErrCannotDeleteSelf):
+		writeError(w, http.StatusConflict, CodeCannotDeleteSelf, "you cannot delete your own account")
+	case errors.Is(err, auth.ErrLastAdmin):
+		writeError(w, http.StatusConflict, CodeLastAdmin, "the last administrator cannot be deleted")
+	case errors.Is(err, auth.ErrCannotDemoteSelf):
+		writeError(w, http.StatusConflict, CodeCannotDemoteSelf, "you cannot remove your own administrator rights")
 	default:
 		return false
 	}

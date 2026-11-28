@@ -64,6 +64,14 @@ var (
 	ErrUserNotFound = errors.New("auth: user not found")
 	// ErrResetTokenInvalid is returned for an unknown, used or expired link.
 	ErrResetTokenInvalid = errors.New("auth: invalid password reset token")
+	// ErrForbidden is the answer to an account operation by a non-admin.
+	ErrForbidden = errors.New("auth: forbidden")
+	// ErrCannotDeleteSelf blocks a self-delete.
+	ErrCannotDeleteSelf = errors.New("auth: cannot delete self")
+	// ErrLastAdmin blocks deleting the only administrator.
+	ErrLastAdmin = errors.New("auth: last admin")
+	// ErrCannotDemoteSelf blocks an administrator taking their own rights away.
+	ErrCannotDemoteSelf = errors.New("auth: cannot demote self")
 )
 
 // FieldError is a validation failure expressed as the rule token the API

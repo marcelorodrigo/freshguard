@@ -163,6 +163,30 @@ export interface ProfilePatch {
   current_password?: string;
 }
 
+export type UserSort = 'name' | 'email' | 'is_admin' | 'created_at';
+
+export interface UserFilters {
+  q?: string;
+  sort?: UserSort;
+  dir?: 'asc' | 'desc';
+  page?: number;
+  per_page?: number;
+}
+
+export interface UserInput {
+  name: string;
+  email: string;
+  password: string;
+  is_admin: boolean;
+}
+
+export interface UserPatch {
+  name?: string;
+  email?: string;
+  is_admin?: boolean;
+  password?: string;
+}
+
 interface SessionResponse {
   user: User;
 }
@@ -278,6 +302,69 @@ export function getMe(): Promise<User> {
 /** Changes the signed-in account's profile or password. */
 export function updateMe(patch: ProfilePatch): Promise<User> {
   return request<User>('/api/v1/me', jsonInit('PATCH', patch));
+}
+
+/** Lists accounts, the admin-only Users screen. */
+export function listUsers(filters: UserFilters = {}): Promise<Page<User>> {
+  const params = new URLSearchParams();
+
+  if (filters.q !== undefined && filters.q !== '') {
+    params.set('q', filters.q);
+  }
+  if (filters.sort !== undefined) {
+    params.set('sort', filters.sort);
+  }
+  if (filters.dir !== undefined) {
+    params.set('dir', filters.dir);
+  }
+  if (filters.page !== undefined) {
+    params.set('page', String(filters.page));
+  }
+  if (filters.per_page !== undefined) {
+    params.set('per_page', String(filters.per_page));
+  }
+
+  const query = params.toString();
+  const path = query === '' ? '/api/v1/users' : '/api/v1/users?' + query;
+  return request<Page<User>>(path);
+}
+
+/** Creates a member; the admin chooses the first password. */
+export function createUser(input: UserInput): Promise<User> {
+  return request<User>('/api/v1/users', jsonInit('POST', input));
+}
+
+/** Changes a subset of an account; a password set on somebody else is temporary. */
+export function updateUser(id: string, patch: UserPatch): Promise<User> {
+  return request<User>(`/api/v1/users/${encodeURIComponent(id)}`, jsonInit('PATCH', patch));
+}
+
+/** Deletes one account; the caller and the last admin are refused. */
+export function deleteUser(id: string): Promise<void> {
+  return request<void>(`/api/v1/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+/** Gives a member a temporary password and forces a change at the next sign-in. */
+export function setUserPassword(id: string, password: string): Promise<void> {
+  return request<void>(
+    `/api/v1/users/${encodeURIComponent(id)}/password`,
+    jsonInit('POST', { password }),
+  );
+}
+
+/** Reads the address a reset link belongs to, or 404 when it is used or expired. */
+export function getPasswordReset(token: string): Promise<{ email: string }> {
+  return request<{ email: string }>(
+    `/api/v1/password-resets/${encodeURIComponent(token)}`,
+  );
+}
+
+/** Sets a new password from a reset link and consumes the link. */
+export function completePasswordReset(token: string, password: string): Promise<void> {
+  return request<void>(
+    `/api/v1/password-resets/${encodeURIComponent(token)}`,
+    jsonInit('POST', { password }),
+  );
 }
 
 /** Lists items with search, sorting and pagination. */

@@ -6,22 +6,29 @@ import {
   bulkDeleteLocations,
   createBatch,
   createItem,
+  completePasswordReset,
   consumeBatch,
   createLocation,
+  createUser,
   deleteBatch,
   deleteItem,
   deleteLocation,
+  deleteUser,
   getHealth,
   getItem,
+  getPasswordReset,
   listItems,
   listLocations,
   listTags,
+  listUsers,
   login,
   logout,
   searchItems,
+  setUserPassword,
   updateBatch,
   updateItem,
   updateLocation,
+  updateUser,
 } from './api';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -550,5 +557,134 @@ describe('consumeBatch', () => {
       '/api/v1/batches/batch%20id/consume',
       expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
     );
+  });
+});
+
+describe('people requests', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('lists users with the filters and decodes the page', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        data: [user],
+        meta: { page: 2, per_page: 10, total: 11, pages: 2 },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      listUsers({ q: 'ana', sort: 'email', dir: 'desc', page: 2, per_page: 10 }),
+    ).resolves.toEqual({
+      data: [user],
+      meta: { page: 2, per_page: 10, total: 11, pages: 2 },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/users?q=ana&sort=email&dir=desc&page=2&per_page=10',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+  });
+
+  it('creates a user with the admin flag', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(user, 201));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      createUser({
+        name: 'Marcelo',
+        email: 'm@example.com',
+        password: 'secret password',
+        is_admin: true,
+      }),
+    ).resolves.toEqual(user);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/users',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'Marcelo',
+          email: 'm@example.com',
+          password: 'secret password',
+          is_admin: true,
+        }),
+      }),
+    );
+  });
+
+  it('patches one user and deletes another', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(user))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await updateUser(user.id, { name: 'Ana', password: 'temporary password' });
+    await deleteUser(user.id);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `/api/v1/users/${user.id}`,
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ name: 'Ana', password: 'temporary password' }),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      `/api/v1/users/${user.id}`,
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  it('sets a temporary password and follows a reset link', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(jsonResponse({ email: 'm@example.com' }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await setUserPassword(user.id, 'temporary password');
+    await expect(getPasswordReset('abc123')).resolves.toEqual({ email: 'm@example.com' });
+    await completePasswordReset('abc123', 'a chosen password');
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `/api/v1/users/${user.id}/password`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ password: 'temporary password' }),
+      }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/password-resets/abc123',
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      '/api/v1/password-resets/abc123',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ password: 'a chosen password' }),
+      }),
+    );
+  });
+
+  it('reports a used reset link as not found', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({ error: { code: 'not_found', message: 'no such resource' } }, 404),
+      ),
+    );
+
+    await expect(getPasswordReset('used')).rejects.toMatchObject({
+      status: 404,
+      code: 'not_found',
+    });
   });
 });

@@ -82,4 +82,24 @@ describe('router auth gate', () => {
 
     expect(router.currentRoute.value.name).toBe('items');
   });
+
+  it('sends a non-admin away from the users screen', async () => {
+    session.user = user();
+    const router = createAppRouter(createMemoryHistory());
+
+    await router.push('/users');
+    await router.isReady();
+
+    expect(router.currentRoute.value.name).toBe('items');
+  });
+
+  it('keeps the profile reachable while a password change is required', async () => {
+    session.user = user({ must_reset: true });
+    const router = createAppRouter(createMemoryHistory());
+
+    await router.push('/profile');
+    await router.isReady();
+
+    expect(router.currentRoute.value.name).toBe('profile');
+  });
 });

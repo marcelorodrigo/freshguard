@@ -84,6 +84,24 @@ describe('resolveNavigation', () => {
     ).toBe(true);
   });
 
+  it('lets a flagged account read their own profile', () => {
+    expect(
+      resolveNavigation(
+        { name: 'profile', fullPath: '/profile', requiresAuth: true },
+        { setupRequired: false, user: user({ must_reset: true }) },
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps a reset link reachable while signed out', () => {
+    expect(
+      resolveNavigation(
+        { name: 'password-reset', fullPath: '/password-reset/token' },
+        { setupRequired: false, user: null },
+      ),
+    ).toBe(true);
+  });
+
   it('sends a signed-in user away from login to the deep link', () => {
     expect(
       resolveNavigation(

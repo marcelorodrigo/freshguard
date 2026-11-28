@@ -76,7 +76,9 @@ function signedOutDecision(to: NavigationTarget): NavigationDecision {
 }
 
 function mustResetDecision(to: NavigationTarget): NavigationDecision {
-  return to.name === 'change-password'
+  // The profile is reachable so a flagged account can still read who it is
+  // signed in as; every other screen waits for the password change.
+  return to.name === 'change-password' || to.name === 'profile'
     ? true
     : { name: 'change-password', replace: true };
 }
