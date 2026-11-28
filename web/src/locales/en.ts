@@ -132,6 +132,11 @@ export const en = {
     createTitle: 'Create Location',
     editTitle: 'Edit Location',
   },
+  dashboard: {
+    recentlyExpired: 'Recently Expired',
+    empty: 'Congratulations, no expired items',
+    item: 'Item',
+  },
   quickConsume: {
     title: 'Quick Consume',
     searchPlaceholder: 'Search items by name, barcode, or description...',

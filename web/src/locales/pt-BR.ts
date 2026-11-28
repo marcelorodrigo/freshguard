@@ -126,6 +126,11 @@ export const ptBR: MessageSchema = {
     createTitle: 'Criar Local',
     editTitle: 'Editar Local',
   },
+  dashboard: {
+    recentlyExpired: 'Vencidos Recentemente',
+    empty: 'Parabéns, nenhum item vencido',
+    item: 'Item',
+  },
   quickConsume: {
     title: 'Consumo Rápido',
     searchPlaceholder: 'Pesquisar itens por nome, código de barras ou descrição...',

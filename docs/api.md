@@ -261,7 +261,13 @@ Batches inside a result are only those with quantity > 0, ordered by `expires_at
 
 ### Dashboard
 
-`GET /api/v1/dashboard/recently-expired` → up to five batches with `expires_at < today`, ordered `expires_at asc`, each with `item` and `location` (same shape as a batch, plus `item`).
+`GET /api/v1/dashboard/recently-expired` → `{"data":[…]}` with up to five batches whose `expires_at` is before today, ordered `expires_at asc`, then `id`. Each row is the batch shape plus an `item`, both `location` and `item` carrying `id` and `name`. A batch expiring today is not expired yet.
+
+```json
+{"data":[{"id":"0190…","item_id":"0190…","item":{"id":"0190…","name":"Whole milk"},
+  "location":{"id":"0190…","name":"Fridge"},"expires_at":"2026-01-20","quantity":2,
+  "created_at":"…","updated_at":"…"}]}
+```
 
 ### Users (admin)
 

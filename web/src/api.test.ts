@@ -13,6 +13,7 @@ import {
   deleteLocation,
   getHealth,
   getItem,
+  getRecentlyExpired,
   listItems,
   listLocations,
   listTags,
@@ -22,6 +23,7 @@ import {
   updateBatch,
   updateItem,
   updateLocation,
+  type ExpiredBatch,
 } from './api';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -549,6 +551,33 @@ describe('consumeBatch', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/batches/batch%20id/consume',
       expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
+    );
+  });
+});
+
+describe('dashboard requests', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns the recently expired batches', async () => {
+    const batch: ExpiredBatch = {
+      id: 'batch-1',
+      item_id: 'item-1',
+      item: { id: 'item-1', name: 'Whole milk' },
+      location: { id: 'loc-1', name: 'Fridge' },
+      expires_at: '2026-01-20',
+      quantity: 2,
+      created_at: '2026-01-01T08:00:00Z',
+      updated_at: '2026-01-01T08:00:00Z',
+    };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: [batch] }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(getRecentlyExpired()).resolves.toEqual([batch]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/dashboard/recently-expired',
+      expect.objectContaining({ credentials: 'same-origin' }),
     );
   });
 });

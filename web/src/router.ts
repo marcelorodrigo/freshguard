@@ -10,6 +10,7 @@ import AppShell from './components/AppShell.vue';
 import { resolveNavigation } from './navigation';
 import { ensureSession, session } from './session';
 import ChangePasswordView from './views/ChangePasswordView.vue';
+import DashboardView from './views/DashboardView.vue';
 import ItemFormView from './views/ItemFormView.vue';
 import ItemsListView from './views/ItemsListView.vue';
 import LocationsListView from './views/LocationsListView.vue';
@@ -45,7 +46,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'dashboard',
-        component: PlaceholderView,
+        component: DashboardView,
       },
       {
         path: 'items',

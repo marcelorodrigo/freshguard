@@ -123,6 +123,7 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("DELETE /api/v1/batches/{id}", s.authenticated(s.deleteBatch))
 	mux.HandleFunc("POST /api/v1/batches/{id}/consume", s.authenticated(s.consumeBatch))
 	mux.HandleFunc("GET /api/v1/search", s.authenticated(s.search))
+	mux.HandleFunc("GET /api/v1/dashboard/recently-expired", s.authenticated(s.recentlyExpired))
 	mux.HandleFunc("GET /api/v1/locations", s.authenticated(s.listLocations))
 	mux.HandleFunc("POST /api/v1/locations", s.authenticated(s.createLocation))
 	mux.HandleFunc("POST /api/v1/locations/bulk-delete", s.authenticated(s.bulkDeleteLocations))

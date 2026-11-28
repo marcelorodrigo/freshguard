@@ -64,6 +64,11 @@ export interface BatchInput {
 /** A subset of batch fields; omitted fields are left alone. */
 export type BatchPatch = Partial<BatchInput>;
 
+/** A batch on the dashboard, with the item and location it belongs to. */
+export interface ExpiredBatch extends Batch {
+  item: { id: string; name: string };
+}
+
 /** A location from `GET /api/v1/locations`. */
 export interface Location {
   id: string;
@@ -446,5 +451,13 @@ export function bulkDeleteLocations(
 /** Reads the 50 most used tags. */
 export async function listTags(): Promise<Tag[]> {
   const body = await request<{ data: Tag[] }>('/api/v1/tags');
+  return body.data;
+}
+
+/** Reads the five most expired batches for the dashboard. */
+export async function getRecentlyExpired(): Promise<ExpiredBatch[]> {
+  const body = await request<{ data: ExpiredBatch[] }>(
+    '/api/v1/dashboard/recently-expired',
+  );
   return body.data;
 }
