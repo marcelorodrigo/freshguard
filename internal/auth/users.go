@@ -315,9 +315,11 @@ func (s *Service) writeProfilePassword(ctx context.Context, user *User, hash, ne
 }
 
 // SetTemporaryPassword replaces a user's password with one they did not
-// choose, flags must_reset and signs them out everywhere. An admin does this
-// when a member is locked out.
-func (s *Service) SetTemporaryPassword(ctx context.Context, userID, password string) error {
+// choose, flags must_reset and signs them out everywhere except the session
+// named by keepSessionSecret. An admin does this when a member is locked out;
+// passing the caller's own cookie keeps an admin setting their own temporary
+// password from being signed out before they can change it.
+func (s *Service) SetTemporaryPassword(ctx context.Context, userID, password, keepSessionSecret string) error {
 	if err := ValidatePassword(password); err != nil {
 		return err
 	}
@@ -349,7 +351,12 @@ func (s *Service) SetTemporaryPassword(ctx context.Context, userID, password str
 		return ErrUserNotFound
 	}
 
-	if _, err := tx.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = ?", userID); err != nil {
+	if keepSessionSecret == "" {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = ?", userID); err != nil {
+			return fmt.Errorf("revoke sessions: %w", err)
+		}
+	} else if _, err := tx.ExecContext(ctx,
+		"DELETE FROM sessions WHERE user_id = ? AND id <> ?", userID, hashToken(keepSessionSecret)); err != nil {
 		return fmt.Errorf("revoke sessions: %w", err)
 	}
 

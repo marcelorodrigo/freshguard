@@ -14,9 +14,12 @@ import ItemFormView from './views/ItemFormView.vue';
 import ItemsListView from './views/ItemsListView.vue';
 import LocationsListView from './views/LocationsListView.vue';
 import LoginView from './views/LoginView.vue';
+import PasswordResetView from './views/PasswordResetView.vue';
 import PlaceholderView from './views/PlaceholderView.vue';
+import ProfileView from './views/ProfileView.vue';
 import QuickConsumeView from './views/QuickConsumeView.vue';
 import SetupView from './views/SetupView.vue';
+import UsersListView from './views/UsersListView.vue';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -29,6 +32,12 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     name: 'login',
     component: LoginView,
+    meta: { public: true },
+  },
+  {
+    path: '/password-reset/:token',
+    name: 'password-reset',
+    component: PasswordResetView,
     meta: { public: true },
   },
   {
@@ -75,8 +84,13 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'users',
         name: 'users',
-        component: PlaceholderView,
+        component: UsersListView,
         meta: { adminOnly: true },
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: ProfileView,
       },
     ],
   },

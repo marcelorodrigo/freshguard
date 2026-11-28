@@ -149,25 +149,25 @@ Route `/quick-consume?search=`. API `GET /api/v1/search`, `POST /api/v1/batches/
 
 Route `/users`. API `GET|POST /api/v1/users`, `PATCH|DELETE /api/v1/users/{id}`, `POST /api/v1/users/{id}/password`.
 
-- [ ] Columns: **Name**, **Email**, **Admin**, plus **Created At** and **Updated At** hidden by default.
-- [ ] Searchable by name and email; sortable by name, email, admin, created; default sort name ascending.
-- [ ] Row actions **Edit** and **Delete**; bulk delete.
-- [ ] Create modal: **Name** (required ≤ 255), **Email** (required, valid, unique ≤ 255), **Password** (required on create, 8–255), **Administrator** toggle with helper `Administrators can manage all users and access admin features.`
-- [ ] Edit modal: password optional with helper `Leave empty to keep current password when editing.`; changing another user's password sets a temporary one and forces a change on their next sign-in.
-- [ ] The **Administrator** toggle is disabled when editing yourself.
-- [ ] Delete is unavailable for yourself; deleting the only admin is refused with `409 last_admin`.
-- [ ] Admins can edit their own profile here; non-admins cannot reach the screen at all.
-- [ ] The old **Verified** column and **Email Verified At** field are gone (deviation).
+- [x] Columns: **Name**, **Email**, **Admin**, plus **Created At** and **Updated At** hidden by default.
+- [x] Searchable by name and email; sortable by name, email, admin, created; default sort name ascending.
+- [ ] Row actions **Edit** and **Delete**; bulk delete. (Single-row delete only; deviation 9.)
+- [x] Create modal: **Name** (required ≤ 255), **Email** (required, valid, unique ≤ 255), **Password** (required on create, 8–255), **Administrator** toggle with helper `Administrators can manage all users and access admin features.`
+- [x] Edit modal: password optional with helper `Leave empty to keep current password when editing.`; changing another user's password sets a temporary one and forces a change on their next sign-in.
+- [x] The **Administrator** toggle is disabled when editing yourself.
+- [x] Delete is unavailable for yourself; deleting the only admin is refused with `409 last_admin`.
+- [x] Admins can edit their own profile here; non-admins cannot reach the screen at all.
+- [x] The old **Verified** column and **Email Verified At** field are gone (deviation).
 
 ## Profile
 
 Route `/profile`. API `GET|PATCH /api/v1/me`.
 
-- [ ] Fields: **Name** (required), **Email** (required, unique), **Password** (optional, with current-password field when set).
-- [ ] Changing the email does not require re-verification (there is none).
-- [ ] Locale switch (English / Português do Brasil) persists across sessions.
-- [ ] Sign out action.
-- [ ] A `must_reset` user can only reach this screen and the password form.
+- [x] Fields: **Name** (required), **Email** (required, unique), **Password** (optional, with current-password field when set).
+- [x] Changing the email does not require re-verification (there is none).
+- [x] Locale switch (English / Português do Brasil) persists across sessions.
+- [x] Sign out action.
+- [x] A `must_reset` user can only reach this screen and the password form.
 
 ## Cross-cutting
 
@@ -275,6 +275,23 @@ The English source for `web/src/i18n/en.ts`. `pt-BR.ts` mirrors it key for key.
 | `users.permissions` | Permissions |
 | `users.administrator` | Administrator |
 | `users.administratorHelp` | Administrators can manage all users and access admin features. |
+| `users.member` | Member |
+| `users.createTitle` | Create User |
+| `users.editTitle` | Edit User |
+| `users.created` | User created |
+| `users.updated` | User updated |
+| `users.deleted` | User deleted |
+| `users.deleteTitle` | Delete user |
+| `users.deleteConfirm` | Delete this user? Their account is removed and they are signed out everywhere. |
+| `users.emptyTitle` | No users yet |
+| `users.emptyBody` | Create the first member of this household. |
+| `users.searchPlaceholder` | Search users... |
+| `users.noMatches` | No users match this search. |
+| `users.selfDeleteTooltip` | You cannot delete your own account. |
+| `users.deleteBlockedTitle` | User cannot be deleted |
+| `users.selfDeleteBody` | You cannot delete your own account. |
+| `users.lastAdminBody` | The last administrator cannot be deleted. |
+| `users.temporaryPasswordHelp` | A password set by an administrator is temporary and must be changed at the next sign-in. |
 | `auth.signIn` | Sign in |
 | `auth.signOut` | Sign out |
 | `auth.email` | Email |
@@ -290,6 +307,19 @@ The English source for `web/src/i18n/en.ts`. `pt-BR.ts` mirrors it key for key.
 | `profile.title` | Profile |
 | `profile.language` | Language |
 | `profile.currentPassword` | Current password |
+| `profile.passwordSection` | Change password |
+| `profile.passwordHelp` | Leave both fields empty to keep your current password. |
+| `profile.updated` | Profile updated |
+| `reset.title` | Choose a new password |
+| `reset.intro` | Set a new password for {email}. |
+| `reset.invalidTitle` | This link is no longer valid |
+| `reset.invalidBody` | It has expired or has already been used. Ask an administrator for a new reset link. |
+| `reset.submit` | Set password |
+| `reset.submitting` | Setting password… |
+| `reset.doneTitle` | Password changed |
+| `reset.doneBody` | You can now sign in with your new password. |
+| `reset.signIn` | Go to sign in |
+| `reset.loading` | Checking this link… |
 
 ## Known deviations
 
@@ -301,5 +331,6 @@ Not bugs; do not file them.
 4. Tag suggestions are ordered by usage, not by the recency of the last 50 updated items.
 5. Parent selects reject cycles, which the old form allowed.
 6. The barcode camera is `vue-qrcode-reader` instead of `html5-qrcode`; the modal, the button and the prefill rules are identical.
-7. The profile screen gains a locale switch; a `must_reset` user sees the change-password form before anything else.
+7. The profile screen gains a locale switch; a `must_reset` user sees the change-password form before any screen except the profile.
 8. Filament's generic modal wording ("Are you sure you want to delete…") is reproduced in spirit, not verbatim.
+9. Users bulk delete is not in v1: `docs/api.md` deletes one account at a time so the self and last-admin rules are evaluated against a single row. Items and locations keep their atomic bulk delete.

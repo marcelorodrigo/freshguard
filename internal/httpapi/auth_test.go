@@ -549,7 +549,7 @@ func TestMustResetBlocksEverythingButProfileAndLogout(t *testing.T) {
 	}
 
 	temporary := "temporary password"
-	if err := env.auth.SetTemporaryPassword(t.Context(), member.ID, temporary); err != nil {
+	if err := env.auth.SetTemporaryPassword(t.Context(), member.ID, temporary, ""); err != nil {
 		t.Fatalf("SetTemporaryPassword: %v", err)
 	}
 

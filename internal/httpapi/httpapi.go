@@ -33,6 +33,13 @@ const (
 	CodeLocationHasBatches = "location_has_batches"
 	// CodeBatchUnavailable is a consume that raced a delete or another consume.
 	CodeBatchUnavailable = "batch_unavailable"
+
+	// CodeCannotDeleteSelf blocks a self-delete.
+	CodeCannotDeleteSelf = "cannot_delete_self"
+	// CodeLastAdmin blocks deleting the only administrator.
+	CodeLastAdmin = "last_admin"
+	// CodeCannotDemoteSelf blocks an administrator taking their own rights away.
+	CodeCannotDemoteSelf = "cannot_demote_self"
 )
 
 // Options configures the root handler.
@@ -129,6 +136,12 @@ func (s *server) routes() *http.ServeMux {
 	mux.HandleFunc("PATCH /api/v1/locations/{id}", s.authenticated(s.updateLocation))
 	mux.HandleFunc("DELETE /api/v1/locations/{id}", s.authenticated(s.deleteLocation))
 	mux.HandleFunc("GET /api/v1/tags", s.authenticated(s.listTags))
+
+	mux.HandleFunc("GET /api/v1/users", s.administrator(s.listUsers))
+	mux.HandleFunc("POST /api/v1/users", s.administrator(s.createUser))
+	mux.HandleFunc("PATCH /api/v1/users/{id}", s.administrator(s.updateUser))
+	mux.HandleFunc("DELETE /api/v1/users/{id}", s.administrator(s.deleteUser))
+	mux.HandleFunc("POST /api/v1/users/{id}/password", s.administrator(s.setUserPassword))
 
 	mux.HandleFunc("/api", s.notFound)
 	mux.HandleFunc("/api/", s.notFound)

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -369,7 +370,7 @@ func TestSetTemporaryPasswordForcesAReset(t *testing.T) {
 	}
 
 	temporary := "temporary password"
-	if err := f.svc.SetTemporaryPassword(ctx, member.ID, temporary); err != nil {
+	if err := f.svc.SetTemporaryPassword(ctx, member.ID, temporary, ""); err != nil {
 		t.Fatalf("SetTemporaryPassword: %v", err)
 	}
 
@@ -742,7 +743,7 @@ func TestSetTemporaryPasswordForUnknownUser(t *testing.T) {
 
 	f := newFixture(t)
 
-	err := f.svc.SetTemporaryPassword(context.Background(), "0190a1b2-0000-7000-8000-000000000000", testPassword)
+	err := f.svc.SetTemporaryPassword(context.Background(), "0190a1b2-0000-7000-8000-000000000000", testPassword, "")
 	if !errors.Is(err, ErrUserNotFound) {
 		t.Errorf("SetTemporaryPassword(unknown) = %v, want ErrUserNotFound", err)
 	}
@@ -779,7 +780,7 @@ func TestAccountWritesFailOnACancelledContext(t *testing.T) {
 	if _, err := f.svc.CreateUser(ctx, in); err == nil {
 		t.Error("CreateUser on a cancelled context = nil error, want failure")
 	}
-	if err := f.svc.SetTemporaryPassword(ctx, "0190a1b2-0000-7000-8000-000000000000", testPassword); err == nil {
+	if err := f.svc.SetTemporaryPassword(ctx, "0190a1b2-0000-7000-8000-000000000000", testPassword, ""); err == nil {
 		t.Error("SetTemporaryPassword on a cancelled context = nil error, want failure")
 	}
 }
@@ -806,5 +807,322 @@ func TestUserCount(t *testing.T) {
 	}
 	if count != 1 {
 		t.Errorf("count = %d, want 1", count)
+	}
+}
+
+func ptr[T any](value T) *T { return &value }
+
+func createMember(t *testing.T, f *fixture, name, email string, admin bool) User {
+	t.Helper()
+
+	user, err := f.svc.CreateUser(context.Background(), CreateUserInput{
+		Name: name, Email: email, Password: testPassword, IsAdmin: admin,
+	})
+	if err != nil {
+		t.Fatalf("CreateUser(%s): %v", email, err)
+	}
+	// Distinct creation timestamps make the created_at ordering observable.
+	f.now = f.now.Add(time.Minute)
+	return user
+}
+
+func userNames(users []User) []string {
+	names := make([]string, len(users))
+	for i, user := range users {
+		names[i] = user.Name
+	}
+	return names
+}
+
+func TestListUsers(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	f.firstAdmin(t)
+	createMember(t, f, "Ana", "ana@example.com", true)
+	createMember(t, f, "Bruno", "bruno@example.org", false)
+	createMember(t, f, "Carla", "carla@example.net", false)
+
+	tests := map[string]struct {
+		params ListUsersParams
+		want   []string
+	}{
+		"default": {
+			params: ListUsersParams{},
+			want:   []string{"Ana", "Bruno", "Carla", "Marcelo"},
+		},
+		"search by name": {
+			params: ListUsersParams{Q: "brun"},
+			want:   []string{"Bruno"},
+		},
+		"search by email": {
+			params: ListUsersParams{Q: "example.net"},
+			want:   []string{"Carla"},
+		},
+		"search is case-insensitive": {
+			params: ListUsersParams{Q: "ANA@EXAMPLE.COM"},
+			want:   []string{"Ana"},
+		},
+		"sort email descending": {
+			params: ListUsersParams{Sort: "email", Dir: "desc"},
+			want:   []string{"Marcelo", "Carla", "Bruno", "Ana"},
+		},
+		"sort admins first": {
+			params: ListUsersParams{Sort: "is_admin", Dir: "desc"},
+			want:   []string{"Ana", "Marcelo", "Bruno", "Carla"},
+		},
+		"sort created descending": {
+			params: ListUsersParams{Sort: "created_at", Dir: "desc"},
+			want:   []string{"Carla", "Bruno", "Ana", "Marcelo"},
+		},
+		"second page": {
+			params: ListUsersParams{Page: 2, PerPage: 2},
+			want:   []string{"Carla", "Marcelo"},
+		},
+		"unknown sort falls back to name": {
+			params: ListUsersParams{Sort: "password_hash"},
+			want:   []string{"Ana", "Bruno", "Carla", "Marcelo"},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			page, err := f.svc.ListUsers(context.Background(), tc.params)
+			if err != nil {
+				t.Fatalf("ListUsers: %v", err)
+			}
+			if got := userNames(page.Users); !slices.Equal(got, tc.want) {
+				t.Errorf("names = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestListUsersPagination(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	f.firstAdmin(t)
+	createMember(t, f, "Ana", "ana@example.com", true)
+	createMember(t, f, "Bruno", "bruno@example.org", false)
+	createMember(t, f, "Carla", "carla@example.net", false)
+
+	page, err := f.svc.ListUsers(context.Background(), ListUsersParams{Page: 2, PerPage: 2})
+	if err != nil {
+		t.Fatalf("ListUsers: %v", err)
+	}
+	if page.Page != 2 || page.PerPage != 2 || page.Total != 4 || page.Pages != 2 {
+		t.Errorf("meta = %+v, want page 2, per_page 2, total 4, pages 2", page)
+	}
+
+	capped, err := f.svc.ListUsers(context.Background(), ListUsersParams{PerPage: 500})
+	if err != nil {
+		t.Fatalf("ListUsers: %v", err)
+	}
+	if capped.PerPage != MaxUsersPerPage {
+		t.Errorf("per_page = %d, want the %d cap", capped.PerPage, MaxUsersPerPage)
+	}
+
+	if got := userNames(page.Users); !slices.Equal(got, []string{"Carla", "Marcelo"}) {
+		t.Errorf("second page names = %v, want Carla and Marcelo", got)
+	}
+	for _, listed := range page.Users {
+		if listed.ID == "" {
+			t.Error("a listed user has no id")
+		}
+	}
+}
+
+func TestAdminUpdateUserFields(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	ctx := context.Background()
+	admin := f.firstAdmin(t).User
+	ana := createMember(t, f, "Ana", "ana@example.com", false)
+	carla := createMember(t, f, "Carla", "carla@example.net", false)
+
+	updated, err := f.svc.AdminUpdateUser(ctx, admin.ID, ana.ID, AdminUserPatch{
+		Name:  ptr("Ana Maria"),
+		Email: ptr("ana.maria@example.com"),
+	})
+	if err != nil {
+		t.Fatalf("AdminUpdateUser: %v", err)
+	}
+	if updated.Name != "Ana Maria" || updated.Email != "ana.maria@example.com" {
+		t.Errorf("user = %+v, want the patched name and email", updated)
+	}
+
+	promoted, err := f.svc.AdminUpdateUser(ctx, admin.ID, ana.ID, AdminUserPatch{IsAdmin: ptr(true)})
+	if err != nil {
+		t.Fatalf("AdminUpdateUser(is_admin): %v", err)
+	}
+	if !promoted.IsAdmin {
+		t.Error("is_admin = false after promotion, want true")
+	}
+
+	if _, err := f.svc.AdminUpdateUser(ctx, admin.ID, admin.ID, AdminUserPatch{IsAdmin: ptr(false)}); !errors.Is(err, ErrCannotDemoteSelf) {
+		t.Errorf("demote self = %v, want ErrCannotDemoteSelf", err)
+	}
+
+	if _, err := f.svc.AdminUpdateUser(ctx, admin.ID, carla.ID, AdminUserPatch{Email: ptr("ana.maria@example.com")}); err == nil {
+		t.Fatal("duplicate email = nil error, want a field error")
+	} else {
+		assertFieldError(t, err, "email", "unique")
+	}
+
+	if _, err := f.svc.AdminUpdateUser(ctx, carla.ID, admin.ID, AdminUserPatch{Name: ptr("Nope")}); !errors.Is(err, ErrForbidden) {
+		t.Errorf("non-admin update = %v, want ErrForbidden", err)
+	}
+
+	if _, err := f.svc.AdminUpdateUser(ctx, admin.ID, "0190a1b2-0000-7000-8000-000000000000", AdminUserPatch{Name: ptr("Nope")}); !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("unknown target = %v, want ErrUserNotFound", err)
+	}
+}
+
+func TestAdminUpdateUserValidates(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	admin := f.firstAdmin(t).User
+	carla := createMember(t, f, "Carla", "carla@example.net", false)
+
+	invalid := map[string]struct {
+		patch AdminUserPatch
+		field string
+		rule  string
+	}{
+		"blank name":     {patch: AdminUserPatch{Name: ptr("  ")}, field: "name", rule: "required"},
+		"invalid email":  {patch: AdminUserPatch{Email: ptr("nope")}, field: "email", rule: "email"},
+		"short password": {patch: AdminUserPatch{Password: ptr("short")}, field: "password", rule: "min"},
+	}
+	for name, tc := range invalid {
+		t.Run(name, func(t *testing.T) {
+			_, err := f.svc.AdminUpdateUser(context.Background(), admin.ID, carla.ID, tc.patch)
+			assertFieldError(t, err, tc.field, tc.rule)
+		})
+	}
+}
+
+func TestAdminUpdateUserPassword(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	ctx := context.Background()
+	adminSession := f.firstAdmin(t)
+	admin := adminSession.User
+	carla := createMember(t, f, "Carla", "carla@example.net", false)
+
+	// A password set on somebody else is temporary: it signs them out and
+	// forces a change on the next sign-in.
+	memberSession, err := f.svc.Login(ctx, carla.Email, testPassword, "")
+	if err != nil {
+		t.Fatalf("Login(carla): %v", err)
+	}
+
+	temporary := "temporary password"
+	if _, err := f.svc.AdminUpdateUser(ctx, admin.ID, carla.ID, AdminUserPatch{Password: ptr(temporary)}); err != nil {
+		t.Fatalf("AdminUpdateUser(password): %v", err)
+	}
+	if _, err := f.svc.Session(ctx, memberSession.Secret); !errors.Is(err, ErrSessionInvalid) {
+		t.Errorf("member session after an admin password = %v, want ErrSessionInvalid", err)
+	}
+	signedIn, err := f.svc.Login(ctx, carla.Email, temporary, "")
+	if err != nil {
+		t.Fatalf("Login with the temporary password: %v", err)
+	}
+	if !signedIn.User.MustReset {
+		t.Error("must_reset = false after an admin password, want true")
+	}
+
+	// A password set on oneself is not temporary and leaves the caller signed in.
+	chosen := "the admin chose this"
+	if _, err := f.svc.AdminUpdateUser(ctx, admin.ID, admin.ID, AdminUserPatch{Password: ptr(chosen)}); err != nil {
+		t.Fatalf("AdminUpdateUser(self password): %v", err)
+	}
+	if _, err := f.svc.Session(ctx, adminSession.Secret); err != nil {
+		t.Errorf("admin session after changing own password = %v, want it to survive", err)
+	}
+	own, err := f.svc.Login(ctx, admin.Email, chosen, "")
+	if err != nil {
+		t.Fatalf("Login with the new admin password: %v", err)
+	}
+	if own.User.MustReset {
+		t.Error("must_reset = true after changing own password, want false")
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	ctx := context.Background()
+	admin := f.firstAdmin(t).User
+	member := createMember(t, f, "Ana", "ana@example.com", false)
+
+	if err := f.svc.DeleteUser(ctx, member.ID, admin.ID); !errors.Is(err, ErrForbidden) {
+		t.Errorf("non-admin delete = %v, want ErrForbidden", err)
+	}
+	if err := f.svc.DeleteUser(ctx, admin.ID, "0190a1b2-0000-7000-8000-000000000000"); !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("unknown target = %v, want ErrUserNotFound", err)
+	}
+	if err := f.svc.DeleteUser(ctx, admin.ID, member.ID); err != nil {
+		t.Fatalf("DeleteUser: %v", err)
+	}
+	if _, err := f.svc.userByID(ctx, member.ID); !errors.Is(err, ErrUserNotFound) {
+		t.Errorf("deleted member lookup = %v, want ErrUserNotFound", err)
+	}
+}
+
+func TestDeleteUserRefusesSelf(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	ctx := context.Background()
+	admin := f.firstAdmin(t).User
+	other := createMember(t, f, "Other admin", "other@example.com", true)
+
+	if err := f.svc.DeleteUser(ctx, admin.ID, admin.ID); !errors.Is(err, ErrCannotDeleteSelf) {
+		t.Errorf("delete self with another admin = %v, want ErrCannotDeleteSelf", err)
+	}
+	if err := f.svc.DeleteUser(ctx, admin.ID, other.ID); err != nil {
+		t.Errorf("delete another admin = %v, want success", err)
+	}
+}
+
+func TestDeleteUserRefusesTheLastAdmin(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	admin := f.firstAdmin(t).User
+
+	if err := f.svc.DeleteUser(context.Background(), admin.ID, admin.ID); !errors.Is(err, ErrLastAdmin) {
+		t.Errorf("delete the last admin = %v, want ErrLastAdmin", err)
+	}
+}
+
+func TestSetTemporaryPasswordKeepsTheCallersSession(t *testing.T) {
+	t.Parallel()
+
+	f := newFixture(t)
+	ctx := context.Background()
+	f.firstAdmin(t)
+	member := createMember(t, f, "Ana", "ana@example.com", false)
+
+	session, err := f.svc.Login(ctx, member.Email, testPassword, "")
+	if err != nil {
+		t.Fatalf("Login: %v", err)
+	}
+
+	if err := f.svc.SetTemporaryPassword(ctx, member.ID, "temporary password", session.Secret); err != nil {
+		t.Fatalf("SetTemporaryPassword: %v", err)
+	}
+
+	kept, err := f.svc.Session(ctx, session.Secret)
+	if err != nil {
+		t.Fatalf("Session after keeping the caller: %v", err)
+	}
+	if !kept.User.MustReset {
+		t.Error("must_reset = false, want true")
 	}
 }
