@@ -50,12 +50,12 @@ Route `/login`. API `POST /api/v1/session`, `DELETE /api/v1/session`.
 
 Route `/`. API `GET /api/v1/dashboard/recently-expired`.
 
-- [ ] Heading **Recently Expired**.
-- [ ] Table of expired batches: **Item**, **Location**, **Quantity**, **Expiration Date** (`d-m-Y`).
-- [ ] Ordered by expiry ascending; at most five rows; no pagination.
-- [ ] Clicking a row opens that item's edit screen.
-- [ ] Empty state: **Congratulations, no expired items** with a check icon.
-- [ ] Location, Quantity and Expiration Date hide progressively on narrow screens (Filament `visibleFrom`: lg, sm, md).
+- [x] Heading **Recently Expired**.
+- [x] Table of expired batches: **Item**, **Location**, **Quantity**, **Expiration Date** (`d-m-Y`).
+- [x] Ordered by expiry ascending; at most five rows; no pagination.
+- [x] Clicking a row opens that item's edit screen.
+- [x] Empty state: **Congratulations, no expired items** with a check icon.
+- [x] Location, Quantity and Expiration Date hide progressively on narrow screens (Filament `visibleFrom`: lg, sm, md).
 
 ## Items list
 
@@ -257,6 +257,7 @@ The English source for `web/src/i18n/en.ts`. `pt-BR.ts` mirrors it key for key.
 | `quickConsume.unavailableBody` | This batch has already been consumed or is no longer available. |
 | `dashboard.recentlyExpired` | Recently Expired |
 | `dashboard.empty` | Congratulations, no expired items |
+| `dashboard.item` | Item |
 | `barcode.notFoundTitle` | Product not found |
 | `barcode.notFoundBody` | No product information found for this barcode. |
 | `barcode.invalidTitle` | Invalid barcode |

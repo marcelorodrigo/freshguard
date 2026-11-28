@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/marcelorodrigo/freshguard/internal/auth"
+	"github.com/marcelorodrigo/freshguard/internal/inventory"
 	"github.com/marcelorodrigo/freshguard/internal/store"
 )
 
@@ -23,10 +24,11 @@ const (
 )
 
 type testEnv struct {
-	handler http.Handler
-	auth    *auth.Service
-	db      *store.Store
-	clock   *testClock
+	handler   http.Handler
+	auth      *auth.Service
+	inventory *inventory.Service
+	db        *store.Store
+	clock     *testClock
 }
 
 // newTestEnv builds the real routes plus a probe behind the session
@@ -54,10 +56,11 @@ func newTestEnv(t *testing.T) *testEnv {
 	))
 
 	return &testEnv{
-		handler: logRequests(srv.logger, mux),
-		auth:    svc,
-		db:      db,
-		clock:   clock,
+		handler:   logRequests(srv.logger, mux),
+		auth:      svc,
+		inventory: stock,
+		db:        db,
+		clock:     clock,
 	}
 }
 

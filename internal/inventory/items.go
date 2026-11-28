@@ -370,15 +370,18 @@ func (s *Service) batchesForItem(ctx context.Context, q queryer, itemID string) 
 }
 
 // scanBatch reads the batch columns shared by batchesForItem and batch.
-func scanBatch(row rowScanner) (Batch, error) {
+func scanBatch(row rowScanner, extra ...any) (Batch, error) {
 	var (
 		batch     Batch
 		createdAt string
 		updatedAt string
 	)
-	if err := row.Scan(&batch.ID, &batch.ItemID, &batch.LocationID,
-		&batch.LocationName, &batch.ExpiresAt, &batch.Quantity,
-		&createdAt, &updatedAt); err != nil {
+
+	dest := []any{
+		&batch.ID, &batch.ItemID, &batch.LocationID, &batch.LocationName,
+		&batch.ExpiresAt, &batch.Quantity, &createdAt, &updatedAt,
+	}
+	if err := row.Scan(append(dest, extra...)...); err != nil {
 		return Batch{}, err
 	}
 
